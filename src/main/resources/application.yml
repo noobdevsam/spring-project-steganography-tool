@@ -1,3 +1,6 @@
 spring:
     application:
         name: spring-project-steganography-tool
+    threads:
+        virtual:
+            enabled: true
