@@ -4,3 +4,6 @@ spring:
     threads:
         virtual:
             enabled: true
+    data:
+        mongodb:
+            uri: ${MONGODB_URI}
