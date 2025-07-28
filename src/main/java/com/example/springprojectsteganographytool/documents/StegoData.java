@@ -44,6 +44,7 @@ public class StegoData {
             LocalDateTime creationDate,
             String possHint
     ) {
+        this.id = UUID.randomUUID();
         this.fileName = fileName;
         this.fileType = fileType;
         this.originalImage = originalImage;
@@ -56,8 +57,20 @@ public class StegoData {
         this.possHint = possHint;
     }
 
-    public StegoData(UUID id, String fileName, String fileType, byte[] originalImage, String embeddedText, byte[] stegoImage, boolean encrypted, byte[] embeddedFile, String encryptionKey, LocalDateTime creationDate, String possHint) {
-        this.id = id;
+    public StegoData(
+            String id,
+            String fileName,
+            String fileType,
+            byte[] originalImage,
+            String embeddedText,
+            byte[] stegoImage,
+            boolean encrypted,
+            byte[] embeddedFile,
+            String encryptionKey,
+            LocalDateTime creationDate,
+            String possHint
+    ) {
+        this.id = UUID.fromString(id);
         this.fileName = fileName;
         this.fileType = fileType;
         this.originalImage = originalImage;
