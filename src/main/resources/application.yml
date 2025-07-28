@@ -6,4 +6,4 @@ spring:
             enabled: true
     data:
         mongodb:
-            uri: ${MONGODB_URI}
+            uri: ${MONGODB_URI:mongodb://db-mongo:27017/stego}
