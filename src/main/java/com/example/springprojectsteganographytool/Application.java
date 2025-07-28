@@ -5,6 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.embedded.jetty.JettyServletWebServerFactory;
 import org.springframework.context.annotation.Bean;
 
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @SpringBootApplication
@@ -26,4 +27,31 @@ public class Application {
         return factory;
     }
 
+    @Bean
+    public ExecutorService virtualThreadExecutor() {
+        return Executors.newVirtualThreadPerTaskExecutor();
+    }
+
 }
+
+
+/*
+* Usage Example:
+*
+@Service
+public class MyService {
+
+    private final ExecutorService virtualThreadExecutor;
+
+    public MyService(ExecutorService virtualThreadExecutor) {
+        this.virtualThreadExecutor = virtualThreadExecutor;
+    }
+
+    public void runTask() {
+        virtualThreadExecutor.submit(() -> {
+            // Your parallel logic here
+            System.out.println("Running in virtual thread: " + Thread.currentThread());
+        });
+    }
+}
+* */
