@@ -9,6 +9,6 @@ public record StegoEncodeResponseDTO(
         String embeddedFileName,
         boolean hasText,
         boolean hasFile,
-        String createdDate
+        Instant createdDate
 ) {
 }
