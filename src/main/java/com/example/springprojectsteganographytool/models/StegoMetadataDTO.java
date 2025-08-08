@@ -1,14 +1,10 @@
 package com.example.springprojectsteganographytool.models;
 
-import java.time.Instant;
-import java.util.UUID;
-
 public record StegoMetadataDTO(
-        UUID id,
-        String originalFileName,
-        String embeddedFileName,
+        int lsbDepth, // 1 or 2
         boolean hasText,
         boolean hasFile,
-        Instant createdDate
+        String encryptionKeyHash, // SHA-256 hash of the AES key
+        String originalFileName // Original file name
 ) {
 }
