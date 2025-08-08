@@ -1,8 +1,14 @@
 package com.example.springprojectsteganographytool.exceptions;
 
+import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
+import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTypeNotSupportedException;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
+import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
+import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEncodingException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -39,5 +45,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Object> handleInvalidImageFormat(InvalidImageFormatException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler({
+            LsbEncodingException.class,
+            LsbDecodingException.class,
+            AesKeyInvalidException.class,
+            AesOperationException.class,
+            MetadataEncodingException.class,
+            MetadataDecodingException.class
+    })
+    public ResponseEntity<Object> handleProcessingErrors(RuntimeException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
 
 }
