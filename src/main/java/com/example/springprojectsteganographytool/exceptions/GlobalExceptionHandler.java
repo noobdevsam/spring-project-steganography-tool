@@ -1,5 +1,8 @@
 package com.example.springprojectsteganographytool.exceptions;
 
+import com.example.springprojectsteganographytool.exceptions.common.OperationNotAllowedException;
+import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
+import com.example.springprojectsteganographytool.exceptions.data.StorageException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
@@ -58,5 +61,19 @@ public class GlobalExceptionHandler {
         return buildResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(StegoDataNotFoundException.class)
+    public ResponseEntity<Object> handleStegoDataNotFound(StegoDataNotFoundException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(StorageException.class)
+    public ResponseEntity<Object> handleStorageError(StorageException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(OperationNotAllowedException.class)
+    public ResponseEntity<Object> handleOperationNotAllowed(OperationNotAllowedException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
 
 }
