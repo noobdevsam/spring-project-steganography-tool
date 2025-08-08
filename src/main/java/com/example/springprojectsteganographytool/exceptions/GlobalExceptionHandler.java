@@ -20,9 +20,21 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import java.time.Instant;
 import java.util.HashMap;
 
+/**
+ * Global exception handler for the application.
+ * This class uses Spring's @ControllerAdvice to handle exceptions globally
+ * and return appropriate HTTP responses.
+ */
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Builds a standardized response body for exceptions.
+     *
+     * @param message the error message to include in the response
+     * @param status  the HTTP status to set for the response
+     * @return a ResponseEntity containing the response body and status
+     */
     private ResponseEntity<Object> buildResponse(String message, HttpStatus status) {
         var body = new HashMap<String, Object>();
 
@@ -34,21 +46,45 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(body, status);
     }
 
+    /**
+     * Handles FileTypeNotSupportedException and returns a 400 Bad Request response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler(FileTypeNotSupportedException.class)
     public ResponseEntity<Object> handleFileTypeNotSupported(FileTypeNotSupportedException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Handles FileTooLargeException and returns a 413 Payload Too Large response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler(FileTooLargeException.class)
     public ResponseEntity<Object> handleFileTooLarge(FileTooLargeException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
+    /**
+     * Handles InvalidImageFormatException and returns a 400 Bad Request response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler(InvalidImageFormatException.class)
     public ResponseEntity<Object> handleInvalidImageFormat(InvalidImageFormatException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Handles various processing-related exceptions and returns a 500 Internal Server Error response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler({
             LsbEncodingException.class,
             LsbDecodingException.class,
@@ -61,16 +97,34 @@ public class GlobalExceptionHandler {
         return buildResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    /**
+     * Handles StegoDataNotFoundException and returns a 404 Not Found response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler(StegoDataNotFoundException.class)
     public ResponseEntity<Object> handleStegoDataNotFound(StegoDataNotFoundException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    /**
+     * Handles StorageException and returns a 500 Internal Server Error response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler(StorageException.class)
     public ResponseEntity<Object> handleStorageError(StorageException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    /**
+     * Handles OperationNotAllowedException and returns a 403 Forbidden response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
     @ExceptionHandler(OperationNotAllowedException.class)
     public ResponseEntity<Object> handleOperationNotAllowed(OperationNotAllowedException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
