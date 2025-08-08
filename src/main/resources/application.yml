@@ -11,3 +11,7 @@ spring:
     data:
         mongodb:
             uri: ${MONGODB_URI:mongodb://db-mongo:27017/stego}
+
+logging:
+    level:
+        org.springframework.data.mongodb.core.MongoTemplate: DEBUG
