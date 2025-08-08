@@ -3,7 +3,7 @@ package com.example.springprojectsteganographytool.services;
 /**
  * Service interface for AES encryption and decryption operations.
  */
-public interface AESUtilService {
+public interface AesUtilService {
 
     /**
      * Encrypts the given plain text using the specified password.
