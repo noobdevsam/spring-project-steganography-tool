@@ -1,44 +1,33 @@
 package com.example.springprojectsteganographytool.services;
 
-import java.awt.image.BufferedImage;
-import java.io.IOException;
+import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 
 public interface LsbUtilService {
 
-    long getMaxPayloadSizeBytes(
-            BufferedImage image,
+    byte[] encodeMessage(
+            byte[] imageBytes,
+            byte[] messageBytes,
+            StegoMetadataDTO metadata
+    ) throws Exception;
+
+    byte[] decodeMessage(
+            byte[] stegoImageBytes,
             int lsbDepth
-    );
+    ) throws Exception;
 
-    BufferedImage embedPayload(
-            BufferedImage image,
-            byte[] payload,
+    byte[] encodeFile(
+            byte[] imageBytes,
+            byte[] fileBytes,
+            StegoMetadataDTO metadata
+    ) throws Exception;
+
+    byte[] decodeFile(
+            byte[] stegoImageBytes,
             int lsbDepth
-    );
+    ) throws Exception;
 
-    byte[] extractPayload(
-            BufferedImage image,
-            int payloadLength,
-            int lsbDepth
-    );
+    StegoMetadataDTO extractMetadata(
+            byte[] stegoImageBytes
+    ) throws Exception;
 
-    byte[] bufferedImageToBytes(
-            BufferedImage image,
-            String format
-    ) throws IOException;
-
-    BufferedImage bytesToBufferedImage(
-            byte[] bytes
-    ) throws IOException;
-
-    BufferedImage embedWithLengthHeader(
-            BufferedImage coverImage,
-            byte[] payload,
-            int lsbDepth
-    );
-
-    byte[] extractWithLengthHeader(
-            BufferedImage stegoImage,
-            int lsbDepth
-    );
 }
