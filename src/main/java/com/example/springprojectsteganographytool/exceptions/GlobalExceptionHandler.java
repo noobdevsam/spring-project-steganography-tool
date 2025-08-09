@@ -1,17 +1,22 @@
 package com.example.springprojectsteganographytool.exceptions;
 
 import com.example.springprojectsteganographytool.exceptions.common.OperationNotAllowedException;
+import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
+import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTypeNotSupportedException;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
+import com.example.springprojectsteganographytool.exceptions.file.StegoImageNotFoundException;
+import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEncodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -66,6 +71,61 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(FileTooLargeException.class)
     public ResponseEntity<Object> handleFileTooLarge(FileTooLargeException ex) {
         return buildResponse(ex.getMessage(), HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    /**
+     * Handles InvalidEncryptionKeyException and returns a 400 Bad Request response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
+    @ExceptionHandler(InvalidEncryptionKeyException.class)
+    public ResponseEntity<Object> handleInvalidEncryptionKey(InvalidEncryptionKeyException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handles InvalidLsbDepthException and returns a 400 Bad Request response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
+    @ExceptionHandler(InvalidLsbDepthException.class)
+    public ResponseEntity<Object> handleInvalidLsbDepth(InvalidLsbDepthException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Handles MessageTooLargeException and returns a 413 Payload Too Large response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
+    @ExceptionHandler(MessageTooLargeException.class)
+    public ResponseEntity<Object> handleMessageTooLarge(MessageTooLargeException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.PAYLOAD_TOO_LARGE);
+    }
+
+    /**
+     * Handles MetadataNotFoundException and returns a 404 Not Found response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
+    @ExceptionHandler(MetadataNotFoundException.class)
+    public ResponseEntity<Object> handleMetadataNotFound(MetadataNotFoundException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * Handles StegoImageNotFoundException and returns a 404 Not Found response.
+     *
+     * @param ex the exception to handle
+     * @return a ResponseEntity with the error details
+     */
+    @ExceptionHandler(StegoImageNotFoundException.class)
+    public ResponseEntity<Object> handleStegoImageNotFound(StegoImageNotFoundException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
     /**
