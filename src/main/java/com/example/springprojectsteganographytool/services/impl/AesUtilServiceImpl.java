@@ -6,11 +6,32 @@ import com.example.springprojectsteganographytool.exceptions.encryption.InvalidE
 import com.example.springprojectsteganographytool.services.AesUtilService;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+
 @Service
 public class AesUtilServiceImpl implements AesUtilService {
+
     @Override
     public byte[] encryptText(String plainText, String key) throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
-        return new byte[0];
+
+        // Validate the key
+        if (key == null || key.isBlank()) {
+            throw new AesKeyInvalidException("Encryption key is required and cannot be null or blank.");
+        }
+
+
+        try {
+            // Convert the plain text to bytes using UTF-8 encoding
+            // and then encrypt it using the provided key
+            var plaintextBytes = plainText.getBytes(StandardCharsets.UTF_8);
+
+            return encryptBytes(plaintextBytes, key);
+        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+            throw exception;
+        } catch (Exception e) {
+            throw new AesOperationException("AES operation failed", e);
+        }
+
     }
 
     @Override
