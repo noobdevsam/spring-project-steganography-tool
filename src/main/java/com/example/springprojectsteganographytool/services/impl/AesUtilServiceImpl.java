@@ -14,6 +14,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.HexFormat;
 
 @Service
@@ -146,6 +147,36 @@ public class AesUtilServiceImpl implements AesUtilService {
 
         return outputBytes;
 
+    }
+
+    private byte[] decryptBytes(
+            byte[] bytesToDecrypt,
+            String key
+    ) throws Exception {
+
+        if (bytesToDecrypt == null || bytesToDecrypt.length < SALT_LENGTH + IV_LENGTH) {
+            throw new AesOperationException("Invalid input for decryption.");
+        }
+
+        // Extract salt and IV from the input byte array
+        var salt = Arrays.copyOfRange(bytesToDecrypt, 0, SALT_LENGTH);
+        var iv = Arrays.copyOfRange(bytesToDecrypt, SALT_LENGTH, SALT_LENGTH + IV_LENGTH);
+        var cipherText = Arrays.copyOfRange(bytesToDecrypt, SALT_LENGTH + IV_LENGTH, bytesToDecrypt.length);
+
+
+        // Derive the key using PBKDF2 with the provided key and extracted salt
+        var keySpec = deriveKey(key, salt);
+
+        // Initialize the cipher for decryption
+        var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
+        cipher.init(
+                Cipher.DECRYPT_MODE,
+                keySpec,
+                new IvParameterSpec(iv)
+        );
+
+        // Decrypt the cipher text
+        return cipher.doFinal(cipherText);
     }
 
     private SecretKeySpec deriveKey(
