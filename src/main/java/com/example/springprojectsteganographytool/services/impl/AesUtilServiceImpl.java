@@ -58,8 +58,32 @@ public class AesUtilServiceImpl implements AesUtilService {
     }
 
     @Override
-    public String decryptText(byte[] cipherBytes, String key) throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
-        return "";
+    public String decryptText(
+            byte[] cipherBytes,
+            String key
+    ) throws InvalidEncryptionKeyException,
+            AesKeyInvalidException,
+            AesOperationException {
+
+        // Validate the key
+        if (key == null || key.isBlank()) {
+            throw new AesKeyInvalidException("Decryption key is required and cannot be null or blank.");
+        }
+
+        try {
+
+            // Decrypt the cipher bytes using the provided key
+            // and convert the result back to a String using UTF-8 encoding
+            var plainTextBytes = decryptBytes(cipherBytes, key);
+
+            return new String(plainTextBytes, StandardCharsets.UTF_8);
+
+        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+            throw exception;
+        } catch (Exception e) {
+            throw new AesOperationException("AES operation failed", e);
+        }
+
     }
 
     @Override
