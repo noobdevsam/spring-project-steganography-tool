@@ -77,14 +77,14 @@ public class AesUtilServiceImpl implements AesUtilService {
     // ------ Helper Methods ------
 
     private byte[] encryptBytes(
-            byte[] plaintextBytes,
+            byte[] bytesToEncrypt,
             String key
     ) throws Exception {
 
         var salt = new byte[SALT_LENGTH];
         var iv = new byte[IV_LENGTH];
         var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        var cipherText = cipher.doFinal(plaintextBytes);
+        var cipherText = cipher.doFinal(bytesToEncrypt);
 
         // Generate random salt and IV
         RANDOM.nextBytes(salt);
