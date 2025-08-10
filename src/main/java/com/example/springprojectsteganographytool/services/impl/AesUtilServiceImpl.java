@@ -113,8 +113,29 @@ public class AesUtilServiceImpl implements AesUtilService {
     }
 
     @Override
-    public byte[] decryptFile(byte[] cipherBytes, String key) throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
-        return new byte[0];
+    public byte[] decryptFile(
+            byte[] cipherBytes,
+            String key
+    ) throws InvalidEncryptionKeyException,
+            AesKeyInvalidException,
+            AesOperationException {
+
+        // Validate the key
+        if (key == null || key.isBlank()) {
+            throw new AesKeyInvalidException("Decryption key is required and cannot be null or blank.");
+        }
+
+        try {
+
+            // Decrypt the cipher bytes using the provided key
+            return decryptBytes(cipherBytes, key);
+
+        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+            throw exception;
+        } catch (Exception e) {
+            throw new AesOperationException("AES file operation failed", e);
+        }
+
     }
 
     @Override
