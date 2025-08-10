@@ -6,10 +6,17 @@ import com.example.springprojectsteganographytool.exceptions.encryption.InvalidE
 import com.example.springprojectsteganographytool.services.AesUtilService;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKeyFactory;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 
 @Service
 public class AesUtilServiceImpl implements AesUtilService {
+
+    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256";
+    private static final int ITERATION_COUNT = 65536;
+    private static final int KEY_LENGTH = 256; // AES-256
 
     @Override
     public byte[] encryptText(String plainText, String key) throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
@@ -53,4 +60,16 @@ public class AesUtilServiceImpl implements AesUtilService {
     public String generateKey(String key) throws InvalidEncryptionKeyException, AesKeyInvalidException {
         return "";
     }
+
+
+    private SecretKeySpec deriveKey(
+            String password,
+            byte[] salt
+    ) throws Exception {
+        var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
+        var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
+        var keyBytes = factory.generateSecret(spec).getEncoded();
+        return new SecretKeySpec(keyBytes, "AES");
+    }
+
 }
