@@ -28,7 +28,12 @@ public class AesUtilServiceImpl implements AesUtilService {
 
 
     @Override
-    public byte[] encryptText(String plainText, String key) throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
+    public byte[] encryptText(
+            String plainText,
+            String key
+    ) throws InvalidEncryptionKeyException,
+            AesKeyInvalidException,
+            AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -71,7 +76,10 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     // ------ Helper Methods ------
 
-    private byte[] encryptBytes(byte[] plaintextBytes, String key) throws Exception {
+    private byte[] encryptBytes(
+            byte[] plaintextBytes,
+            String key
+    ) throws Exception {
 
         var salt = new byte[SALT_LENGTH];
         var iv = new byte[IV_LENGTH];
