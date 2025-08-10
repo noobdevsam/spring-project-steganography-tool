@@ -12,7 +12,9 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.HexFormat;
 
 @Service
 public class AesUtilServiceImpl implements AesUtilService {
@@ -92,7 +94,20 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     @Override
     public String generateKey(String key) throws InvalidEncryptionKeyException, AesKeyInvalidException {
-        return "";
+
+        // Validate the key
+        if (key == null || key.isBlank()) {
+            throw new AesKeyInvalidException("Encryption key is required and cannot be null or blank.");
+        }
+
+        try {
+            var messageDigest = MessageDigest.getInstance("SHA-256");
+            var digestKey = messageDigest.digest(key.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(digestKey); //hex-encoded SHA-256 hash of the key
+        } catch (Exception e) {
+            throw new AesOperationException("Failed to generate key", e);
+        }
+
     }
 
     // ------ Helper Methods ------
