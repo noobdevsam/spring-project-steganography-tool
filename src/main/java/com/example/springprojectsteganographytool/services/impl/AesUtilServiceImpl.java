@@ -17,26 +17,37 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HexFormat;
 
+/**
+ * Implementation of the AesUtilService interface providing utility methods for AES encryption and decryption.
+ * This service supports text and file encryption/decryption using AES in CBC mode with PKCS5 padding.
+ * It also includes methods for generating encryption keys.
+ */
 @Service
 public class AesUtilServiceImpl implements AesUtilService {
 
-    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256";
+    // Constants for encryption configuration
+    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
     private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
-    private static final int ITERATION_COUNT = 65536;
-    private static final int KEY_LENGTH = 256; // AES-256
+    private static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
+    private static final int KEY_LENGTH = 256; // AES-256 key length in bits
     private static final int SALT_LENGTH = 16; // Length of the salt in bytes
     private static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
 
-    private static final SecureRandom RANDOM = new SecureRandom();
+    private static final SecureRandom RANDOM = new SecureRandom(); // Secure random generator for salt and IV
 
-
+    /**
+     * Encrypts a plain text string using the provided key.
+     *
+     * @param plainText The plain text to encrypt.
+     * @param key       The encryption key.
+     * @return The encrypted text as a byte array.
+     * @throws InvalidEncryptionKeyException If the key is invalid.
+     * @throws AesKeyInvalidException        If the key is null or blank.
+     * @throws AesOperationException         If an error occurs during encryption.
+     */
     @Override
-    public byte[] encryptText(
-            String plainText,
-            String key
-    ) throws InvalidEncryptionKeyException,
-            AesKeyInvalidException,
-            AesOperationException {
+    public byte[] encryptText(String plainText, String key)
+            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -54,16 +65,21 @@ public class AesUtilServiceImpl implements AesUtilService {
         } catch (Exception e) {
             throw new AesOperationException("AES operation failed", e);
         }
-
     }
 
+    /**
+     * Decrypts an encrypted byte array using the provided key.
+     *
+     * @param cipherBytes The encrypted byte array.
+     * @param key         The decryption key.
+     * @return The decrypted plain text as a string.
+     * @throws InvalidEncryptionKeyException If the key is invalid.
+     * @throws AesKeyInvalidException        If the key is null or blank.
+     * @throws AesOperationException         If an error occurs during decryption.
+     */
     @Override
-    public String decryptText(
-            byte[] cipherBytes,
-            String key
-    ) throws InvalidEncryptionKeyException,
-            AesKeyInvalidException,
-            AesOperationException {
+    public String decryptText(byte[] cipherBytes, String key)
+            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -83,16 +99,21 @@ public class AesUtilServiceImpl implements AesUtilService {
         } catch (Exception e) {
             throw new AesOperationException("AES operation failed", e);
         }
-
     }
 
+    /**
+     * Encrypts a file represented as a byte array using the provided key.
+     *
+     * @param fileBytes The file content as a byte array.
+     * @param key       The encryption key.
+     * @return The encrypted file content as a byte array.
+     * @throws InvalidEncryptionKeyException If the key is invalid.
+     * @throws AesKeyInvalidException        If the key is null or blank.
+     * @throws AesOperationException         If an error occurs during encryption.
+     */
     @Override
-    public byte[] encryptFile(
-            byte[] fileBytes,
-            String key
-    ) throws InvalidEncryptionKeyException,
-            AesKeyInvalidException,
-            AesOperationException {
+    public byte[] encryptFile(byte[] fileBytes, String key)
+            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -112,13 +133,19 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
+    /**
+     * Decrypts an encrypted file represented as a byte array using the provided key.
+     *
+     * @param cipherBytes The encrypted file content as a byte array.
+     * @param key         The decryption key.
+     * @return The decrypted file content as a byte array.
+     * @throws InvalidEncryptionKeyException If the key is invalid.
+     * @throws AesKeyInvalidException        If the key is null or blank.
+     * @throws AesOperationException         If an error occurs during decryption.
+     */
     @Override
-    public byte[] decryptFile(
-            byte[] cipherBytes,
-            String key
-    ) throws InvalidEncryptionKeyException,
-            AesKeyInvalidException,
-            AesOperationException {
+    public byte[] decryptFile(byte[] cipherBytes, String key)
+            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -138,6 +165,14 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
+    /**
+     * Generates a SHA-256 hash of the provided key and returns it as a hex-encoded string.
+     *
+     * @param key The input key.
+     * @return The hex-encoded SHA-256 hash of the key.
+     * @throws InvalidEncryptionKeyException If the key is invalid.
+     * @throws AesKeyInvalidException        If the key is null or blank.
+     */
     @Override
     public String generateKey(String key) throws InvalidEncryptionKeyException, AesKeyInvalidException {
 
@@ -156,13 +191,15 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
-    // ------ Helper Methods ------
-
-    private byte[] encryptBytes(
-            byte[] bytesToEncrypt,
-            String key
-    ) throws Exception {
-
+    /**
+     * Encrypts a byte array using the provided key.
+     *
+     * @param bytesToEncrypt The byte array to encrypt.
+     * @param key            The encryption key.
+     * @return The encrypted byte array.
+     * @throws Exception If an error occurs during encryption.
+     */
+    private byte[] encryptBytes(byte[] bytesToEncrypt, String key) throws Exception {
         var salt = new byte[SALT_LENGTH];
         var iv = new byte[IV_LENGTH];
         var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
@@ -191,14 +228,17 @@ public class AesUtilServiceImpl implements AesUtilService {
         System.arraycopy(cipherText, 0, outputBytes, SALT_LENGTH + IV_LENGTH, cipherText.length); // Copy cipher text
 
         return outputBytes;
-
     }
 
-    private byte[] decryptBytes(
-            byte[] bytesToDecrypt,
-            String key
-    ) throws Exception {
-
+    /**
+     * Decrypts a byte array using the provided key.
+     *
+     * @param bytesToDecrypt The byte array to decrypt.
+     * @param key            The decryption key.
+     * @return The decrypted byte array.
+     * @throws Exception If an error occurs during decryption.
+     */
+    private byte[] decryptBytes(byte[] bytesToDecrypt, String key) throws Exception {
         if (bytesToDecrypt == null || bytesToDecrypt.length < SALT_LENGTH + IV_LENGTH) {
             throw new AesOperationException("Invalid input for decryption.");
         }
@@ -224,14 +264,18 @@ public class AesUtilServiceImpl implements AesUtilService {
         return cipher.doFinal(cipherText);
     }
 
-    private SecretKeySpec deriveKey(
-            String password,
-            byte[] salt
-    ) throws Exception {
+    /**
+     * Derives a key using PBKDF2 with the provided password and salt.
+     *
+     * @param password The password to derive the key from.
+     * @param salt     The salt to use in the key derivation.
+     * @return The derived key as a SecretKeySpec.
+     * @throws Exception If an error occurs during key derivation.
+     */
+    private SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
         var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
         var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
         var keyBytes = factory.generateSecret(spec).getEncoded();
         return new SecretKeySpec(keyBytes, "AES");
     }
-
 }
