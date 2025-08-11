@@ -190,6 +190,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Writes a byte array into the pixels of a BufferedImage using LSB encoding.
+     * <p>
+     * This method encodes the provided data bytes into the least significant bits
+     * of the image's pixel color channels, starting from the specified pixel index.
+     * The encoding process uses the specified LSB depth to determine how many bits
+     * per color channel are used for encoding. If the image does not have enough
+     * capacity to store the data, a MessageTooLargeException is thrown.
+     *
+     * @param image      The BufferedImage into which the data bytes will be encoded.
+     * @param startPixel The index of the pixel to start encoding from.
+     * @param lsbDepth   The number of least significant bits used per color channel for encoding.
+     * @param dataBytes  The byte array containing the data to be encoded.
+     * @throws MessageTooLargeException If the image does not have enough capacity to store the data.
+     */
     private void writeBytesToImage(
             BufferedImage image,
             int startPixel,
@@ -228,6 +243,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
                 //get next lsbDepth bits from dataBytes
                 var bitsToWrite = 0;
+
                 for (var bit = 0; bit < lsbDepth; bit++) {
 
                     var globalBitIndex = (bytePointer * 8) + bitPointer;
@@ -251,7 +267,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 }
 
                 // set lsbDepth bits in the channel
-                var mask = ~((1 << lsbDepth) - 1);
+                var mask = ~((1 << lsbDepth) - 1); //use bitwise NOT to create a mask
                 channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1));
 
                 if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) {
