@@ -204,7 +204,7 @@ public class AesUtilServiceImpl implements AesUtilService {
     }
 
     /**
-     * Generates an SHA-256 hash of the provided key and returns it as a hex-encoded string.
+     * Generates a SHA-256 hash of the provided key and returns it as a hex-encoded string.
      * This method validates the input key, processes the hash generation asynchronously using an executor service,
      * and returns the resulting hash in a hex-encoded format.
      *
