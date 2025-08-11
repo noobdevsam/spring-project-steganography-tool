@@ -205,11 +205,13 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     /**
      * Generates a SHA-256 hash of the provided key and returns it as a hex-encoded string.
+     * This method validates the input key, processes the hash generation asynchronously using an executor service,
+     * and returns the resulting hash in a hex-encoded format.
      *
-     * @param key The input key.
-     * @return The hex-encoded SHA-256 hash of the key.
-     * @throws AesKeyInvalidException If the key is null or blank.
-     * @throws AesOperationException  If an error occurs during key generation.
+     * @param key The input key to be hashed.
+     * @return The hex-encoded SHA-256 hash of the input key.
+     * @throws AesKeyInvalidException If the input key is null or blank.
+     * @throws AesOperationException  If an error occurs during the hash generation process.
      */
     @Override
     public String generateKey(String key) throws AesKeyInvalidException, AesOperationException {
@@ -219,12 +221,27 @@ public class AesUtilServiceImpl implements AesUtilService {
             throw new AesKeyInvalidException("Encryption key is required and cannot be null or blank.");
         }
 
-        try {
+        Callable<String> task = () -> {
+            // Generate a SHA-256 hash of the key
             var messageDigest = MessageDigest.getInstance("SHA-256");
+
+            // Convert the key to bytes and compute the digest
             var digestKey = messageDigest.digest(key.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digestKey); //hex-encoded SHA-256 hash of the key
-        } catch (Exception e) {
-            throw new AesOperationException("Failed to generate key", e);
+
+            // Return the hex-encoded representation of the digest.
+            // Hex-encoded SHA-256 hash of the key
+            return HexFormat.of().formatHex(digestKey);
+        };
+
+        try {
+            // Submit the key generation task to the executor service and wait for the result
+            return executorService.submit(task).get();
+        } catch (InterruptedException interruptedException) {
+            // Restore the interrupted status and throw an exception
+            Thread.currentThread().interrupt();
+            throw new AesOperationException("Key generation interrupted", interruptedException);
+        } catch (ExecutionException ee) {
+            throw new AesOperationException("Key generation operation failed", ee);
         }
 
     }
