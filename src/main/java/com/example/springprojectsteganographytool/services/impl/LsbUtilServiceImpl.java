@@ -68,4 +68,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return null;
     }
 
+    private byte[] imageToBytes(
+            BufferedImage image,
+            String format
+    ) throws Exception {
+        // Convert BufferedImage to byte array
+        return new byte[0];
+    }
+
 }
