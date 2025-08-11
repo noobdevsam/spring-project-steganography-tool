@@ -89,5 +89,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return 0;
     }
 
+    private void writeBytesToImage(
+            BufferedImage image,
+            int startPixel,
+            int lsbDepth,
+            byte[] dataBytes
+    ) {
+        // Write bytes to the image using LSB encoding
+    }
 
 }
