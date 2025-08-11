@@ -4,6 +4,7 @@ import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyIn
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.services.AesUtilService;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -16,6 +17,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.concurrent.ExecutorService;
 
 /**
  * Implementation of the AesUtilService interface providing utility methods for AES encryption and decryption.
@@ -34,6 +36,11 @@ public class AesUtilServiceImpl implements AesUtilService {
     private static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
 
     private static final SecureRandom RANDOM = new SecureRandom(); // Secure random generator for salt and IV
+    private final ExecutorService executorService;
+
+    public AesUtilServiceImpl(@Qualifier("virtualThreadExecutor") ExecutorService executorService) {
+        this.executorService = executorService;
+    }
 
     /**
      * Encrypts a plain text string using the provided key.
