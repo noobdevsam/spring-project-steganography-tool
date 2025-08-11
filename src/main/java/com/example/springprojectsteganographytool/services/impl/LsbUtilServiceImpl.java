@@ -211,77 +211,78 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             byte[] dataBytes
     ) {
-        int width = image.getWidth();
-        int height = image.getHeight();
-        int totalPixels = width * height;
-        int bitPointer = 0;
-        int bytePointer = 0;
-        int totalBits = dataBytes.length * 8;
-        int pixelIndex = startPixel;
+        int width = image.getWidth(); // get image width
+        int height = image.getHeight(); // get image height
+        int totalPixels = width * height; // calculate total number of pixels in the image
+        int bitPointer = 0; // bit pointer to track the current bit in the byte
+        int bytePointer = 0; // byte pointer to track the current byte in the dataBytes array
+        int totalBits = dataBytes.length * 8; // total bits in the dataBytes array
+        int pixelIndex = startPixel; // start pixel index to begin writing data
 
-        outer:
         // label for breaking out of nested loops
-        while (bytePointer < dataBytes.length) {
+        outer:
+        while (bytePointer < dataBytes.length) { // while there are still bytes to write
 
-            if (pixelIndex >= totalPixels) {
+            if (pixelIndex >= totalPixels) { // check if pixel index exceeds total pixels
                 throw new MessageTooLargeException("Not enough image capacity while writing payload");
             }
 
-            var x = pixelIndex % width;
-            var y = pixelIndex / width;
-            var rgb = image.getRGB(x, y);
-            var alpha = (rgb >> 24) & 0xFF;
+            var x = pixelIndex % width; // calculate x coordinate of the pixel
+            var y = pixelIndex / width; // calculate y coordinate of the pixel
+            var rgb = image.getRGB(x, y); // get the RGB value of the pixel
+            var alpha = (rgb >> 24) & 0xFF; // extract the alpha channel from the RGB value
 
-            var red = (rgb >> 16) & 0xFF;
-            var green = (rgb >> 8) & 0xFF;
-            var blue = rgb & 0xFF;
-            var channels = new int[]{red, green, blue};
+            var red = (rgb >> 16) & 0xFF; // extract the red channel from the RGB value
+            var green = (rgb >> 8) & 0xFF; // extract the green channel from the RGB value
+            var blue = rgb & 0xFF; // extract the blue channel from the RGB value
+            var channels = new int[]{red, green, blue}; // create an array to hold the RGB channels
 
-            var newRgbValue = (alpha << 24) | ((channels[0] & 0xFF) << 16) | ((channels[1] & 0xFF) << 8) | (channels[2] & 0xFF);
+            var newRgbValue = (alpha << 24) | ((channels[0] & 0xFF) << 16) | ((channels[1] & 0xFF) << 8) | (channels[2] & 0xFF); // create a new RGB value with the modified channels
 
-            for (var c = 0; c < 3; c++) {
+            for (var c = 0; c < 3; c++) { // iterate over each color channel (R, G, B)
 
                 //get next lsbDepth bits from dataBytes
-                var bitsToWrite = 0;
+                var bitsToWrite = 0; // variable to hold the bits to write into the channel
 
-                for (var bit = 0; bit < lsbDepth; bit++) {
+                for (var bit = 0; bit < lsbDepth; bit++) { // iterate over the number of bits to write
 
-                    var globalBitIndex = (bytePointer * 8) + bitPointer;
-                    var bitValue = 0;
+                    var globalBitIndex = (bytePointer * 8) + bitPointer; // calculate the global bit index in the dataBytes array
+                    var bitValue = 0; // variable to hold the bit value to write
 
-                    if (globalBitIndex < totalBits) {
-                        var currentByte = dataBytes[bytePointer] & 0xFF;
-                        var shift = 7 - (bitPointer);
-                        bitValue = (currentByte >> shift) & 0x01;
-                    } else {
-                        bitValue = 0;
+                    if (globalBitIndex < totalBits) { // check if the global bit index is within the bounds of the dataBytes array
+                        var currentByte = dataBytes[bytePointer] & 0xFF; // get the current byte from the dataBytes array and ensure it's treated as unsigned
+                        var shift = 7 - (bitPointer); // calculate the shift amount to get the correct bit from the byte
+                        bitValue = (currentByte >> shift) & 0x01; // extract the bit value from the current byte
+                    } else { // if the global bit index exceeds total bits, set bitValue to 0
+                        bitValue = 0; // default to 0 if we run out of bits in dataBytes
                     }
 
-                    bitsToWrite = (bitsToWrite << 1) | bitValue;
-                    bitPointer++;
+                    bitsToWrite = (bitsToWrite << 1) | bitValue; // shift the bitsToWrite left by 1 and add the current bit value
+                    bitPointer++; // increment the bit pointer
 
-                    if (bitPointer == 8) {
-                        bitPointer = 0;
-                        bytePointer++;
+                    if (bitPointer == 8) { // if we have read 8 bits (1 byte)
+                        bitPointer = 0; // reset the bit pointer to 0
+                        bytePointer++; // increment the byte pointer to move to the next byte
                     }
                 }
 
                 // set lsbDepth bits in the channel
                 var mask = ~((1 << lsbDepth) - 1); //use bitwise NOT to create a mask
-                channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1));
+                channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1)); // clear the lsbDepth bits in the channel and set them to bitsToWrite
 
-                if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) {
+                if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) { // if we have written all bytes and bits, we can stop
                     // done writing; still to update pixel and break
-                    var newRgb = newRgbValue;
-                    image.setRGB(x, y, newRgb);
-                    break outer;
+                    var newRgb = newRgbValue; // create a new RGB value with the modified channels
+                    image.setRGB(x, y, newRgb); // set the new RGB value to the pixel
+                    break outer; // break out of the outer loop
                 }
             }
 
-            var newRgb = newRgbValue;
-            image.setRGB(x, y, newRgb);
-            pixelIndex++;
+            var newRgb = newRgbValue; // create a new RGB value with the modified channels
+            image.setRGB(x, y, newRgb); // set the new RGB value to the pixel
+            pixelIndex++; // move to the next pixel
         }
+
     }
 
     private byte[] readBytesFromImage(
