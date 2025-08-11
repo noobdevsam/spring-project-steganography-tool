@@ -162,12 +162,32 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return copy;
     }
 
+    /**
+     * Calculates the number of pixels required to store a given number of bytes using LSB encoding.
+     * <p>
+     * This method determines the minimum number of pixels needed to encode the specified number
+     * of bytes at a given LSB depth. The calculation is based on the number of bits per byte
+     * and the number of bits available per pixel for encoding.
+     *
+     * @param numberOfBytes The number of bytes to be encoded.
+     * @param lsbDepth      The LSB depth, representing the number of least significant bits used per color channel.
+     * @return The minimum number of pixels required to store the given number of bytes.
+     */
     private int bytesToPixelCount(
             int numberOfBytes,
-            int depth
+            int lsbDepth
     ) {
-        // Calculate the number of pixels in the image
-        return 0;
+
+        // Convert bytes to bits
+        var bits = (long) numberOfBytes * 8L;
+
+        // 3 color channels (RGB) times the LSB depth
+        var bitsPerPixel = 3L * lsbDepth;
+
+        // Return the ciel of bits divided by bits per pixel
+        // Round up to the nearest whole pixel
+        return (int) ((bits + bitsPerPixel - 1) / bitsPerPixel);
+
     }
 
     private void writeBytesToImage(
