@@ -136,9 +136,30 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Creates a deep copy of the provided BufferedImage.
+     * <p>
+     * This method generates a new BufferedImage with the same dimensions and type
+     * as the source image. It then draws the source image onto the new BufferedImage,
+     * ensuring that the returned image is an independent copy of the original.
+     *
+     * @param source The BufferedImage to be copied.
+     * @return A new BufferedImage that is a deep copy of the source image.
+     */
     private BufferedImage deepCopy(BufferedImage source) {
-        // Create a deep copy of the BufferedImage
-        return null;
+
+        // Create a new BufferedImage with the same dimensions and type as the source
+        var copy = new BufferedImage(
+                source.getWidth(),
+                source.getHeight(),
+                BufferedImage.TYPE_INT_ARGB
+        );
+
+        // Draw the source image onto the new BufferedImage
+        copy.getGraphics().drawImage(source, 0, 0, null);
+
+        // Return the deep copy of the image
+        return copy;
     }
 
     private int bytesToPixelCount(
