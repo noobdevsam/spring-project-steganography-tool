@@ -184,7 +184,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // 3 color channels (RGB) times the LSB depth
         var bitsPerPixel = 3L * lsbDepth;
 
-        // Return the ciel of bits divided by bits per pixel
+        // Return the ceil of bits divided by bits per pixel
         // Round up to the nearest whole pixel
         return (int) ((bits + bitsPerPixel - 1) / bitsPerPixel);
 
