@@ -76,4 +76,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return new byte[0];
     }
 
+    private BufferedImage deepCopy(BufferedImage source) {
+        // Create a deep copy of the BufferedImage
+        return null;
+    }
+
 }
