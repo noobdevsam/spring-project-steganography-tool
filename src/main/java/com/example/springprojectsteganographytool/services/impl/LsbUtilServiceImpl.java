@@ -318,7 +318,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         byte[] outputBytes = new byte[numberOfBytes]; // create an output byte array to hold the read data
 
         outer:
-        while (filledBits < numberOfBytes) { // while we have not filled the output byte array
+        while (filledBits < totalBits) { // while we have bits to read
 
             if (pixelIndex >= totalPixels) { // check if pixel index exceeds total pixels
                 throw new LsbDecodingException("Not enough pixels while reading payload");
@@ -338,6 +338,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
                 // append bits to the currentByte from left
                 for (var bit = lsbDepth - 1; bit >= 0; bit--) { // iterate over the bits in reverse order
+
                     var bitValue = (bits >> bit) & 0x01; // extract the bit value from the channel
                     currentByte = (currentByte << 1) | bitValue; // shift the currentByte left by 1 and add the bit value
                     bitPointer++; // increment the bit pointer
