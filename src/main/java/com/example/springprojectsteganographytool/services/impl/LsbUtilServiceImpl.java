@@ -314,15 +314,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         int bytePointer = 0; // byte pointer to track the current byte in the dataBytes array
         int totalBits = numberOfBytes * 8; // total bits to read from the image
         int pixelIndex = startPixel; // start pixel index to begin reading data
-        int filledBits = 0;
-        int currentByte = 0;
+        int filledBits = 0; // filled bits to track how many bits have been read
+        int currentByte = 0; // current byte to hold the bits being read
 
-        byte[] outputBytes = new byte[numberOfBytes];
+        byte[] outputBytes = new byte[numberOfBytes]; // create an output byte array to hold the read data
 
         outer:
-        while (filledBits < numberOfBytes) {
+        while (filledBits < numberOfBytes) { // while we have not filled the output byte array
 
-            if (pixelIndex >= totalPixels) {
+            if (pixelIndex >= totalPixels) { // check if pixel index exceeds total pixels
                 throw new LsbDecodingException("Not enough pixels while reading payload");
             }
 
@@ -335,26 +335,26 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     rgb & 0xFF
             }; // create an array to hold the RGB channels
 
-            for (var c = 0; c < 3; c++) {
-                var bits = channels[c] & ((1 << lsbDepth) - 1);
+            for (var c = 0; c < 3; c++) { // iterate over each color channel (R, G, B)
+                var bits = channels[c] & ((1 << lsbDepth) - 1); // extract the lsbDepth bits from the channel
 
                 // append bits to the currentByte from left
-                for (var bit = lsbDepth - 1; bit >= 0; bit--) {
-                    var bitValue = (bits >> bit) & 0x01;
-                    currentByte = (currentByte << 1) | bitValue;
-                    bitPointer++;
-                    filledBits++;
+                for (var bit = lsbDepth - 1; bit >= 0; bit--) { // iterate over the bits in reverse order
+                    var bitValue = (bits >> bit) & 0x01; // extract the bit value from the channel
+                    currentByte = (currentByte << 1) | bitValue; // shift the currentByte left by 1 and add the bit value
+                    bitPointer++; // increment the bit pointer
+                    filledBits++; // increment the filled bits counter
 
-                    if (bitPointer == 8) {
-                        outputBytes[bytePointer++] = (byte) (currentByte & 0xFF);
-                        bitPointer = 0;
-                        currentByte = 0;
-                        if (bytePointer >= numberOfBytes) {
-                            break outer;
+                    if (bitPointer == 8) { // if we have read 8 bits (1 byte)
+                        outputBytes[bytePointer++] = (byte) (currentByte & 0xFF); // store the current byte in the output array
+                        bitPointer = 0; // reset the bit pointer to 0
+                        currentByte = 0; // reset the current byte to 0
+                        if (bytePointer >= numberOfBytes) { // if we have filled the output byte array, we can stop
+                            break outer; // break out of the outer loop
                         }
                     }
 
-                    if (filledBits >= totalBits) {
+                    if (filledBits >= totalBits) { // check if we have read enough bits
                         // if we have read enough bits, we can stop
                         break outer;
                     }
