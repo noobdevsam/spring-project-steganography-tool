@@ -40,4 +40,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return null;
     }
 
+    private byte[] encodeWithMetadata(
+            byte[] imageBytes,
+            byte[] payloadDataBytes,
+            StegoMetadataDTO metadata
+    ) throws LsbEncodingException {
+        return new byte[0];
+    }
+
 }
