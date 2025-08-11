@@ -81,4 +81,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return null;
     }
 
+    private int bytesToPixelCount(
+            int numberOfBytes,
+            int depth
+    ) {
+        // Calculate the number of pixels in the image
+        return 0;
+    }
+
+
 }
