@@ -285,6 +285,22 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Reads a byte array from the pixels of a BufferedImage using LSB decoding.
+     * <p>
+     * This method extracts data encoded in the least significant bits of the image's
+     * pixel color channels, starting from the specified pixel index. The decoding
+     * process uses the specified LSB depth to determine how many bits per color
+     * channel are used for decoding. If the image does not contain enough pixels
+     * to extract the required number of bytes, an LsbDecodingException is thrown.
+     *
+     * @param image         The BufferedImage from which the data bytes will be decoded.
+     * @param startPixel    The index of the pixel to start decoding from.
+     * @param lsbDepth      The number of least significant bits used per color channel for decoding.
+     * @param numberOfBytes The number of bytes to be decoded from the image.
+     * @return A byte array containing the decoded data.
+     * @throws LsbDecodingException If the image does not have enough pixels to extract the required data.
+     */
     private byte[] readBytesFromImage(
             BufferedImage image,
             int startPixel,
