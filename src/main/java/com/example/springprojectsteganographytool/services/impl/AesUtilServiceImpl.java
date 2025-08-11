@@ -2,7 +2,6 @@ package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
-import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.services.AesUtilService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -48,13 +47,12 @@ public class AesUtilServiceImpl implements AesUtilService {
      * @param plainText The plain text to encrypt.
      * @param key       The encryption key.
      * @return The encrypted text as a byte array.
-     * @throws InvalidEncryptionKeyException If the key is invalid.
-     * @throws AesKeyInvalidException        If the key is null or blank.
-     * @throws AesOperationException         If an error occurs during encryption.
+     * @throws AesKeyInvalidException If the key is null or blank.
+     * @throws AesOperationException  If an error occurs during encryption.
      */
     @Override
     public byte[] encryptText(String plainText, String key)
-            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -67,7 +65,7 @@ public class AesUtilServiceImpl implements AesUtilService {
             var plaintextBytes = plainText.getBytes(StandardCharsets.UTF_8);
 
             return encryptBytes(plaintextBytes, key);
-        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+        } catch (AesKeyInvalidException | AesOperationException exception) {
             throw exception;
         } catch (Exception e) {
             throw new AesOperationException("AES operation failed", e);
@@ -80,13 +78,12 @@ public class AesUtilServiceImpl implements AesUtilService {
      * @param cipherBytes The encrypted byte array.
      * @param key         The decryption key.
      * @return The decrypted plain text as a string.
-     * @throws InvalidEncryptionKeyException If the key is invalid.
-     * @throws AesKeyInvalidException        If the key is null or blank.
-     * @throws AesOperationException         If an error occurs during decryption.
+     * @throws AesKeyInvalidException If the key is null or blank.
+     * @throws AesOperationException  If an error occurs during decryption.
      */
     @Override
     public String decryptText(byte[] cipherBytes, String key)
-            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -101,7 +98,7 @@ public class AesUtilServiceImpl implements AesUtilService {
 
             return new String(plainTextBytes, StandardCharsets.UTF_8);
 
-        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+        } catch (AesKeyInvalidException | AesOperationException exception) {
             throw exception;
         } catch (Exception e) {
             throw new AesOperationException("AES operation failed", e);
@@ -114,13 +111,12 @@ public class AesUtilServiceImpl implements AesUtilService {
      * @param fileBytes The file content as a byte array.
      * @param key       The encryption key.
      * @return The encrypted file content as a byte array.
-     * @throws InvalidEncryptionKeyException If the key is invalid.
-     * @throws AesKeyInvalidException        If the key is null or blank.
-     * @throws AesOperationException         If an error occurs during encryption.
+     * @throws AesKeyInvalidException If the key is null or blank.
+     * @throws AesOperationException  If an error occurs during encryption.
      */
     @Override
     public byte[] encryptFile(byte[] fileBytes, String key)
-            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -132,7 +128,7 @@ public class AesUtilServiceImpl implements AesUtilService {
             // Encrypt the file bytes using the provided key
             return encryptBytes(fileBytes, key);
 
-        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+        } catch (AesKeyInvalidException | AesOperationException exception) {
             throw exception;
         } catch (Exception e) {
             throw new AesOperationException("AES file operation failed", e);
@@ -146,13 +142,12 @@ public class AesUtilServiceImpl implements AesUtilService {
      * @param cipherBytes The encrypted file content as a byte array.
      * @param key         The decryption key.
      * @return The decrypted file content as a byte array.
-     * @throws InvalidEncryptionKeyException If the key is invalid.
-     * @throws AesKeyInvalidException        If the key is null or blank.
-     * @throws AesOperationException         If an error occurs during decryption.
+     * @throws AesKeyInvalidException If the key is null or blank.
+     * @throws AesOperationException  If an error occurs during decryption.
      */
     @Override
     public byte[] decryptFile(byte[] cipherBytes, String key)
-            throws InvalidEncryptionKeyException, AesKeyInvalidException, AesOperationException {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -164,7 +159,7 @@ public class AesUtilServiceImpl implements AesUtilService {
             // Decrypt the cipher bytes using the provided key
             return decryptBytes(cipherBytes, key);
 
-        } catch (InvalidEncryptionKeyException | AesKeyInvalidException | AesOperationException exception) {
+        } catch (AesKeyInvalidException | AesOperationException exception) {
             throw exception;
         } catch (Exception e) {
             throw new AesOperationException("AES file operation failed", e);
@@ -177,11 +172,11 @@ public class AesUtilServiceImpl implements AesUtilService {
      *
      * @param key The input key.
      * @return The hex-encoded SHA-256 hash of the key.
-     * @throws InvalidEncryptionKeyException If the key is invalid.
-     * @throws AesKeyInvalidException        If the key is null or blank.
+     * @throws AesKeyInvalidException If the key is null or blank.
+     * @throws AesOperationException  If an error occurs during key generation.
      */
     @Override
-    public String generateKey(String key) throws InvalidEncryptionKeyException, AesKeyInvalidException {
+    public String generateKey(String key) throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
