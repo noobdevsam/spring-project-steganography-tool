@@ -129,12 +129,14 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     /**
      * Encrypts a file represented as a byte array using the provided key.
+     * This method validates the encryption key, processes the encryption asynchronously using an executor service,
+     * and returns the encrypted file content as a byte array.
      *
-     * @param fileBytes The file content as a byte array.
-     * @param key       The encryption key.
-     * @return The encrypted file content as a byte array.
-     * @throws AesKeyInvalidException If the key is null or blank.
-     * @throws AesOperationException  If an error occurs during encryption.
+     * @param fileBytes The file content to encrypt, represented as a byte array.
+     * @param key       The encryption key to use for encrypting the file.
+     * @return A byte array containing the encrypted file content.
+     * @throws AesKeyInvalidException If the provided encryption key is null or blank.
+     * @throws AesOperationException  If an error occurs during the encryption process or task execution.
      */
     @Override
     public byte[] encryptFile(byte[] fileBytes, String key)
@@ -145,15 +147,20 @@ public class AesUtilServiceImpl implements AesUtilService {
             throw new AesKeyInvalidException("Encryption key is required and cannot be null or blank.");
         }
 
+        // Create a callable task to perform the encryption
+        Callable<byte[]> task = () -> encryptBytes(fileBytes, key);
+
         try {
-
-            // Encrypt the file bytes using the provided key
-            return encryptBytes(fileBytes, key);
-
-        } catch (AesKeyInvalidException | AesOperationException exception) {
-            throw exception;
-        } catch (Exception e) {
-            throw new AesOperationException("AES file operation failed", e);
+            // Submit the encryption task to the executor service and wait for the result
+            return executorService.submit(task).get();
+        } catch (InterruptedException interruptedException) {
+            // Restore the interrupted status and throw an exception
+            Thread.currentThread().interrupt();
+            throw new AesOperationException("AES file encryption interrupted", interruptedException);
+        } catch (ExecutionException ee) {
+            // Handle the cause of the execution exception
+            handleExecutionCause(ee);
+            throw new AesOperationException("AES file encryption operation failed", ee);
         }
 
     }
