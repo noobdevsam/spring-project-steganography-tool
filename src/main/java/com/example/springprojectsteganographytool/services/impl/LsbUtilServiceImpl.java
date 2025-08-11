@@ -196,7 +196,76 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             byte[] dataBytes
     ) {
-        // Write bytes to the image using LSB encoding
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int totalPixels = width * height;
+        int bitPointer = 0;
+        int bytePointer = 0;
+        int totalBits = dataBytes.length * 8;
+        int pixelIndex = startPixel;
+
+        outer:
+        // label for breaking out of nested loops
+        while (bytePointer < dataBytes.length) {
+
+            if (pixelIndex >= totalPixels) {
+                throw new MessageTooLargeException("Not enough image capacity while writing payload");
+            }
+
+            var x = pixelIndex % width;
+            var y = pixelIndex / width;
+            var rgb = image.getRGB(x, y);
+            var alpha = (rgb >> 24) & 0xFF;
+
+            var red = (rgb >> 16) & 0xFF;
+            var green = (rgb >> 8) & 0xFF;
+            var blue = rgb & 0xFF;
+            var channels = new int[]{red, green, blue};
+
+            var newRgbValue = (alpha << 24) | ((channels[0] & 0xFF) << 16) | ((channels[1] & 0xFF) << 8) | (channels[2] & 0xFF);
+
+            for (var c = 0; c < 3; c++) {
+
+                //get next lsbDepth bits from dataBytes
+                var bitsToWrite = 0;
+                for (var bit = 0; bit < lsbDepth; bit++) {
+
+                    var globalBitIndex = (bytePointer * 8) + bitPointer;
+                    var bitValue = 0;
+
+                    if (globalBitIndex < totalBits) {
+                        var currentByte = dataBytes[bytePointer] & 0xFF;
+                        var shift = 7 - (bitPointer);
+                        bitValue = (currentByte >> shift) & 0x01;
+                    } else {
+                        bitValue = 0;
+                    }
+
+                    bitsToWrite = (bitsToWrite << 1) | bitValue;
+                    bitPointer++;
+
+                    if (bitPointer == 8) {
+                        bitPointer = 0;
+                        bytePointer++;
+                    }
+                }
+
+                // set lsbDepth bits in the channel
+                var mask = ~((1 << lsbDepth) - 1);
+                channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1));
+
+                if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) {
+                    // done writing; still to update pixel and break
+                    var newRgb = newRgbValue;
+                    image.setRGB(x, y, newRgb);
+                    break outer;
+                }
+            }
+
+            var newRgb = newRgbValue;
+            image.setRGB(x, y, newRgb);
+            pixelIndex++;
+        }
     }
 
     private byte[] readBytesFromImage(
