@@ -237,8 +237,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             var blue = rgb & 0xFF; // extract the blue channel from the RGB value
             var channels = new int[]{red, green, blue}; // create an array to hold the RGB channels
 
-            var newRgbValue = (alpha << 24) | ((channels[0] & 0xFF) << 16) | ((channels[1] & 0xFF) << 8) | (channels[2] & 0xFF); // create a new RGB value with the modified channels
-
             for (var c = 0; c < 3; c++) { // iterate over each color channel (R, G, B)
 
                 //get next lsbDepth bits from dataBytes
@@ -272,13 +270,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
                 if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) { // if we have written all bytes and bits, we can stop
                     // done writing; still to update pixel and break
-                    var newRgb = newRgbValue; // create a new RGB value with the modified channels
+                    var newRgb = (alpha << 24) | ((channels[0] & 0xFF) << 16) | ((channels[1] & 0xFF) << 8) | (channels[2] & 0xFF); // create a new RGB value with the modified channels
                     image.setRGB(x, y, newRgb); // set the new RGB value to the pixel
                     break outer; // break out of the outer loop
                 }
             }
 
-            var newRgb = newRgbValue; // create a new RGB value with the modified channels
+            var newRgb = (alpha << 24) | ((channels[0] & 0xFF) << 16) | ((channels[1] & 0xFF) << 8) | (channels[2] & 0xFF); // create a new RGB value with the modified channels
             image.setRGB(x, y, newRgb); // set the new RGB value to the pixel
             pixelIndex++; // move to the next pixel
         }
