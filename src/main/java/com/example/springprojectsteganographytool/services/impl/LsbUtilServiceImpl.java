@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 
 @Service
 public class LsbUtilServiceImpl implements LsbUtilService {
@@ -104,12 +105,35 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Converts a BufferedImage into a byte array in the specified format.
+     * <p>
+     * This method writes the provided BufferedImage to a ByteArrayOutputStream
+     * using the specified image format (e.g., "png", "jpg") and returns the
+     * resulting byte array. If an error occurs during the writing process,
+     * an exception is thrown.
+     *
+     * @param image  The BufferedImage to be converted.
+     * @param format The format in which the image should be written (e.g., "png", "jpg").
+     * @return A byte array representing the image in the specified format.
+     * @throws Exception If an error occurs during the image writing process.
+     */
     private byte[] imageToBytes(
             BufferedImage image,
             String format
     ) throws Exception {
-        // Convert BufferedImage to byte array
-        return new byte[0];
+
+        try (
+                var byteArrayOutputStream = new ByteArrayOutputStream()
+        ) {
+
+            // Write the image to the output stream in the specified format
+            ImageIO.write(image, format, byteArrayOutputStream);
+
+            // Convert the output stream to a byte array
+            return byteArrayOutputStream.toByteArray();
+
+        }
     }
 
     private BufferedImage deepCopy(BufferedImage source) {
