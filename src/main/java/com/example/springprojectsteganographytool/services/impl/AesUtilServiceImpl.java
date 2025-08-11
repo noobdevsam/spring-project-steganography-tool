@@ -84,29 +84,6 @@ public class AesUtilServiceImpl implements AesUtilService {
     }
 
     /**
-     * Handles the cause of an ExecutionException by rethrowing it as a specific exception
-     * or wrapping it in a generic AesOperationException.
-     *
-     * @param ee The ExecutionException to handle.
-     * @throws AesKeyInvalidException If the cause is an AesKeyInvalidException.
-     * @throws AesOperationException  If the cause is an AesOperationException or any other exception.
-     */
-    private void handleExecutionCause(ExecutionException ee) throws AesKeyInvalidException, AesOperationException {
-        var cause = ee.getCause();
-
-        if (cause instanceof AesKeyInvalidException) {
-            throw (AesKeyInvalidException) cause;
-        }
-
-        if (cause instanceof AesOperationException) {
-            throw (AesOperationException) cause;
-        }
-
-        // Otherwise, wrap the cause in a generic AesOperationException
-        throw new AesOperationException("Unexpected error during AES operation", cause);
-    }
-
-    /**
      * Decrypts an encrypted byte array using the provided key.
      *
      * @param cipherBytes The encrypted byte array.
@@ -227,6 +204,9 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
+
+    // ----- Private Helper Methods -----
+
     /**
      * Encrypts a byte array using the provided key.
      *
@@ -313,5 +293,28 @@ public class AesUtilServiceImpl implements AesUtilService {
         var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
         var keyBytes = factory.generateSecret(spec).getEncoded();
         return new SecretKeySpec(keyBytes, "AES");
+    }
+
+    /**
+     * Handles the cause of an ExecutionException by rethrowing it as a specific exception
+     * or wrapping it in a generic AesOperationException.
+     *
+     * @param ee The ExecutionException to handle.
+     * @throws AesKeyInvalidException If the cause is an AesKeyInvalidException.
+     * @throws AesOperationException  If the cause is an AesOperationException or any other exception.
+     */
+    private void handleExecutionCause(ExecutionException ee) throws AesKeyInvalidException, AesOperationException {
+        var cause = ee.getCause();
+
+        if (cause instanceof AesKeyInvalidException) {
+            throw (AesKeyInvalidException) cause;
+        }
+
+        if (cause instanceof AesOperationException) {
+            throw (AesOperationException) cause;
+        }
+
+        // Otherwise, wrap the cause in a generic AesOperationException
+        throw new AesOperationException("Unexpected error during AES operation", cause);
     }
 }
