@@ -204,7 +204,7 @@ public class AesUtilServiceImpl implements AesUtilService {
     }
 
     /**
-     * Generates a SHA-256 hash of the provided key and returns it as a hex-encoded string.
+     * Generates an SHA-256 hash of the provided key and returns it as a hex-encoded string.
      * This method validates the input key, processes the hash generation asynchronously using an executor service,
      * and returns the resulting hash in a hex-encoded format.
      *
@@ -222,7 +222,7 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
         Callable<String> task = () -> {
-            // Generate a SHA-256 hash of the key
+            // Generate an SHA-256 hash of the key
             var messageDigest = MessageDigest.getInstance("SHA-256");
 
             // Convert the key to bytes and compute the digest
