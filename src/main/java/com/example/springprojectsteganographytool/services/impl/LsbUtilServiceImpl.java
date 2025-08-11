@@ -291,8 +291,65 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             int numberOfBytes
     ) {
-        // Read bytes from the image using LSB decoding
-        return new byte[0];
+        int width = image.getWidth(); // get image width
+        int height = image.getHeight(); // get image height
+        int totalPixels = width * height; // calculate total number of pixels in the image
+        int bitPointer = 0; // bit pointer to track the current bit in the byte
+        int bytePointer = 0; // byte pointer to track the current byte in the dataBytes array
+        int totalBits = numberOfBytes * 8; // total bits to read from the image
+        int pixelIndex = startPixel; // start pixel index to begin reading data
+        int filledBits = 0;
+        int currentByte = 0;
+
+        byte[] outputBytes = new byte[numberOfBytes];
+
+        outer:
+        while (filledBits < numberOfBytes) {
+
+            if (pixelIndex >= totalPixels) {
+                throw new LsbDecodingException("Not enough pixels while reading payload");
+            }
+
+            var x = pixelIndex % width; // calculate x coordinate of the pixel
+            var y = pixelIndex / width; // calculate y coordinate of the pixel
+            var rgb = image.getRGB(x, y); // get the RGB value of the pixel
+            var channels = new int[]{
+                    (rgb >> 16) & 0xFF,
+                    (rgb >> 8) & 0xFF,
+                    rgb & 0xFF
+            }; // create an array to hold the RGB channels
+
+            for (var c = 0; c < 3; c++) {
+                var bits = channels[c] & ((1 << lsbDepth) - 1);
+
+                // append bits to the currentByte from left
+                for (var bit = lsbDepth - 1; bit >= 0; bit--) {
+                    var bitValue = (bits >> bit) & 0x01;
+                    currentByte = (currentByte << 1) | bitValue;
+                    bitPointer++;
+                    filledBits++;
+
+                    if (bitPointer == 8) {
+                        outputBytes[bytePointer++] = (byte) (currentByte & 0xFF);
+                        bitPointer = 0;
+                        currentByte = 0;
+                        if (bytePointer >= numberOfBytes) {
+                            break outer;
+                        }
+                    }
+
+                    if (filledBits >= totalBits) {
+                        // if we have read enough bits, we can stop
+                        break outer;
+                    }
+                }
+
+            }
+
+            pixelIndex++; // move to the next pixel
+        }
+
+        return outputBytes; // return the output bytes containing the read data
     }
 
 }
