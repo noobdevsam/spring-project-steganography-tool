@@ -12,6 +12,8 @@ import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import org.springframework.stereotype.Service;
 
+import java.awt.image.BufferedImage;
+
 @Service
 public class LsbUtilServiceImpl implements LsbUtilService {
 
@@ -40,7 +42,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return null;
     }
 
-    // ----- Private Helper Methods -----
+    // ----- Private High-Level Helper Methods -----
 
     private byte[] encodeWithMetadata(
             byte[] imageBytes,
@@ -55,6 +57,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             StegoMetadataDTO metadata
     ) throws Exception {
         return new byte[0];
+    }
+
+    // ----- Private Low-Level Helper Methods -----
+
+    private BufferedImage bytesToImage(
+            byte[] imageBytes
+    ) throws InvalidImageFormatException {
+        // Convert byte array to BufferedImage
+        return null;
     }
 
 }
