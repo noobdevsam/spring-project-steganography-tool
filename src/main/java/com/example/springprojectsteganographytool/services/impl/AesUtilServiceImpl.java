@@ -85,12 +85,14 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     /**
      * Decrypts an encrypted byte array using the provided key.
+     * This method validates the decryption key, processes the decryption asynchronously using an executor service,
+     * and converts the decrypted byte array back to a plain text string.
      *
-     * @param cipherBytes The encrypted byte array.
-     * @param key         The decryption key.
+     * @param cipherBytes The encrypted byte array to decrypt.
+     * @param key         The decryption key to use for decryption.
      * @return The decrypted plain text as a string.
-     * @throws AesKeyInvalidException If the key is null or blank.
-     * @throws AesOperationException  If an error occurs during decryption.
+     * @throws AesKeyInvalidException If the provided decryption key is null or blank.
+     * @throws AesOperationException  If an error occurs during decryption or task execution.
      */
     @Override
     public String decryptText(byte[] cipherBytes, String key)
@@ -101,18 +103,27 @@ public class AesUtilServiceImpl implements AesUtilService {
             throw new AesKeyInvalidException("Decryption key is required and cannot be null or blank.");
         }
 
+        // Create a callable task to perform the decryption
+        Callable<byte[]> task = () -> decryptBytes(
+                cipherBytes, key
+        );
+
         try {
 
-            // Decrypt the cipher bytes using the provided key
-            // and convert the result back to a String using UTF-8 encoding
-            var plainTextBytes = decryptBytes(cipherBytes, key);
+            // Submit the decryption task to the executor service and wait for the result
+            // Convert the decrypted byte array back to a string using UTF-8 encoding
+            var plainTextBytes = executorService.submit(task).get();
 
             return new String(plainTextBytes, StandardCharsets.UTF_8);
 
-        } catch (AesKeyInvalidException | AesOperationException exception) {
-            throw exception;
-        } catch (Exception e) {
-            throw new AesOperationException("AES operation failed", e);
+        } catch (InterruptedException exception) {
+            // Restore the interrupted status and throw an exception
+            Thread.currentThread().interrupt();
+            throw new AesOperationException("AES decryption interrupted", exception);
+        } catch (ExecutionException ee) {
+            // Handle the cause of the execution exception
+            handleExecutionCause(ee);
+            throw new AesOperationException("AES decryption operation failed", ee);
         }
     }
 
