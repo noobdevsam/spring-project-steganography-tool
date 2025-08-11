@@ -210,7 +210,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int startPixel,
             int lsbDepth,
             byte[] dataBytes
-    ) {
+    ) throws MessageTooLargeException {
         int width = image.getWidth(); // get image width
         int height = image.getHeight(); // get image height
         int totalPixels = width * height; // calculate total number of pixels in the image
@@ -304,7 +304,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int startPixel,
             int lsbDepth,
             int numberOfBytes
-    ) {
+    ) throws LsbDecodingException {
         int width = image.getWidth(); // get image width
         int height = image.getHeight(); // get image height
         int totalPixels = width * height; // calculate total number of pixels in the image
