@@ -16,6 +16,8 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HexFormat;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -43,12 +45,14 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     /**
      * Encrypts a plain text string using the provided key.
+     * This method validates the key, encrypts the plain text asynchronously using an executor service,
+     * and returns the encrypted byte array.
      *
      * @param plainText The plain text to encrypt.
      * @param key       The encryption key.
      * @return The encrypted text as a byte array.
      * @throws AesKeyInvalidException If the key is null or blank.
-     * @throws AesOperationException  If an error occurs during encryption.
+     * @throws AesOperationException  If an error occurs during encryption or task execution.
      */
     @Override
     public byte[] encryptText(String plainText, String key)
@@ -59,17 +63,47 @@ public class AesUtilServiceImpl implements AesUtilService {
             throw new AesKeyInvalidException("Encryption key is required and cannot be null or blank.");
         }
 
-        try {
-            // Convert the plain text to bytes using UTF-8 encoding
-            // and then encrypt it using the provided key
-            var plaintextBytes = plainText.getBytes(StandardCharsets.UTF_8);
+        // Create a callable task to perform the encryption
+        Callable<byte[]> task = () -> encryptBytes(
+                plainText.getBytes(StandardCharsets.UTF_8), key
+        );
 
-            return encryptBytes(plaintextBytes, key);
-        } catch (AesKeyInvalidException | AesOperationException exception) {
-            throw exception;
-        } catch (Exception e) {
-            throw new AesOperationException("AES operation failed", e);
+        try {
+            // Submit the encryption task to the executor service and wait for the result
+            // The get() method blocks until the task is complete and retrieves the result
+            return executorService.submit(task).get();
+        } catch (InterruptedException interruptedException) {
+            // Restore the interrupted status and throw an exception
+            Thread.currentThread().interrupt();
+            throw new AesOperationException("AES encryption interrupted", interruptedException);
+        } catch (ExecutionException ee) {
+            // Handle the cause of the execution exception
+            handleExecutionCause(ee);
+            throw new AesOperationException("AES operation failed", ee);
         }
+    }
+
+    /**
+     * Handles the cause of an ExecutionException by rethrowing it as a specific exception
+     * or wrapping it in a generic AesOperationException.
+     *
+     * @param ee The ExecutionException to handle.
+     * @throws AesKeyInvalidException If the cause is an AesKeyInvalidException.
+     * @throws AesOperationException  If the cause is an AesOperationException or any other exception.
+     */
+    private void handleExecutionCause(ExecutionException ee) throws AesKeyInvalidException, AesOperationException {
+        var cause = ee.getCause();
+
+        if (cause instanceof AesKeyInvalidException) {
+            throw (AesKeyInvalidException) cause;
+        }
+
+        if (cause instanceof AesOperationException) {
+            throw (AesOperationException) cause;
+        }
+
+        // Otherwise, wrap the cause in a generic AesOperationException
+        throw new AesOperationException("Unexpected error during AES operation", cause);
     }
 
     /**
