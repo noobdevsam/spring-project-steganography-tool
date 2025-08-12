@@ -10,15 +10,19 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDe
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.nio.ByteBuffer;
 
 @Service
 public class LsbUtilServiceImpl implements LsbUtilService {
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
     public byte[] encodeMessage(byte[] imageBytes, byte[] messageBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
@@ -52,7 +56,64 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             byte[] payloadDataBytes,
             StegoMetadataDTO metadata
     ) throws LsbEncodingException {
+
         try {
+
+            if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
+                throw new InvalidLsbDepthException("LSB depth must be 1 or 2");
+            }
+
+            var image = bytesToImage(imageBytes);
+
+
+            var metaJson = mapper.writeValueAsBytes(metadata);
+            var metaLength = metaJson.length;
+            var metaLengthBytes = ByteBuffer
+                    .allocate(4)
+                    .putInt(metaLength)
+                    .array();
+
+
+            var metaBlock = new byte[metaLength + 4];
+            System.arraycopy(metaLengthBytes, 0, metaBlock, 0, 4);
+            System.arraycopy(metaJson, 0, metaBlock, 4, metaLength);
+
+
+            var width = image.getWidth();
+            var height = image.getHeight();
+            var totalPixels = (long) width * height;
+            var metadataBits = (long) metaBlock.length * 8L;
+
+            var metadataCapacityBits = totalPixels * 3L;
+
+
+            var metaPixelCount = bytesToPixelCount(metaBlock.length, 1);
+            var remainingPixels = totalPixels - metaPixelCount;
+            var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
+            var payloadCapacityBytes = payloadCapacityBits / 8L;
+
+            if (payloadDataBytes.length + 8 > payloadCapacityBytes) {
+                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
+            }
+
+
+            var working = deepCopy(image);
+            writeBytesToImage(working, 0, 1, metaBlock);
+
+            var payloadLength = ByteBuffer
+                    .allocate(8)
+                    .putLong(payloadDataBytes.length)
+                    .array();
+
+
+            var payloadBlock = new byte[8 + payloadDataBytes.length];
+            System.arraycopy(payloadLength, 0, payloadBlock, 0, 8);
+            System.arraycopy(payloadDataBytes, 0, payloadBlock, 8, payloadDataBytes.length);
+
+            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock);
+
+
+            return imageToBytes(working, "png");
 
         } catch (LsbEncodingException e) {
             throw e;
