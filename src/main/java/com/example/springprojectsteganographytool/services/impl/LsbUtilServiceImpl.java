@@ -90,43 +90,50 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putInt(metaLength)
                     .array(); // Convert the length to a 4-byte array
 
-            // Create a metadata block with the length prefix
+            // Create a metadata block with the length prefix, block = [length (4 bytes)] [metadata JSON]
             var metaBlock = new byte[metaLength + 4]; // Allocate space for the metadata block
             System.arraycopy(metaLengthBytes, 0, metaBlock, 0, 4); // Copy the length bytes to the beginning of the block
             System.arraycopy(metaJson, 0, metaBlock, 4, metaLength); // Copy the metadata JSON bytes to the block after the length
 
             // Calculate image dimensions and capacity
+            // Metadata uses 1-bit LSB, payload uses metadata.lsbDepth()
             var width = image.getWidth();
             var height = image.getHeight();
             var totalPixels = (long) width * height;
 
             // for later calculations
+            // if metadata occupies prefix region, we will compute exact pixels consumed later
             var metadataBits = (long) metaBlock.length * 8L;
             var metadataCapacityBits = totalPixels * 3L;
 
             // Calculate the number of pixels required for metadata and payload
+            // We will reserve the prefix region just big enough to hold metadata using 1-bit LSB
             var metaPixelCount = bytesToPixelCount(metaBlock.length, 1); // 1 LSB depth for metadata
             var remainingPixels = totalPixels - metaPixelCount; // Calculate remaining pixels after metadata
             var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth(); // Calculate payload capacity based on remaining pixels and LSB depth
             var payloadCapacityBytes = payloadCapacityBits / 8L; // Convert bits to bytes
 
             // Check if the payload fits within the image capacity
+            // here, [payloadDataBytes.length + 8] is the total size of the payload block including its length prefix,
+            // and it is payload length header
             if (payloadDataBytes.length + 8 > payloadCapacityBytes) {
                 throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
             }
 
+            // 1) write metadata into first metaPixelCount pixels using 1 LSB depth
             // Create a deep copy of the image for encoding
             var working = deepCopy(image);
-
             // Write the metadata block into the image
             writeBytesToImage(working, 0, 1, metaBlock); // Start encoding metadata at pixel index 0 with 1 LSB depth
 
+            // 2) write length (8 bytes) + payload data into image starting from metaPixelCount pixels using metadata.lsbDepth()
             // Prepare the payload block with its length
             var payloadLength = ByteBuffer
                     .allocate(8)
                     .putLong(payloadDataBytes.length)
                     .array(); // Convert the payload length to an 8-byte array
 
+            // compose payloadBlock = [length (8 bytes)] [payload data]
             var payloadBlock = new byte[8 + payloadDataBytes.length]; // Allocate space for the payload block (8 bytes for length + actual payload data)
             System.arraycopy(payloadLength, 0, payloadBlock, 0, 8); // Copy the payload length bytes to the beginning of the block
             System.arraycopy(payloadDataBytes, 0, payloadBlock, 8, payloadDataBytes.length); // Copy the actual payload data bytes to the block after the length
