@@ -155,7 +155,29 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             byte[] stegoImageBytes,
             StegoMetadataDTO metadata
     ) throws Exception {
-        return new byte[0];
+
+        var image = bytesToImage(stegoImageBytes);
+
+        var metaLengthBytes = readBytesFromImage(image, 0, 1, 4);
+
+        var metaLength = ByteBuffer.wrap(metaLengthBytes).getInt();
+
+        var metaTotal = metaLength + 4;
+
+        var metaPixelCount = bytesToPixelCount(metaTotal, 1);
+
+        var payloadLengthBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
+
+        var payloadLength = ByteBuffer.wrap(payloadLengthBytes).getLong();
+
+        if (payloadLength > Integer.MAX_VALUE) {
+            throw new LsbDecodingException("Payload is too large");
+        }
+
+        // var payload = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) (payloadLength + 8));
+
+        return readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) (payloadLength));
+
     }
 
     // ----- Private Low-Level Helper Methods -----
