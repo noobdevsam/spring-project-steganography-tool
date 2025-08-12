@@ -151,33 +151,55 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Extracts the payload data from a stego image using metadata.
+     * <p>
+     * This method decodes the payload embedded in the least significant bits of the
+     * pixels of the provided stego image. It first extracts the metadata length, calculates
+     * the number of pixels used for metadata, and then retrieves the payload length and
+     * the actual payload. If the payload length exceeds the maximum allowed size, an
+     * exception is thrown.
+     *
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @param metadata        The metadata object containing encoding details such as LSB depth.
+     * @return A byte array containing the extracted payload data.
+     * @throws Exception If an error occurs during the decoding process.
+     */
     private byte[] extractPayloadUsingMetadata(
             byte[] stegoImageBytes,
             StegoMetadataDTO metadata
     ) throws Exception {
 
+        // Convert the stego image bytes to a BufferedImage
         var image = bytesToImage(stegoImageBytes);
 
+        // Read the first 4 bytes to get the metadata length
         var metaLengthBytes = readBytesFromImage(image, 0, 1, 4);
 
+        // Convert the metadata length bytes to an integer
         var metaLength = ByteBuffer.wrap(metaLengthBytes).getInt();
 
+        // Calculate the total metadata size (length + metadata content)
         var metaTotal = metaLength + 4;
 
+        // Calculate the number of pixels required to store the metadata
         var metaPixelCount = bytesToPixelCount(metaTotal, 1);
 
+        // Read the next 8 bytes to get the payload length
         var payloadLengthBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
 
+        // Convert the payload length bytes to a long
         var payloadLength = ByteBuffer.wrap(payloadLengthBytes).getLong();
 
+        // Check if the payload length exceeds the maximum allowed size
         if (payloadLength > Integer.MAX_VALUE) {
             throw new LsbDecodingException("Payload is too large");
         }
 
-        // var payload = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) (payloadLength + 8));
+        // var payload = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) payloadLength + 8);
 
+        // Read and return the payload data from the image
         return readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) (payloadLength));
-
     }
 
     // ----- Private Low-Level Helper Methods -----
