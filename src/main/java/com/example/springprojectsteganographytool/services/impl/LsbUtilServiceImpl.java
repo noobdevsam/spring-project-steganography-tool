@@ -108,24 +108,26 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putInt(metaLength)
                     .array(); // Convert the length to a 4-byte array
 
-            var metaBlockLength = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
-            var metaBlock = new byte[metaBlockLength];
+            var metaBlockLength = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength; // Calculate the total length of the metadata block
+            var metaBlock = new byte[metaBlockLength]; // Create a byte array for the metadata block
 
             // [MAGIC(4)]
-            System.arraycopy(STEGO_MAGIC, 0, metaBlock, 0, HEADER_MAGIC_LEN);
+            System.arraycopy(STEGO_MAGIC, 0, metaBlock, 0, HEADER_MAGIC_LEN); // Copy the magic bytes to the metadata block
             // [VERSION(1)]
-            metaBlock[HEADER_MAGIC_LEN] = STEGO_VERSION;
+            metaBlock[HEADER_MAGIC_LEN] = STEGO_VERSION; // Set the version byte in the metadata block
             // [META_LENGTH(4)]
-            System.arraycopy(metaLengthBytes, 0, metaBlock, HEADER_TOTAL_LEN, META_LEN_BYTES);
+            System.arraycopy(metaLengthBytes, 0, metaBlock, HEADER_TOTAL_LEN, META_LEN_BYTES); // Copy the metadata length bytes to the metadata block
             // [META_JSON]
-            System.arraycopy(metaJson, 0, metaBlock, (HEADER_TOTAL_LEN + META_LEN_BYTES), metaLength);
+            System.arraycopy(metaJson, 0, metaBlock, (HEADER_TOTAL_LEN + META_LEN_BYTES), metaLength); // Copy the metadata JSON bytes to the metadata block
 
+            // Check if the image has enough capacity to store the metadata
             var totalPixels = (long) working.getWidth() * working.getHeight();
             var metaPixelCount = bytesToPixelCount(metaBlock.length, 1);
             if (metaPixelCount > totalPixels) {
                 throw new MessageTooLargeException("Metadata is too large for the image with the given LSB depth");
             }
 
+            // Calculate the payload capacity in pixels and bytes
             var remainingPixels = totalPixels - metaPixelCount;
             var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
             var payloadCapacityBytes = payloadCapacityBits / 8L;
@@ -134,20 +136,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .allocate(PAYLOAD_LEN_BYTES)
                     .order(ByteOrder.BIG_ENDIAN)
                     .putLong(payloadDataBytes.length)
-                    .array();
+                    .array(); // Convert the payload length to an 8-byte array
 
-            var payloadBlock = new byte[PAYLOAD_LEN_BYTES + payloadDataBytes.length];
-            System.arraycopy(payloadLengthBytes, 0, payloadBlock, 0, PAYLOAD_LEN_BYTES);
-            System.arraycopy(payloadDataBytes, 0, payloadBlock, PAYLOAD_LEN_BYTES, payloadDataBytes.length);
+            var payloadBlock = new byte[PAYLOAD_LEN_BYTES + payloadDataBytes.length]; // Create a byte array for the payload block
+            System.arraycopy(payloadLengthBytes, 0, payloadBlock, 0, PAYLOAD_LEN_BYTES); // Copy the payload length bytes to the payload block
+            System.arraycopy(payloadDataBytes, 0, payloadBlock, PAYLOAD_LEN_BYTES, payloadDataBytes.length); // Copy the actual payload data to the payload block
 
+            // Check if the payload fits within the image capacity
             if ((long) payloadBlock.length > payloadCapacityBytes) {
                 throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
             }
 
-            writeBytesToImage(working, 0, 1, metaBlock);
-            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock);
+            writeBytesToImage(working, 0, 1, metaBlock); // Write the metadata block to the image using LSB depth of 1
+            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock); // Write the payload block to the image using the specified LSB depth
 
-            return imageToBytes(working, "png");
+            return imageToBytes(working, "png"); // Convert the modified image back to a byte array in lossless PNG format
 
         } catch (MessageTooLargeException e) {
             throw new LsbEncodingException("Not enough image capacity while writing data", e);
