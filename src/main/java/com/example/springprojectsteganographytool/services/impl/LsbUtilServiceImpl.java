@@ -23,6 +23,16 @@ import java.nio.ByteOrder;
 @Service
 public class LsbUtilServiceImpl implements LsbUtilService {
 
+    private static final byte[] STEGO_MAGIC = new byte[]{'S', 'T', 'E', 'G'};
+    private static final byte STEGO_VERSION = 1;
+
+    private static final int HEADER_MAGIC_LEN = 4;
+    private static final int HEADER_VERSION_LEN = 1;
+    private static final int HEADER_TOTAL_LEN = HEADER_MAGIC_LEN + HEADER_VERSION_LEN; // 5
+
+    private static final int META_LEN_BYTES = 4;
+    private static final int PAYLOAD_LEN_BYTES = 8;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
@@ -73,78 +83,77 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             StegoMetadataDTO metadata
     ) throws LsbEncodingException {
 
+        // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
+        // then [PAYLOAD_LEN(8)][PAYLOAD] at LSB=metadata.lsbDepth()
+
         try {
+
+            if (metadata == null) {
+                throw new LsbEncodingException("Metadata cannot be null");
+            }
 
             // Validate the LSB depth in the metadata
             if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
                 throw new InvalidLsbDepthException("LSB depth must be 1 or 2");
             }
 
-            // Convert the image bytes to a BufferedImage
-            var image = bytesToImage(imageBytes);
+            var working = deepCopy(bytesToImage(imageBytes)); // Create a deep copy of the image to avoid modifying the original
 
             // Serialize the metadata to JSON and prepare the metadata block
             var metaJson = mapper.writeValueAsBytes(metadata); // Convert metadata to JSON bytes
             var metaLength = metaJson.length; // Get the length of the metadata in bytes
             var metaLengthBytes = ByteBuffer
-                    .allocate(4)
+                    .allocate(META_LEN_BYTES)
+                    .order(ByteOrder.BIG_ENDIAN)
                     .putInt(metaLength)
                     .array(); // Convert the length to a 4-byte array
 
-            // Create a metadata block with the length prefix, block = [length (4 bytes)] [metadata JSON]
-            var metaBlock = new byte[metaLength + 4]; // Allocate space for the metadata block
-            System.arraycopy(metaLengthBytes, 0, metaBlock, 0, 4); // Copy the length bytes to the beginning of the block
-            System.arraycopy(metaJson, 0, metaBlock, 4, metaLength); // Copy the metadata JSON bytes to the block after the length
+            var metaBlockLength = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength; // Calculate the total length of the metadata block
+            var metaBlock = new byte[metaBlockLength]; // Create a byte array for the metadata block
 
-            // Calculate image dimensions and capacity
-            // Metadata uses 1-bit LSB, payload uses metadata.lsbDepth()
-            var width = image.getWidth();
-            var height = image.getHeight();
-            var totalPixels = (long) width * height;
+            // [MAGIC(4)]
+            System.arraycopy(STEGO_MAGIC, 0, metaBlock, 0, HEADER_MAGIC_LEN); // Copy the magic bytes to the metadata block
+            // [VERSION(1)]
+            metaBlock[HEADER_MAGIC_LEN] = STEGO_VERSION; // Set the version byte in the metadata block
+            // [META_LENGTH(4)]
+            System.arraycopy(metaLengthBytes, 0, metaBlock, HEADER_TOTAL_LEN, META_LEN_BYTES); // Copy the metadata length bytes to the metadata block
+            // [META_JSON]
+            System.arraycopy(metaJson, 0, metaBlock, (HEADER_TOTAL_LEN + META_LEN_BYTES), metaLength); // Copy the metadata JSON bytes to the metadata block
 
-            // for later calculations
-            // if metadata occupies prefix region, we will compute exact pixels consumed later
-            var metadataBits = (long) metaBlock.length * 8L;
-            var metadataCapacityBits = totalPixels * 3L;
-
-            // Calculate the number of pixels required for metadata and payload
-            // We will reserve the prefix region just big enough to hold metadata using 1-bit LSB
-            var metaPixelCount = bytesToPixelCount(metaBlock.length, 1); // 1 LSB depth for metadata
-            var remainingPixels = totalPixels - metaPixelCount; // Calculate remaining pixels after metadata
-            var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth(); // Calculate payload capacity based on remaining pixels and LSB depth
-            var payloadCapacityBytes = payloadCapacityBits / 8L; // Convert bits to bytes
-
-            // Check if the payload fits within the image capacity
-            // here, [payloadDataBytes.length + 8] is the total size of the payload block including its length prefix,
-            // and it is payload length header
-            if (payloadDataBytes.length + 8 > payloadCapacityBytes) {
-                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
+            // Check if the image has enough capacity to store the metadata
+            var totalPixels = (long) working.getWidth() * working.getHeight();
+            var metaPixelCount = bytesToPixelCount(metaBlock.length, 1);
+            if (metaPixelCount > totalPixels) {
+                throw new MessageTooLargeException("Metadata is too large for the image with the given LSB depth");
             }
 
-            // 1) write metadata into first metaPixelCount pixels using 1 LSB depth
-            // Create a deep copy of the image for encoding
-            var working = deepCopy(image);
-            // Write the metadata block into the image
-            writeBytesToImage(working, 0, 1, metaBlock); // Start encoding metadata at pixel index 0 with 1 LSB depth
+            // Calculate the payload capacity in pixels and bytes
+            var remainingPixels = totalPixels - metaPixelCount;
+            var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
+            var payloadCapacityBytes = payloadCapacityBits / 8L;
 
-            // 2) write length (8 bytes) + payload data into image starting from metaPixelCount pixels using metadata.lsbDepth()
-            // Prepare the payload block with its length
-            var payloadLength = ByteBuffer
-                    .allocate(8)
+            var payloadLengthBytes = ByteBuffer
+                    .allocate(PAYLOAD_LEN_BYTES)
+                    .order(ByteOrder.BIG_ENDIAN)
                     .putLong(payloadDataBytes.length)
                     .array(); // Convert the payload length to an 8-byte array
 
-            // compose payloadBlock = [length (8 bytes)] [payload data]
-            var payloadBlock = new byte[8 + payloadDataBytes.length]; // Allocate space for the payload block (8 bytes for length + actual payload data)
-            System.arraycopy(payloadLength, 0, payloadBlock, 0, 8); // Copy the payload length bytes to the beginning of the block
-            System.arraycopy(payloadDataBytes, 0, payloadBlock, 8, payloadDataBytes.length); // Copy the actual payload data bytes to the block after the length
+            var payloadBlock = new byte[PAYLOAD_LEN_BYTES + payloadDataBytes.length]; // Create a byte array for the payload block
+            System.arraycopy(payloadLengthBytes, 0, payloadBlock, 0, PAYLOAD_LEN_BYTES); // Copy the payload length bytes to the payload block
+            System.arraycopy(payloadDataBytes, 0, payloadBlock, PAYLOAD_LEN_BYTES, payloadDataBytes.length); // Copy the actual payload data to the payload block
 
-            // Write the payload block into the image
-            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock); // Start encoding payload after metadata with the specified LSB depth
+            // Check if the payload fits within the image capacity
+            if ((long) payloadBlock.length > payloadCapacityBytes) {
+                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
+            }
 
-            // Convert the encoded image back to a byte array in PNG format
-            return imageToBytes(working, "png");
+            writeBytesToImage(working, 0, 1, metaBlock); // Write the metadata block to the image using LSB depth of 1
+            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock); // Write the payload block to the image using the specified LSB depth
 
+            return imageToBytes(working, "png"); // Convert the modified image back to a byte array in lossless PNG format
+
+        } catch (MessageTooLargeException e) {
+            throw new LsbEncodingException("Not enough image capacity while writing data", e);
         } catch (LsbEncodingException e) {
             throw e;
         } catch (Exception e) {
@@ -152,72 +161,68 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
-    /**
-     * Extracts the payload data from a stego image using metadata.
-     * <p>
-     * This method decodes the payload embedded in the least significant bits of the
-     * pixels of the provided stego image. It first extracts the metadata length, calculates
-     * the number of pixels used for metadata, and then retrieves the payload length and
-     * the actual payload. If the payload length exceeds the maximum allowed size, an
-     * exception is thrown.
-     *
-     * @param stegoImageBytes The byte array representing the stego image.
-     * @param metadata        The metadata object containing encoding details such as LSB depth.
-     * @return A byte array containing the extracted payload data.
-     * @throws Exception If an error occurs during the decoding process.
-     */
     private byte[] extractPayloadUsingMetadata(
             byte[] stegoImageBytes,
             StegoMetadataDTO metadata
     ) throws Exception {
 
-        // Convert the stego image bytes to a BufferedImage
+        // Reads and validates header
+        // then finds payload using computed metadata region length without parsing JSON.
+        // Expects metadata.lsbDepth() to be correct for the payload region.
+
         var image = bytesToImage(stegoImageBytes);
 
-        // Figure out how many pixels are used for metadata
-        // Read the first 4 bytes to get the metadata length using 1 LSB depth
-        // This assumes the metadata is stored in the first pixel(s) of the image
-        var metaLengthBytes = readBytesFromImage(image, 0, 1, 4);
+        var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
+        if (
+                header.length != HEADER_TOTAL_LEN
+                        || header[0] != STEGO_MAGIC[0]
+                        || header[1] != STEGO_MAGIC[1]
+                        || header[2] != STEGO_MAGIC[2]
+                        || header[3] != STEGO_MAGIC[3]
+                        || header[4] != STEGO_VERSION
+        ) {
+            throw new InvalidImageFormatException("Image does not contain valid LSB header");
+        }
 
-        // Convert the metadata length bytes to an integer
+        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
+        var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
+
         var metaLength = ByteBuffer
                 .wrap(metaLengthBytes)
                 .order(ByteOrder.BIG_ENDIAN)
                 .getInt();
+        if (metaLength <= 0) {
+            throw new MetadataNotFoundException("Metadata length is invalid or zero");
+        }
 
-        // Calculate the total metadata size (length + metadata content)
-        var metaTotal = metaLength + 4;
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
-        // Calculate the number of pixels required to store the metadata
-        var metaPixelCount = bytesToPixelCount(metaTotal, 1);
+        if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
+            throw new InvalidLsbDepthException("Invalid LSB depth in metadata: " + metadata.lsbDepth());
+        }
 
-        // Now read 8 bytes payload length starting at metaPixelCount using metadata.lsbDepth() to get the payload length
-        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
-
-        // Convert the payload length bytes to a long
+        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), PAYLOAD_LEN_BYTES);
         var payloadLength = ByteBuffer
                 .wrap(payloadLengthHeaderBytes)
                 .order(ByteOrder.BIG_ENDIAN)
                 .getLong();
 
-        // Check if the payload length exceeds the maximum allowed size
         if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
             throw new LsbDecodingException("Payload length is invalid or too large");
         }
 
-        // Optional, capacity sanity check at decoding time
         var totalPixels = (long) image.getWidth() * image.getHeight();
         var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = (remainingPixels * 3L * metadata.lsbDepth()) / 8L - 8;
+        var maxPayloadBytes = ((remainingPixels * 3L * metadata.lsbDepth()) / 8L) - PAYLOAD_LEN_BYTES;
         if (payloadLength > maxPayloadBytes) {
             throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
         }
 
-        // Advance past the 8 bytes of payload length header
-        var payloadHeaderPixels = bytesToPixelCount(8, metadata.lsbDepth());
+        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
         var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
 
-        // Read and return the payload data from the image
+
         return readBytesFromImage(image, payloadStartPixel, metadata.lsbDepth(), (int) (payloadLength));
     }
 
