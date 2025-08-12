@@ -172,30 +172,41 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         var image = bytesToImage(stegoImageBytes);
 
+        var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
+        if (
+                header.length != HEADER_TOTAL_LEN
+                        || header[0] != STEGO_MAGIC[0]
+                        || header[1] != STEGO_MAGIC[1]
+                        || header[2] != STEGO_MAGIC[2]
+                        || header[3] != STEGO_MAGIC[3]
+                        || header[4] != STEGO_VERSION
+        ) {
+            throw new InvalidImageFormatException("Image does not contain valid LSB header");
+        }
 
-        var metaLengthBytes = readBytesFromImage(image, 0, 1, 4);
-
+        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
+        var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
 
         var metaLength = ByteBuffer
                 .wrap(metaLengthBytes)
                 .order(ByteOrder.BIG_ENDIAN)
                 .getInt();
+        if (metaLength <= 0) {
+            throw new MetadataNotFoundException("Metadata length is invalid or zero");
+        }
 
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
-        var metaTotal = metaLength + 4;
+        if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
+            throw new InvalidLsbDepthException("Invalid LSB depth in metadata: " + metadata.lsbDepth());
+        }
 
-
-        var metaPixelCount = bytesToPixelCount(metaTotal, 1);
-
-
-        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
-
-
+        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), PAYLOAD_LEN_BYTES);
         var payloadLength = ByteBuffer
                 .wrap(payloadLengthHeaderBytes)
                 .order(ByteOrder.BIG_ENDIAN)
                 .getLong();
-
 
         if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
             throw new LsbDecodingException("Payload length is invalid or too large");
@@ -203,13 +214,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         var totalPixels = (long) image.getWidth() * image.getHeight();
         var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = (remainingPixels * 3L * metadata.lsbDepth()) / 8L - 8;
+        var maxPayloadBytes = ((remainingPixels * 3L * metadata.lsbDepth()) / 8L) - PAYLOAD_LEN_BYTES;
         if (payloadLength > maxPayloadBytes) {
             throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
         }
 
-
-        var payloadHeaderPixels = bytesToPixelCount(8, metadata.lsbDepth());
+        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
         var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
 
 
