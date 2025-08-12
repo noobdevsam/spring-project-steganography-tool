@@ -18,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 @Service
 public class LsbUtilServiceImpl implements LsbUtilService {
@@ -179,7 +180,10 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaLengthBytes = readBytesFromImage(image, 0, 1, 4);
 
         // Convert the metadata length bytes to an integer
-        var metaLength = ByteBuffer.wrap(metaLengthBytes).getInt();
+        var metaLength = ByteBuffer
+                .wrap(metaLengthBytes)
+                .order(ByteOrder.BIG_ENDIAN)
+                .getInt();
 
         // Calculate the total metadata size (length + metadata content)
         var metaTotal = metaLength + 4;
@@ -188,23 +192,33 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaPixelCount = bytesToPixelCount(metaTotal, 1);
 
         // Now read 8 bytes payload length starting at metaPixelCount using metadata.lsbDepth() to get the payload length
-        var payloadLengthBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
+        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
 
         // Convert the payload length bytes to a long
-        var payloadLength = ByteBuffer.wrap(payloadLengthBytes).getLong();
+        var payloadLength = ByteBuffer
+                .wrap(payloadLengthHeaderBytes)
+                .order(ByteOrder.BIG_ENDIAN)
+                .getLong();
 
         // Check if the payload length exceeds the maximum allowed size
-        if (payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload is too large");
+        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
+            throw new LsbDecodingException("Payload length is invalid or too large");
         }
 
-        //    var payload = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) payloadLength + 8);
-        // we already read 8 bytes but read all and return subset payload contains (8-byte len + payload data) if reading from start;
-        // we may return only payload data but our readBytesFromImage reads from scratch;
+        // Optional, capacity sanity check at decoding time
+        var totalPixels = (long) image.getWidth() * image.getHeight();
+        var remainingPixels = totalPixels - metaPixelCount;
+        var maxPayloadBytes = (remainingPixels * 3L * metadata.lsbDepth()) / 8L - 8;
+        if (payloadLength > maxPayloadBytes) {
+            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
+        }
 
-        // To keep it simple,read only payload data:
+        // Advance past the 8 bytes of payload length header
+        var payloadHeaderPixels = bytesToPixelCount(8, metadata.lsbDepth());
+        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
+
         // Read and return the payload data from the image
-        return readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) (payloadLength));
+        return readBytesFromImage(image, payloadStartPixel, metadata.lsbDepth(), (int) (payloadLength));
     }
 
     // ----- Private Low-Level Helper Methods -----
