@@ -52,7 +52,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             byte[] payloadDataBytes,
             StegoMetadataDTO metadata
     ) throws LsbEncodingException {
-        return new byte[0];
+        try {
+
+        } catch (LsbEncodingException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new LsbEncodingException("LSB encoding failed", e);
+        }
     }
 
     private byte[] extractPayloadUsingMetadata(
