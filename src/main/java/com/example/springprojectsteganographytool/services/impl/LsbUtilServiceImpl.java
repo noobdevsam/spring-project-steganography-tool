@@ -83,29 +83,32 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             var image = bytesToImage(imageBytes);
 
             // Serialize the metadata to JSON and prepare the metadata block
-            var metaJson = mapper.writeValueAsBytes(metadata);
-            var metaLength = metaJson.length;
+            var metaJson = mapper.writeValueAsBytes(metadata); // Convert metadata to JSON bytes
+            var metaLength = metaJson.length; // Get the length of the metadata in bytes
             var metaLengthBytes = ByteBuffer
                     .allocate(4)
                     .putInt(metaLength)
-                    .array();
+                    .array(); // Convert the length to a 4-byte array
 
-            var metaBlock = new byte[metaLength + 4];
-            System.arraycopy(metaLengthBytes, 0, metaBlock, 0, 4);
-            System.arraycopy(metaJson, 0, metaBlock, 4, metaLength);
+            // Create a metadata block with the length prefix
+            var metaBlock = new byte[metaLength + 4]; // Allocate space for the metadata block
+            System.arraycopy(metaLengthBytes, 0, metaBlock, 0, 4); // Copy the length bytes to the beginning of the block
+            System.arraycopy(metaJson, 0, metaBlock, 4, metaLength); // Copy the metadata JSON bytes to the block after the length
 
             // Calculate image dimensions and capacity
             var width = image.getWidth();
             var height = image.getHeight();
             var totalPixels = (long) width * height;
+
+            // for later calculations
             var metadataBits = (long) metaBlock.length * 8L;
             var metadataCapacityBits = totalPixels * 3L;
 
             // Calculate the number of pixels required for metadata and payload
-            var metaPixelCount = bytesToPixelCount(metaBlock.length, 1);
-            var remainingPixels = totalPixels - metaPixelCount;
-            var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
-            var payloadCapacityBytes = payloadCapacityBits / 8L;
+            var metaPixelCount = bytesToPixelCount(metaBlock.length, 1); // 1 LSB depth for metadata
+            var remainingPixels = totalPixels - metaPixelCount; // Calculate remaining pixels after metadata
+            var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth(); // Calculate payload capacity based on remaining pixels and LSB depth
+            var payloadCapacityBytes = payloadCapacityBits / 8L; // Convert bits to bytes
 
             // Check if the payload fits within the image capacity
             if (payloadDataBytes.length + 8 > payloadCapacityBytes) {
@@ -116,20 +119,20 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             var working = deepCopy(image);
 
             // Write the metadata block into the image
-            writeBytesToImage(working, 0, 1, metaBlock);
+            writeBytesToImage(working, 0, 1, metaBlock); // Start encoding metadata at pixel index 0 with 1 LSB depth
 
             // Prepare the payload block with its length
             var payloadLength = ByteBuffer
                     .allocate(8)
                     .putLong(payloadDataBytes.length)
-                    .array();
+                    .array(); // Convert the payload length to an 8-byte array
 
-            var payloadBlock = new byte[8 + payloadDataBytes.length];
-            System.arraycopy(payloadLength, 0, payloadBlock, 0, 8);
-            System.arraycopy(payloadDataBytes, 0, payloadBlock, 8, payloadDataBytes.length);
+            var payloadBlock = new byte[8 + payloadDataBytes.length]; // Allocate space for the payload block (8 bytes for length + actual payload data)
+            System.arraycopy(payloadLength, 0, payloadBlock, 0, 8); // Copy the payload length bytes to the beginning of the block
+            System.arraycopy(payloadDataBytes, 0, payloadBlock, 8, payloadDataBytes.length); // Copy the actual payload data bytes to the block after the length
 
             // Write the payload block into the image
-            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock);
+            writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock); // Start encoding payload after metadata with the specified LSB depth
 
             // Convert the encoded image back to a byte array in PNG format
             return imageToBytes(working, "png");
