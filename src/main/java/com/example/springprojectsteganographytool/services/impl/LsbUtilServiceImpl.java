@@ -173,7 +173,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // Convert the stego image bytes to a BufferedImage
         var image = bytesToImage(stegoImageBytes);
 
-        // Read the first 4 bytes to get the metadata length
+        // Figure out how many pixels are used for metadata
+        // Read the first 4 bytes to get the metadata length using 1 LSB depth
+        // This assumes the metadata is stored in the first pixel(s) of the image
         var metaLengthBytes = readBytesFromImage(image, 0, 1, 4);
 
         // Convert the metadata length bytes to an integer
@@ -185,7 +187,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // Calculate the number of pixels required to store the metadata
         var metaPixelCount = bytesToPixelCount(metaTotal, 1);
 
-        // Read the next 8 bytes to get the payload length
+        // Now read 8 bytes payload length starting at metaPixelCount using metadata.lsbDepth() to get the payload length
         var payloadLengthBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), 8);
 
         // Convert the payload length bytes to a long
@@ -196,8 +198,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbDecodingException("Payload is too large");
         }
 
-        // var payload = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) payloadLength + 8);
+        //    var payload = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) payloadLength + 8);
+        // we already read 8 bytes but read all and return subset payload contains (8-byte len + payload data) if reading from start;
+        // we may return only payload data but our readBytesFromImage reads from scratch;
 
+        // To keep it simple,read only payload data:
         // Read and return the payload data from the image
         return readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), (int) (payloadLength));
     }
