@@ -23,6 +23,16 @@ import java.nio.ByteOrder;
 @Service
 public class LsbUtilServiceImpl implements LsbUtilService {
 
+    private static final byte[] STEGO_MAGIC = new byte[]{'S', 'T', 'E', 'G'};
+    private static final byte STEGO_VERSION = 1;
+
+    private static final int HEADER_MAGIC_LEN = 4;
+    private static final int HEADER_VERSION_LEN = 1;
+    private static final int HEADER_TOTAL_LEN = HEADER_MAGIC_LEN + HEADER_VERSION_LEN; // 5
+
+    private static final int META_LEN_BYTES = 4;
+    private static final int PAYLOAD_LEN_BYTES = 8;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     @Override
