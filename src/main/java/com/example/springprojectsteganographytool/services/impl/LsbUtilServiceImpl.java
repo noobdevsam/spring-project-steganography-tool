@@ -51,6 +51,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private High-Level Helper Methods -----
 
+    /**
+     * Encodes a payload with metadata into an image using LSB encoding.
+     * <p>
+     * This method embeds metadata and payload data into the least significant bits
+     * of the pixels of the provided image. The metadata is encoded first, followed
+     * by the payload. The method ensures that the image has sufficient capacity
+     * to store both the metadata and the payload. If the payload is too large for
+     * the image, a MessageTooLargeException is thrown.
+     *
+     * @param imageBytes       The byte array representing the image to encode into.
+     * @param payloadDataBytes The byte array containing the payload data to encode.
+     * @param metadata         The metadata object containing encoding details such as LSB depth.
+     * @return A byte array representing the encoded image in PNG format.
+     * @throws LsbEncodingException If an error occurs during the encoding process or the payload is too large.
+     */
     private byte[] encodeWithMetadata(
             byte[] imageBytes,
             byte[] payloadDataBytes,
@@ -59,13 +74,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         try {
 
+            // Validate the LSB depth in the metadata
             if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
                 throw new InvalidLsbDepthException("LSB depth must be 1 or 2");
             }
 
+            // Convert the image bytes to a BufferedImage
             var image = bytesToImage(imageBytes);
 
-
+            // Serialize the metadata to JSON and prepare the metadata block
             var metaJson = mapper.writeValueAsBytes(metadata);
             var metaLength = metaJson.length;
             var metaLengthBytes = ByteBuffer
@@ -73,46 +90,48 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putInt(metaLength)
                     .array();
 
-
             var metaBlock = new byte[metaLength + 4];
             System.arraycopy(metaLengthBytes, 0, metaBlock, 0, 4);
             System.arraycopy(metaJson, 0, metaBlock, 4, metaLength);
 
-
+            // Calculate image dimensions and capacity
             var width = image.getWidth();
             var height = image.getHeight();
             var totalPixels = (long) width * height;
             var metadataBits = (long) metaBlock.length * 8L;
-
             var metadataCapacityBits = totalPixels * 3L;
 
-
+            // Calculate the number of pixels required for metadata and payload
             var metaPixelCount = bytesToPixelCount(metaBlock.length, 1);
             var remainingPixels = totalPixels - metaPixelCount;
             var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
             var payloadCapacityBytes = payloadCapacityBits / 8L;
 
+            // Check if the payload fits within the image capacity
             if (payloadDataBytes.length + 8 > payloadCapacityBytes) {
                 throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
             }
 
-
+            // Create a deep copy of the image for encoding
             var working = deepCopy(image);
+
+            // Write the metadata block into the image
             writeBytesToImage(working, 0, 1, metaBlock);
 
+            // Prepare the payload block with its length
             var payloadLength = ByteBuffer
                     .allocate(8)
                     .putLong(payloadDataBytes.length)
                     .array();
 
-
             var payloadBlock = new byte[8 + payloadDataBytes.length];
             System.arraycopy(payloadLength, 0, payloadBlock, 0, 8);
             System.arraycopy(payloadDataBytes, 0, payloadBlock, 8, payloadDataBytes.length);
 
+            // Write the payload block into the image
             writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock);
 
-
+            // Convert the encoded image back to a byte array in PNG format
             return imageToBytes(working, "png");
 
         } catch (LsbEncodingException e) {
