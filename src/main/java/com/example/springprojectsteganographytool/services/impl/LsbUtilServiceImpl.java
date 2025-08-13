@@ -87,6 +87,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+
+    // ----- Private High-Level Helper Methods -----
+
     /**
      * Extracts metadata from a stego image.
      * <p>
@@ -101,8 +104,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * @throws MetadataDecodingException   If an error occurs during metadata deserialization.
      * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
      */
-    @Override
-    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+
+    private StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
         try {
 
             // Read header and metadata length
@@ -125,8 +128,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
 
     }
-
-    // ----- Private High-Level Helper Methods -----
 
     /**
      * Encodes a payload with metadata into an image using LSB encoding.
@@ -216,7 +217,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             writeBytesToImage(working, 0, 1, metaBlock); // Write the metadata block to the image using LSB depth of 1
             writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock); // Write the payload block to the image using the specified LSB depth
 
-            return imageToBytes(working, "png"); // Convert the modified image back to a byte array in lossless PNG format
+            return imageToBytes(working); // Convert the modified image back to a byte array in lossless PNG format
 
         } catch (MessageTooLargeException e) {
             throw new LsbEncodingException("Not enough image capacity while writing data", e);
@@ -385,18 +386,16 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * Converts a BufferedImage into a byte array in the specified format.
      * <p>
      * This method writes the provided BufferedImage to a ByteArrayOutputStream
-     * using the specified image format (e.g., "png", "jpg") and returns the
+     * using the PNG image format and returns the
      * resulting byte array. If an error occurs during the writing process,
      * an exception is thrown.
      *
-     * @param image  The BufferedImage to be converted.
-     * @param format The format in which the image should be written (e.g., "png", "jpg").
-     * @return A byte array representing the image in the specified format.
+     * @param image The BufferedImage to be converted.
+     * @return A byte array representing the image in PNG format.
      * @throws Exception If an error occurs during the image writing process.
      */
     private byte[] imageToBytes(
-            BufferedImage image,
-            String format
+            BufferedImage image
     ) throws Exception {
 
         try (
@@ -404,7 +403,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         ) {
 
             // Write the image to the output stream in the specified format
-            ImageIO.write(image, format, byteArrayOutputStream);
+            ImageIO.write(image, "png", byteArrayOutputStream);
 
             // Convert the output stream to a byte array
             return byteArrayOutputStream.toByteArray();
