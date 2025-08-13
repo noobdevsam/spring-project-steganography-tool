@@ -55,6 +55,20 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return new byte[0];
     }
 
+    /**
+     * Extracts metadata from a stego image.
+     * <p>
+     * This method reads the header and metadata length from the provided stego image byte array.
+     * It then extracts the metadata JSON from the image and deserializes it into a `StegoMetadataDTO` object.
+     * If the header is invalid, the metadata is not found, or an error occurs during deserialization,
+     * appropriate exceptions are thrown.
+     *
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @return A `StegoMetadataDTO` object containing the extracted metadata.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws MetadataDecodingException   If an error occurs during metadata deserialization.
+     * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
+     */
     @Override
     public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
         try {
@@ -68,6 +82,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // 4) Deserialize metadata JSON and return
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+
+            // Note: We intentionally do not validate fields such as lsbDepth here,
+            // because extraction/decoding paths validate them when needed.
 
         } catch (InvalidImageFormatException | MetadataNotFoundException e) {
             throw e; // Re-throw specific exceptions
