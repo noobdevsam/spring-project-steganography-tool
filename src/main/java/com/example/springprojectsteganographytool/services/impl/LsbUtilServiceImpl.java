@@ -386,7 +386,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * Converts a BufferedImage into a byte array in the specified format.
      * <p>
      * This method writes the provided BufferedImage to a ByteArrayOutputStream
-     * using the specified image format (e.g., "png", "jpg") and returns the
+     * using the PNG image format and returns the
      * resulting byte array. If an error occurs during the writing process,
      * an exception is thrown.
      *
