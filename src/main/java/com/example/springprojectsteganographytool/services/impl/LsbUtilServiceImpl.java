@@ -391,7 +391,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * an exception is thrown.
      *
      * @param image The BufferedImage to be converted.
-     * @return A byte array representing the image in the specified format.
+     * @return A byte array representing the image in PNG format.
      * @throws Exception If an error occurs during the image writing process.
      */
     private byte[] imageToBytes(
