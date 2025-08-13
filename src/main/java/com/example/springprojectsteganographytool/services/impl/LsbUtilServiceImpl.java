@@ -106,9 +106,29 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return encodeWithMetadata(imageBytes, fileBytes, metadata);
     }
 
+    /**
+     * Decodes a file from a stego image using LSB (Least Significant Bit) decoding.
+     * <p>
+     * This method extracts metadata from the provided stego image byte array and uses it
+     * to decode the embedded file payload. If an error occurs during the decoding process,
+     * an `LsbDecodingException` is thrown with the relevant error message.
+     *
+     * @param stegoImageBytes The byte array representing the stego image to decode from.
+     * @param lsbDepth        The LSB depth used for decoding (e.g., 1 or 2).
+     * @return A byte array containing the decoded file payload.
+     * @throws InvalidLsbDepthException    If the provided LSB depth is invalid.
+     * @throws LsbDecodingException        If an error occurs during the decoding process.
+     * @throws StegoDataNotFoundException  If the stego data is not found in the image.
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     */
     @Override
     public byte[] decodeFile(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        return new byte[0];
+        try {
+            var metadata = extractMetadata(stegoImageBytes);
+            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
+        } catch (Exception e) {
+            throw new LsbDecodingException(e.getMessage());
+        }
     }
 
     /**
