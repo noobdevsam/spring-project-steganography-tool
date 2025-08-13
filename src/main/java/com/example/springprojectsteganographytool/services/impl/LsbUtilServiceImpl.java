@@ -271,68 +271,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
-    /**
-     * Extracts the payload data from a stego image using metadata.
-     * <p>
-     * This method decodes the payload embedded in the least significant bits of the
-     * pixels of the provided stego image. It first validates the header, extracts the
-     * metadata length, calculates the metadata region size, and retrieves the payload
-     * length and the actual payload. If the payload length exceeds the maximum allowed
-     * size or the image does not contain valid metadata, an exception is thrown.
-     *
-     * @param stegoImageBytes The byte array representing the stego image.
-     * @param metadata        The metadata object containing encoding details such as LSB depth.
-     * @return A byte array containing the extracted payload data.
-     * @throws Exception If an error occurs during the decoding process, such as invalid metadata,
-     *                   invalid LSB depth, or insufficient image capacity.
-     */
-    private byte[] extractPayloadUsingMetadata(
-            byte[] stegoImageBytes,
-            StegoMetadataDTO metadata
-    ) throws Exception {
-
-        // Reads and validates header
-        // then finds payload using computed metadata region length without parsing JSON.
-        // Expects metadata.lsbDepth() to be correct for the payload region.
-
-        var info = readHeaderAndMetaLength(stegoImageBytes); // Read header and metadata length
-
-        // Calculate the total metadata size (header + metadata length + metadata content)
-        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
-        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
-
-        // Validate the LSB depth in the metadata
-        if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
-            throw new InvalidLsbDepthException("Invalid LSB depth in metadata: " + metadata.lsbDepth());
-        }
-
-        // Read the payload length
-        var payloadLengthHeaderBytes = readBytesFromImage(info.image(), metaPixelCount, metadata.lsbDepth(), PAYLOAD_LEN_BYTES);
-        var payloadLength = ByteBuffer
-                .wrap(payloadLengthHeaderBytes)
-                .order(ByteOrder.BIG_ENDIAN)
-                .getLong();
-
-        // Validate the payload length
-        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload length is invalid or too large");
-        }
-
-        // Calculate the maximum payload size based on the remaining pixels
-        var totalPixels = (long) info.image().getWidth() * info.image().getHeight();
-        var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = ((remainingPixels * 3L * metadata.lsbDepth()) / 8L) - PAYLOAD_LEN_BYTES;
-        if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
-        }
-
-        // Calculate the starting pixel for the payload
-        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
-        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
-
-        // Read and return the payload data
-        return readBytesFromImage(info.image(), payloadStartPixel, metadata.lsbDepth(), (int) (payloadLength));
-    }
 
     /**
      * Reads and validates the header and metadata length from a stego image.
@@ -349,6 +287,43 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
      * @throws Exception                   If an error occurs during the process.
      */
+
+
+    private byte[] extractPayloadUsingDepth(byte[] stegoImageBytes, int lsbDepth) throws Exception {
+        if (lsbDepth != 1 && lsbDepth != 2) {
+            throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
+        }
+
+        // 1) Read and validate header + metadata length (both at LSB=1)
+        var info = readHeaderAndMetaLength(stegoImageBytes);
+
+        // 2) Compute how many pixels were used by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+
+        // 3) Read payload length (at caller-provided LSB depth)
+        var payloadLenBytes = readBytesFromImage(info.image(), metaPixelCount, lsbDepth, PAYLOAD_LEN_BYTES);
+        var payloadLength = ByteBuffer.wrap(payloadLenBytes).order(ByteOrder.BIG_ENDIAN).getLong();
+
+        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
+            throw new LsbDecodingException("Payload length is invalid or too large");
+        }
+
+        // 4) Capacity check for remaining pixels at the chosen depth
+        var totalPixels = (long) info.image().getWidth() * info.image().getHeight();
+        var remainingPixels = totalPixels - metaPixelCount;
+        var maxPayloadBytes = ((remainingPixels * 3L * lsbDepth) / 8L) - PAYLOAD_LEN_BYTES;
+        if (payloadLength > maxPayloadBytes) {
+            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
+        }
+
+        // 5) Read payload bytes (at caller-provided LSB depth)
+        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, lsbDepth);
+        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
+
+        return readBytesFromImage(info.image(), payloadStartPixel, lsbDepth, (int) payloadLength);
+    }
+
     private HeaderInfo readHeaderAndMetaLength(byte[] stegoImageBytes) throws Exception {
 
         var image = bytesToImage(stegoImageBytes);
