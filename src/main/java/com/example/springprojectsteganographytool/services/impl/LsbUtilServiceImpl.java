@@ -87,6 +87,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+
+    // ----- Private High-Level Helper Methods -----
+
     /**
      * Extracts metadata from a stego image.
      * <p>
@@ -101,8 +104,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * @throws MetadataDecodingException   If an error occurs during metadata deserialization.
      * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
      */
-    @Override
-    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+
+    private StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
         try {
 
             // Read header and metadata length
@@ -125,8 +128,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
 
     }
-
-    // ----- Private High-Level Helper Methods -----
 
     /**
      * Encodes a payload with metadata into an image using LSB encoding.
