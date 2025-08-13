@@ -217,7 +217,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             writeBytesToImage(working, 0, 1, metaBlock); // Write the metadata block to the image using LSB depth of 1
             writeBytesToImage(working, metaPixelCount, metadata.lsbDepth(), payloadBlock); // Write the payload block to the image using the specified LSB depth
 
-            return imageToBytes(working, "png"); // Convert the modified image back to a byte array in lossless PNG format
+            return imageToBytes(working); // Convert the modified image back to a byte array in lossless PNG format
 
         } catch (MessageTooLargeException e) {
             throw new LsbEncodingException("Not enough image capacity while writing data", e);
@@ -390,14 +390,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * resulting byte array. If an error occurs during the writing process,
      * an exception is thrown.
      *
-     * @param image  The BufferedImage to be converted.
-     * @param format The format in which the image should be written (e.g., "png", "jpg").
+     * @param image The BufferedImage to be converted.
      * @return A byte array representing the image in the specified format.
      * @throws Exception If an error occurs during the image writing process.
      */
     private byte[] imageToBytes(
-            BufferedImage image,
-            String format
+            BufferedImage image
     ) throws Exception {
 
         try (
@@ -405,7 +403,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         ) {
 
             // Write the image to the output stream in the specified format
-            ImageIO.write(image, format, byteArrayOutputStream);
+            ImageIO.write(image, "png", byteArrayOutputStream);
 
             // Convert the output stream to a byte array
             return byteArrayOutputStream.toByteArray();
