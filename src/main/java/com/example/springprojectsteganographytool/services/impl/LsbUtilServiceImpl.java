@@ -57,7 +57,46 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     @Override
     public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
-        return null;
+        try {
+            var image = bytesToImage(stegoImageBytes);
+
+            // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
+            var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
+            if (
+                    header.length != HEADER_TOTAL_LEN
+                            || header[0] != STEGO_MAGIC[0]
+                            || header[1] != STEGO_MAGIC[1]
+                            || header[2] != STEGO_MAGIC[2]
+                            || header[3] != STEGO_MAGIC[3]
+                            || header[4] != STEGO_VERSION
+            ) {
+                throw new InvalidImageFormatException("Image does not contain valid LSB header");
+            }
+
+            // 2) Read metadata length: [META_LEN(4)] at LSB=1
+            var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
+            var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
+            var metaLength = ByteBuffer
+                    .wrap(metaLengthBytes)
+                    .order(ByteOrder.BIG_ENDIAN)
+                    .getInt();
+            if (metaLength <= 0) {
+                throw new MetadataNotFoundException("Metadata length is invalid or zero");
+            }
+
+            // 3) Read metadata JSON: [META_JSON] at LSB=1
+            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
+            var metaJsonBytes = readBytesFromImage(image, metaJsonStartPixel, 1, metaLength);
+
+            // 4) Deserialize metadata JSON and return
+            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+
+        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (Exception e) {
+            throw new MetadataDecodingException("Failed to decode metadata from image", e);
+        }
+
     }
 
     // ----- Private High-Level Helper Methods -----
