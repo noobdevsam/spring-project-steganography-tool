@@ -83,9 +83,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Encodes a file into an image using LSB (Least Significant Bit) encoding.
+     * <p>
+     * This method embeds the provided file bytes into the least significant bits
+     * of the pixels of the given image. Metadata is also included to provide details
+     * about the encoding process. The method ensures that the image has sufficient
+     * capacity to store the file and metadata. If the file is too large for the image,
+     * an exception is thrown.
+     *
+     * @param imageBytes The byte array representing the image to encode into.
+     * @param fileBytes  The byte array containing the file to encode.
+     * @param metadata   The metadata object containing encoding details such as LSB depth.
+     * @return A byte array representing the encoded image in PNG format.
+     * @throws InvalidLsbDepthException    If the LSB depth specified in the metadata is invalid.
+     * @throws MessageTooLargeException    If the file is too large to fit into the image.
+     * @throws LsbEncodingException        If an error occurs during the encoding process.
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     */
     @Override
     public byte[] encodeFile(byte[] imageBytes, byte[] fileBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        return new byte[0];
+        return encodeWithMetadata(imageBytes, fileBytes, metadata);
     }
 
     @Override
