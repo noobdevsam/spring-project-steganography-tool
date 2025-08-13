@@ -36,20 +36,23 @@ public interface LsbUtilService {
     ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
 
     /**
-     * Decodes a message from a stego image using LSB steganography.
-     * Metadata must be extracted beforehand to determine the LSB depth.
+     * Decodes a message from a stego image using LSB (Least Significant Bit) steganography.
+     * This method allows the caller to specify the LSB depth to decode the payload, while
+     * the header and metadata are always decoded using LSB=1.
      *
      * @param stegoImageBytes The byte array representing the stego image containing the encoded message.
-     * @param lsbDepth        The number of least significant bits per channel used for encoding.
-     * @return A byte array representing the decoded message.
-     * @throws InvalidLsbDepthException    If the specified LSB depth is invalid.
-     * @throws LsbDecodingException        If an error occurs during the decoding process.
-     * @throws StegoDataNotFoundException  If no stego data is found in the image.
-     * @throws InvalidImageFormatException If the provided image format is invalid.
+     *                        This image must include the header, metadata, and payload.
+     * @param lsbDepth        The number of least significant bits per channel used for encoding the payload.
+     *                        Valid values are 1 or 2.
+     * @return A byte array representing the decoded message extracted from the stego image.
+     * @throws InvalidLsbDepthException    If the specified LSB depth is invalid (not 1 or 2).
+     * @throws LsbDecodingException        If an error occurs during the decoding process, such as corrupted data.
+     * @throws StegoDataNotFoundException  If no stego data is found in the image (e.g., missing header or metadata).
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
      */
     byte[] decodeMessage(
             byte[] stegoImageBytes,
-            int lsbDepth
+            Integer lsbDepth
     ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
 
     /**
@@ -71,19 +74,23 @@ public interface LsbUtilService {
     ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
 
     /**
-     * Decodes a file from a stego image using LSB steganography.
+     * Decodes a file from a stego image using LSB (Least Significant Bit) steganography.
+     * This method allows the caller to specify the LSB depth for decoding the payload,
+     * while the header and metadata are always decoded using LSB=1.
      *
      * @param stegoImageBytes The byte array representing the stego image containing the encoded file.
-     * @param lsbDepth        The number of least significant bits per channel used for encoding.
-     * @return A byte array representing the decoded file.
-     * @throws InvalidLsbDepthException    If the specified LSB depth is invalid.
-     * @throws LsbDecodingException        If an error occurs during the decoding process.
-     * @throws StegoDataNotFoundException  If no stego data is found in the image.
-     * @throws InvalidImageFormatException If the provided image format is invalid.
+     *                        This image must include the header, metadata, and payload.
+     * @param lsbDepth        The number of least significant bits per channel used for encoding the payload.
+     *                        Valid values are 1 or 2.
+     * @return A byte array representing the decoded file extracted from the stego image.
+     * @throws InvalidLsbDepthException    If the specified LSB depth is invalid (not 1 or 2).
+     * @throws LsbDecodingException        If an error occurs during the decoding process, such as corrupted data.
+     * @throws StegoDataNotFoundException  If no stego data is found in the image (e.g., missing header or metadata).
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
      */
     byte[] decodeFile(
             byte[] stegoImageBytes,
-            int lsbDepth
+            Integer lsbDepth
     ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
 
     /**
