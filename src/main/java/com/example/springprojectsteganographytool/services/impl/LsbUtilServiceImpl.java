@@ -35,29 +35,139 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+    /**
+     * Encodes a message into an image using LSB (Least Significant Bit) encoding.
+     * <p>
+     * This method embeds the provided message bytes into the least significant bits
+     * of the pixels of the given image. Metadata is also included to provide details
+     * about the encoding process. The method ensures that the image has sufficient
+     * capacity to store the message and metadata. If the message is too large for
+     * the image, an exception is thrown.
+     *
+     * @param imageBytes   The byte array representing the image to encode into.
+     * @param messageBytes The byte array containing the message to encode.
+     * @param metadata     The metadata object containing encoding details such as LSB depth.
+     * @return A byte array representing the encoded image in PNG format.
+     * @throws InvalidLsbDepthException    If the LSB depth specified in the metadata is invalid.
+     * @throws MessageTooLargeException    If the message is too large to fit into the image.
+     * @throws LsbEncodingException        If an error occurs during the encoding process.
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     */
     @Override
     public byte[] encodeMessage(byte[] imageBytes, byte[] messageBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        return new byte[0];
+        return encodeWithMetadata(imageBytes, messageBytes, metadata);
     }
 
+    /**
+     * Decodes a message from a stego image using LSB (Least Significant Bit) decoding.
+     * <p>
+     * This method extracts metadata from the provided stego image byte array and uses it
+     * to decode the embedded payload. If an error occurs during the decoding process,
+     * an `LsbDecodingException` is thrown with the relevant error message.
+     *
+     * @param stegoImageBytes The byte array representing the stego image to decode from.
+     * @param lsbDepth        The LSB depth used for decoding (e.g., 1 or 2).
+     * @return A byte array containing the decoded message payload.
+     * @throws InvalidLsbDepthException    If the provided LSB depth is invalid.
+     * @throws LsbDecodingException        If an error occurs during the decoding process.
+     * @throws StegoDataNotFoundException  If the stego data is not found in the image.
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     */
     @Override
     public byte[] decodeMessage(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        return new byte[0];
+        try {
+            var metadata = extractMetadata(stegoImageBytes);
+            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
+        } catch (Exception e) {
+            throw new LsbDecodingException(e.getMessage());
+        }
     }
 
+    /**
+     * Encodes a file into an image using LSB (Least Significant Bit) encoding.
+     * <p>
+     * This method embeds the provided file bytes into the least significant bits
+     * of the pixels of the given image. Metadata is also included to provide details
+     * about the encoding process. The method ensures that the image has sufficient
+     * capacity to store the file and metadata. If the file is too large for the image,
+     * an exception is thrown.
+     *
+     * @param imageBytes The byte array representing the image to encode into.
+     * @param fileBytes  The byte array containing the file to encode.
+     * @param metadata   The metadata object containing encoding details such as LSB depth.
+     * @return A byte array representing the encoded image in PNG format.
+     * @throws InvalidLsbDepthException    If the LSB depth specified in the metadata is invalid.
+     * @throws MessageTooLargeException    If the file is too large to fit into the image.
+     * @throws LsbEncodingException        If an error occurs during the encoding process.
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     */
     @Override
     public byte[] encodeFile(byte[] imageBytes, byte[] fileBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        return new byte[0];
+        return encodeWithMetadata(imageBytes, fileBytes, metadata);
     }
 
+    /**
+     * Decodes a file from a stego image using LSB (Least Significant Bit) decoding.
+     * <p>
+     * This method extracts metadata from the provided stego image byte array and uses it
+     * to decode the embedded file payload. If an error occurs during the decoding process,
+     * an `LsbDecodingException` is thrown with the relevant error message.
+     *
+     * @param stegoImageBytes The byte array representing the stego image to decode from.
+     * @param lsbDepth        The LSB depth used for decoding (e.g., 1 or 2).
+     * @return A byte array containing the decoded file payload.
+     * @throws InvalidLsbDepthException    If the provided LSB depth is invalid.
+     * @throws LsbDecodingException        If an error occurs during the decoding process.
+     * @throws StegoDataNotFoundException  If the stego data is not found in the image.
+     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     */
     @Override
     public byte[] decodeFile(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        return new byte[0];
+        try {
+            var metadata = extractMetadata(stegoImageBytes);
+            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
+        } catch (Exception e) {
+            throw new LsbDecodingException(e.getMessage());
+        }
     }
 
+    /**
+     * Extracts metadata from a stego image.
+     * <p>
+     * This method reads the header and metadata length from the provided stego image byte array.
+     * It then extracts the metadata JSON from the image and deserializes it into a `StegoMetadataDTO` object.
+     * If the header is invalid, the metadata is not found, or an error occurs during deserialization,
+     * appropriate exceptions are thrown.
+     *
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @return A `StegoMetadataDTO` object containing the extracted metadata.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws MetadataDecodingException   If an error occurs during metadata deserialization.
+     * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
+     */
     @Override
     public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
-        return null;
+        try {
+
+            // Read header and metadata length
+            var info = readHeaderAndMetaLength(stegoImageBytes);
+
+            // 3) Read metadata JSON: [META_JSON] at LSB=1
+            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
+            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
+
+            // 4) Deserialize metadata JSON and return
+            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+
+            // Note: We intentionally do not validate fields such as lsbDepth here,
+            // because extraction/decoding paths validate them when needed.
+
+        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (Exception e) {
+            throw new MetadataDecodingException("Failed to decode metadata from image", e);
+        }
+
     }
 
     // ----- Private High-Level Helper Methods -----
@@ -161,17 +271,64 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
-    private byte[] extractPayloadUsingMetadata(
-            byte[] stegoImageBytes,
-            StegoMetadataDTO metadata
-    ) throws Exception {
 
-        // Reads and validates header
-        // then finds payload using computed metadata region length without parsing JSON.
-        // Expects metadata.lsbDepth() to be correct for the payload region.
+    /**
+     * Reads and validates the header and metadata length from a stego image.
+     * <p>
+     * This method extracts the header information and metadata length from the provided
+     * stego image byte array. It first validates the header to ensure the image contains
+     * a valid LSB header, then reads the metadata length. If the header is invalid or
+     * the metadata length is zero or negative, an exception is thrown.
+     *
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @return A `HeaderInfo` object containing the image, the number of pixels used for the header,
+     * and the length of the metadata.
+     * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws Exception                   If an error occurs during the process.
+     */
+
+
+    private byte[] extractPayloadUsingDepth(byte[] stegoImageBytes, int lsbDepth) throws Exception {
+        if (lsbDepth != 1 && lsbDepth != 2) {
+            throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
+        }
+
+        // 1) Read and validate header + metadata length (both at LSB=1)
+        var info = readHeaderAndMetaLength(stegoImageBytes);
+
+        // 2) Compute how many pixels were used by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+
+        // 3) Read payload length (at caller-provided LSB depth)
+        var payloadLenBytes = readBytesFromImage(info.image(), metaPixelCount, lsbDepth, PAYLOAD_LEN_BYTES);
+        var payloadLength = ByteBuffer.wrap(payloadLenBytes).order(ByteOrder.BIG_ENDIAN).getLong();
+
+        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
+            throw new LsbDecodingException("Payload length is invalid or too large");
+        }
+
+        // 4) Capacity check for remaining pixels at the chosen depth
+        var totalPixels = (long) info.image().getWidth() * info.image().getHeight();
+        var remainingPixels = totalPixels - metaPixelCount;
+        var maxPayloadBytes = ((remainingPixels * 3L * lsbDepth) / 8L) - PAYLOAD_LEN_BYTES;
+        if (payloadLength > maxPayloadBytes) {
+            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
+        }
+
+        // 5) Read payload bytes (at caller-provided LSB depth)
+        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, lsbDepth);
+        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
+
+        return readBytesFromImage(info.image(), payloadStartPixel, lsbDepth, (int) payloadLength);
+    }
+
+    private HeaderInfo readHeaderAndMetaLength(byte[] stegoImageBytes) throws Exception {
 
         var image = bytesToImage(stegoImageBytes);
 
+        // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
         var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
         if (
                 header.length != HEADER_TOTAL_LEN
@@ -184,9 +341,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new InvalidImageFormatException("Image does not contain valid LSB header");
         }
 
+        // 2) Read metadata length: [META_LEN(4)] at LSB=1
         var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
         var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
-
         var metaLength = ByteBuffer
                 .wrap(metaLengthBytes)
                 .order(ByteOrder.BIG_ENDIAN)
@@ -195,35 +352,25 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new MetadataNotFoundException("Metadata length is invalid or zero");
         }
 
-        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
-        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+        return new HeaderInfo(image, headerPixels, metaLength);
+    }
 
-        if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
-            throw new InvalidLsbDepthException("Invalid LSB depth in metadata: " + metadata.lsbDepth());
-        }
-
-        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), PAYLOAD_LEN_BYTES);
-        var payloadLength = ByteBuffer
-                .wrap(payloadLengthHeaderBytes)
-                .order(ByteOrder.BIG_ENDIAN)
-                .getLong();
-
-        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload length is invalid or too large");
-        }
-
-        var totalPixels = (long) image.getWidth() * image.getHeight();
-        var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = ((remainingPixels * 3L * metadata.lsbDepth()) / 8L) - PAYLOAD_LEN_BYTES;
-        if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
-        }
-
-        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
-        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
-
-
-        return readBytesFromImage(image, payloadStartPixel, metadata.lsbDepth(), (int) (payloadLength));
+    /**
+     * A record that encapsulates header information extracted from a stego image.
+     * <p>
+     * This record is used to store the image, the number of pixels used for the header,
+     * and the length of the metadata. It is primarily used as a return type for methods
+     * that parse the header and metadata length from a stego image.
+     *
+     * @param image        The `BufferedImage` representation of the stego image.
+     * @param headerPixels The number of pixels used to store the header information.
+     * @param metaLength   The length of the metadata in bytes.
+     */
+    private record HeaderInfo(
+            BufferedImage image,
+            int headerPixels,
+            int metaLength
+    ) {
     }
 
     // ----- Private Low-Level Helper Methods -----
