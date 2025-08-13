@@ -35,97 +35,53 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private final ObjectMapper mapper = new ObjectMapper();
 
+
     /**
-     * Encodes a message into an image using LSB (Least Significant Bit) encoding.
+     * Encodes a payload into an image using LSB steganography.
      * <p>
-     * This method embeds the provided message bytes into the least significant bits
-     * of the pixels of the given image. Metadata is also included to provide details
-     * about the encoding process. The method ensures that the image has sufficient
-     * capacity to store the message and metadata. If the message is too large for
-     * the image, an exception is thrown.
+     * This method delegates the encoding process to the `encodeWithMetadata` method,
+     * which embeds both metadata and payload data into the least significant bits
+     * of the image's pixels.
      *
-     * @param imageBytes   The byte array representing the image to encode into.
-     * @param messageBytes The byte array containing the message to encode.
-     * @param metadata     The metadata object containing encoding details such as LSB depth.
-     * @return A byte array representing the encoded image in PNG format.
-     * @throws InvalidLsbDepthException    If the LSB depth specified in the metadata is invalid.
-     * @throws MessageTooLargeException    If the message is too large to fit into the image.
-     * @throws LsbEncodingException        If an error occurs during the encoding process.
-     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     * @param imageBytes   The byte array representing the original image.
+     * @param payloadBytes The byte array representing the payload to encode.
+     * @param metadata     Metadata containing encoding details such as LSB depth.
+     * @return A byte array representing the stego image with the encoded payload.
+     * @throws InvalidLsbDepthException    If the specified LSB depth is invalid.
+     * @throws MessageTooLargeException    If the payload is too large to fit in the image.
+     * @throws LsbEncodingException        If an error occurs during encoding.
+     * @throws InvalidImageFormatException If the provided image format is invalid.
      */
     @Override
-    public byte[] encodeMessage(byte[] imageBytes, byte[] messageBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        return encodeWithMetadata(imageBytes, messageBytes, metadata);
+    public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+        return encodeWithMetadata(imageBytes, payloadBytes, metadata);
     }
 
     /**
-     * Decodes a message from a stego image using LSB (Least Significant Bit) decoding.
+     * Decodes a payload from a stego image using LSB steganography.
      * <p>
-     * This method extracts metadata from the provided stego image byte array and uses it
-     * to decode the embedded payload. If an error occurs during the decoding process,
-     * an `LsbDecodingException` is thrown with the relevant error message.
+     * This method extracts metadata from the stego image if the LSB depth is not provided,
+     * and then decodes the payload using the specified or extracted LSB depth.
      *
-     * @param stegoImageBytes The byte array representing the stego image to decode from.
-     * @param lsbDepth        The LSB depth used for decoding (e.g., 1 or 2).
-     * @return A byte array containing the decoded message payload.
-     * @throws InvalidLsbDepthException    If the provided LSB depth is invalid.
-     * @throws LsbDecodingException        If an error occurs during the decoding process.
-     * @throws StegoDataNotFoundException  If the stego data is not found in the image.
-     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @param lsbDepth        The LSB depth used during encoding, or null to extract it from metadata.
+     * @return A byte array representing the decoded payload.
+     * @throws InvalidLsbDepthException    If the specified LSB depth is invalid.
+     * @throws LsbDecodingException        If an error occurs during decoding.
+     * @throws StegoDataNotFoundException  If no stego data is found in the image.
+     * @throws InvalidImageFormatException If the provided image format is invalid.
      */
     @Override
-    public byte[] decodeMessage(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+    public byte[] decode(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
         try {
-            var metadata = extractMetadata(stegoImageBytes);
-            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
-        } catch (Exception e) {
-            throw new LsbDecodingException(e.getMessage());
-        }
-    }
-
-    /**
-     * Encodes a file into an image using LSB (Least Significant Bit) encoding.
-     * <p>
-     * This method embeds the provided file bytes into the least significant bits
-     * of the pixels of the given image. Metadata is also included to provide details
-     * about the encoding process. The method ensures that the image has sufficient
-     * capacity to store the file and metadata. If the file is too large for the image,
-     * an exception is thrown.
-     *
-     * @param imageBytes The byte array representing the image to encode into.
-     * @param fileBytes  The byte array containing the file to encode.
-     * @param metadata   The metadata object containing encoding details such as LSB depth.
-     * @return A byte array representing the encoded image in PNG format.
-     * @throws InvalidLsbDepthException    If the LSB depth specified in the metadata is invalid.
-     * @throws MessageTooLargeException    If the file is too large to fit into the image.
-     * @throws LsbEncodingException        If an error occurs during the encoding process.
-     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
-     */
-    @Override
-    public byte[] encodeFile(byte[] imageBytes, byte[] fileBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        return encodeWithMetadata(imageBytes, fileBytes, metadata);
-    }
-
-    /**
-     * Decodes a file from a stego image using LSB (Least Significant Bit) decoding.
-     * <p>
-     * This method extracts metadata from the provided stego image byte array and uses it
-     * to decode the embedded file payload. If an error occurs during the decoding process,
-     * an `LsbDecodingException` is thrown with the relevant error message.
-     *
-     * @param stegoImageBytes The byte array representing the stego image to decode from.
-     * @param lsbDepth        The LSB depth used for decoding (e.g., 1 or 2).
-     * @return A byte array containing the decoded file payload.
-     * @throws InvalidLsbDepthException    If the provided LSB depth is invalid.
-     * @throws LsbDecodingException        If an error occurs during the decoding process.
-     * @throws StegoDataNotFoundException  If the stego data is not found in the image.
-     * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
-     */
-    @Override
-    public byte[] decodeFile(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        try {
-            var metadata = extractMetadata(stegoImageBytes);
-            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
+            if (lsbDepth == null) {
+                var metadata = extractMetadata(stegoImageBytes);
+                return extractPayloadUsingDepth(stegoImageBytes, metadata.lsbDepth());
+            } else {
+                return extractPayloadUsingDepth(stegoImageBytes, lsbDepth);
+            }
+        } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
+            throw e;
         } catch (Exception e) {
             throw new LsbDecodingException(e.getMessage());
         }
@@ -271,24 +227,20 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
-
     /**
-     * Reads and validates the header and metadata length from a stego image.
+     * Extracts the payload from a stego image using the specified LSB depth.
      * <p>
-     * This method extracts the header information and metadata length from the provided
-     * stego image byte array. It first validates the header to ensure the image contains
-     * a valid LSB header, then reads the metadata length. If the header is invalid or
-     * the metadata length is zero or negative, an exception is thrown.
+     * This method validates the LSB depth, reads and validates the header and metadata length,
+     * calculates the number of pixels used for metadata, and extracts the payload length.
+     * It then performs capacity checks and reads the payload bytes from the image.
      *
      * @param stegoImageBytes The byte array representing the stego image.
-     * @return A `HeaderInfo` object containing the image, the number of pixels used for the header,
-     * and the length of the metadata.
-     * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
-     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
-     * @throws Exception                   If an error occurs during the process.
+     * @param lsbDepth        The LSB depth used during encoding (must be 1 or 2).
+     * @return A byte array containing the extracted payload.
+     * @throws InvalidLsbDepthException If the specified LSB depth is invalid.
+     * @throws LsbDecodingException     If the payload length is invalid or exceeds capacity.
+     * @throws Exception                If an error occurs during the extraction process.
      */
-
-
     private byte[] extractPayloadUsingDepth(byte[] stegoImageBytes, int lsbDepth) throws Exception {
         if (lsbDepth != 1 && lsbDepth != 2) {
             throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
@@ -324,6 +276,19 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return readBytesFromImage(info.image(), payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
+    /**
+     * Reads and validates the header and metadata length from a stego image.
+     * <p>
+     * This method extracts the header and metadata length from the provided stego image byte array.
+     * It validates the header to ensure it contains the correct magic bytes and version.
+     * It also validates the metadata length to ensure it is greater than zero.
+     *
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @return A `HeaderInfo` object containing the image, header pixel count, and metadata length.
+     * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws Exception                   If an error occurs during the header reading process.
+     */
     private HeaderInfo readHeaderAndMetaLength(byte[] stegoImageBytes) throws Exception {
 
         var image = bytesToImage(stegoImageBytes);
