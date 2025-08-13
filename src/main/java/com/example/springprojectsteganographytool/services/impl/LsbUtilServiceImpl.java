@@ -58,35 +58,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     @Override
     public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
         try {
-            var image = bytesToImage(stegoImageBytes);
 
-            // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
-            var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
-            if (
-                    header.length != HEADER_TOTAL_LEN
-                            || header[0] != STEGO_MAGIC[0]
-                            || header[1] != STEGO_MAGIC[1]
-                            || header[2] != STEGO_MAGIC[2]
-                            || header[3] != STEGO_MAGIC[3]
-                            || header[4] != STEGO_VERSION
-            ) {
-                throw new InvalidImageFormatException("Image does not contain valid LSB header");
-            }
-
-            // 2) Read metadata length: [META_LEN(4)] at LSB=1
-            var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
-            var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
-            var metaLength = ByteBuffer
-                    .wrap(metaLengthBytes)
-                    .order(ByteOrder.BIG_ENDIAN)
-                    .getInt();
-            if (metaLength <= 0) {
-                throw new MetadataNotFoundException("Metadata length is invalid or zero");
-            }
+            // Read header and metadata length
+            var info = readHeaderAndMetaLength(stegoImageBytes);
 
             // 3) Read metadata JSON: [META_JSON] at LSB=1
             var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
-            var metaJsonBytes = readBytesFromImage(image, metaJsonStartPixel, 1, metaLength);
+            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
 
             // 4) Deserialize metadata JSON and return
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
@@ -224,9 +202,65 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // then finds payload using computed metadata region length without parsing JSON.
         // Expects metadata.lsbDepth() to be correct for the payload region.
 
+        var info = readHeaderAndMetaLength(stegoImageBytes); // Read header and metadata length
+
+        // Calculate the total metadata size (header + metadata length + metadata content)
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+
+        // Validate the LSB depth in the metadata
+        if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
+            throw new InvalidLsbDepthException("Invalid LSB depth in metadata: " + metadata.lsbDepth());
+        }
+
+        // Read the payload length
+        var payloadLengthHeaderBytes = readBytesFromImage(info.image(), metaPixelCount, metadata.lsbDepth(), PAYLOAD_LEN_BYTES);
+        var payloadLength = ByteBuffer
+                .wrap(payloadLengthHeaderBytes)
+                .order(ByteOrder.BIG_ENDIAN)
+                .getLong();
+
+        // Validate the payload length
+        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
+            throw new LsbDecodingException("Payload length is invalid or too large");
+        }
+
+        // Calculate the maximum payload size based on the remaining pixels
+        var totalPixels = (long) info.image().getWidth() * info.image().getHeight();
+        var remainingPixels = totalPixels - metaPixelCount;
+        var maxPayloadBytes = ((remainingPixels * 3L * metadata.lsbDepth()) / 8L) - PAYLOAD_LEN_BYTES;
+        if (payloadLength > maxPayloadBytes) {
+            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
+        }
+
+        // Calculate the starting pixel for the payload
+        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
+        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
+
+        // Read and return the payload data
+        return readBytesFromImage(info.image(), payloadStartPixel, metadata.lsbDepth(), (int) (payloadLength));
+    }
+
+    /**
+     * Reads and validates the header and metadata length from a stego image.
+     * <p>
+     * This method extracts the header information and metadata length from the provided
+     * stego image byte array. It first validates the header to ensure the image contains
+     * a valid LSB header, then reads the metadata length. If the header is invalid or
+     * the metadata length is zero or negative, an exception is thrown.
+     *
+     * @param stegoImageBytes The byte array representing the stego image.
+     * @return A `HeaderInfo` object containing the image, the number of pixels used for the header,
+     * and the length of the metadata.
+     * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws Exception                   If an error occurs during the process.
+     */
+    private HeaderInfo readHeaderAndMetaLength(byte[] stegoImageBytes) throws Exception {
+
         var image = bytesToImage(stegoImageBytes);
 
-        // Read and validate the header
+        // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
         var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
         if (
                 header.length != HEADER_TOTAL_LEN
@@ -239,13 +273,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new InvalidImageFormatException("Image does not contain valid LSB header");
         }
 
-        // Calculate the number of pixels used for the header
+        // 2) Read metadata length: [META_LEN(4)] at LSB=1
         var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
-
-        // Read the metadata length
         var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
-
-        // Convert the metadata length bytes to an integer
         var metaLength = ByteBuffer
                 .wrap(metaLengthBytes)
                 .order(ByteOrder.BIG_ENDIAN)
@@ -254,41 +284,25 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new MetadataNotFoundException("Metadata length is invalid or zero");
         }
 
-        // Calculate the total metadata size (header + metadata length + metadata content)
-        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
-        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+        return new HeaderInfo(image, headerPixels, metaLength);
+    }
 
-        // Validate the LSB depth in the metadata
-        if (metadata.lsbDepth() != 1 && metadata.lsbDepth() != 2) {
-            throw new InvalidLsbDepthException("Invalid LSB depth in metadata: " + metadata.lsbDepth());
-        }
-
-        // Read the payload length
-        var payloadLengthHeaderBytes = readBytesFromImage(image, metaPixelCount, metadata.lsbDepth(), PAYLOAD_LEN_BYTES);
-        var payloadLength = ByteBuffer
-                .wrap(payloadLengthHeaderBytes)
-                .order(ByteOrder.BIG_ENDIAN)
-                .getLong();
-
-        // Validate the payload length
-        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload length is invalid or too large");
-        }
-
-        // Calculate the maximum payload size based on the remaining pixels
-        var totalPixels = (long) image.getWidth() * image.getHeight();
-        var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = ((remainingPixels * 3L * metadata.lsbDepth()) / 8L) - PAYLOAD_LEN_BYTES;
-        if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
-        }
-
-        // Calculate the starting pixel for the payload
-        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
-        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
-
-        // Read and return the payload data
-        return readBytesFromImage(image, payloadStartPixel, metadata.lsbDepth(), (int) (payloadLength));
+    /**
+     * A record that encapsulates header information extracted from a stego image.
+     * <p>
+     * This record is used to store the image, the number of pixels used for the header,
+     * and the length of the metadata. It is primarily used as a return type for methods
+     * that parse the header and metadata length from a stego image.
+     *
+     * @param image        The `BufferedImage` representation of the stego image.
+     * @param headerPixels The number of pixels used to store the header information.
+     * @param metaLength   The length of the metadata in bytes.
+     */
+    private record HeaderInfo(
+            BufferedImage image,
+            int headerPixels,
+            int metaLength
+    ) {
     }
 
     // ----- Private Low-Level Helper Methods -----
