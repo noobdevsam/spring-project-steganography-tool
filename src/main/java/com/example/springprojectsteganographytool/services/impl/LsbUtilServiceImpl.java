@@ -74,13 +74,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
      */
     @Override
-    public byte[] decodeMessage(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        try {
-            var metadata = extractMetadata(stegoImageBytes);
-            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
-        } catch (Exception e) {
-            throw new LsbDecodingException(e.getMessage());
-        }
+    public byte[] decodeMessage(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+        return performDecoding(stegoImageBytes, lsbDepth);
     }
 
     /**
@@ -122,10 +117,20 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * @throws InvalidImageFormatException If the provided image format is invalid or unsupported.
      */
     @Override
-    public byte[] decodeFile(byte[] stegoImageBytes, int lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+    public byte[] decodeFile(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+        return performDecoding(stegoImageBytes, lsbDepth);
+    }
+
+    private byte[] performDecoding(byte[] stegoImageBytes, Integer lsbDepth) {
         try {
-            var metadata = extractMetadata(stegoImageBytes);
-            return extractPayloadUsingMetadata(stegoImageBytes, metadata);
+            if (lsbDepth == null) {
+                var metadata = extractMetadata(stegoImageBytes);
+                return extractPayloadUsingDepth(stegoImageBytes, metadata.lsbDepth());
+            } else {
+                return extractPayloadUsingDepth(stegoImageBytes, lsbDepth);
+            }
+        } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
+            throw e;
         } catch (Exception e) {
             throw new LsbDecodingException(e.getMessage());
         }
