@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 
 @Service
@@ -61,8 +62,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      */
     @Override
     public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        log.info("Encoding payload into image with metadata");
-        return encodeWithMetadata(imageBytes, payloadBytes, metadata);
+        Callable<byte[]> task = () -> {
+            log.info("Encoding payload into image with metadata");
+            return encodeWithMetadata(imageBytes, payloadBytes, metadata);
+        };
+
+        try {
+            return executorService.submit(task).get(); // Submit the encoding task to the executor service and wait for the result
+        } catch (Exception e) {
+            log.error("Error during LSB encoding", e);
+            throw new LsbEncodingException("Failed to encode payload into image", e);
+        }
     }
 
     /**
@@ -81,7 +91,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      */
     @Override
     public byte[] decode(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        try {
+
+        Callable<byte[]> task = () -> {
             if (lsbDepth == null) {
                 log.warn("lsbDepth is null, extracting metadata from stego image");
                 var metadata = extractMetadata(stegoImageBytes);
@@ -90,11 +101,16 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 log.info("Using provided lsbDepth: {}", lsbDepth);
                 return extractPayloadUsingDepth(stegoImageBytes, lsbDepth);
             }
+        };
+
+        try {
+            return executorService.submit(task).get();
         } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
             throw e;
         } catch (Exception e) {
             throw new LsbDecodingException(e.getMessage());
         }
+
     }
 
 
@@ -119,8 +135,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         log.info("Extracting metadata from stego image");
 
-        try {
-
+        Callable<StegoMetadataDTO> task = () -> {
             // Read header and metadata length
             var info = readHeaderAndMetaLength(stegoImageBytes);
 
@@ -133,7 +148,10 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // Note: We intentionally do not validate fields such as lsbDepth here,
             // because extraction/decoding paths validate them when needed.
+        };
 
+        try {
+            return executorService.submit(task).get();
         } catch (InvalidImageFormatException | MetadataNotFoundException e) {
             throw e; // Re-throw specific exceptions
         } catch (Exception e) {
