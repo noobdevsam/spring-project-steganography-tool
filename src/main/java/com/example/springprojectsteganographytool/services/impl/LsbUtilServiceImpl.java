@@ -11,6 +11,7 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNo
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -21,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @Service
+@Slf4j
 public class LsbUtilServiceImpl implements LsbUtilService {
 
     private static final byte[] STEGO_MAGIC = new byte[]{'S', 'T', 'E', 'G'};
@@ -54,6 +56,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      */
     @Override
     public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+        log.info("Encoding payload into image with metadata");
         return encodeWithMetadata(imageBytes, payloadBytes, metadata);
     }
 
@@ -75,9 +78,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     public byte[] decode(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
         try {
             if (lsbDepth == null) {
+                log.warn("lsbDepth is null, extracting metadata from stego image");
                 var metadata = extractMetadata(stegoImageBytes);
                 return extractPayloadUsingDepth(stegoImageBytes, metadata.lsbDepth());
             } else {
+                log.info("Using provided lsbDepth: {}", lsbDepth);
                 return extractPayloadUsingDepth(stegoImageBytes, lsbDepth);
             }
         } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
@@ -106,6 +111,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      */
 
     private StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+
+        log.info("Extracting metadata from stego image");
+
         try {
 
             // Read header and metadata length
@@ -130,25 +138,32 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     /**
-     * Encodes a payload with metadata into an image using LSB encoding.
+     * Encodes a payload and metadata into an image using LSB steganography.
      * <p>
      * This method embeds metadata and payload data into the least significant bits
-     * of the pixels of the provided image. The metadata is encoded first, followed
-     * by the payload. The method ensures that the image has sufficient capacity
-     * to store both the metadata and the payload. If the payload is too large for
-     * the image, a MessageTooLargeException is thrown.
+     * of the image's pixels. The metadata is stored at an LSB depth of 1, while the
+     * payload is stored at the LSB depth specified in the metadata.
+     * <p>
+     * The encoding process involves:
+     * - Validating the metadata and LSB depth.
+     * - Serializing the metadata into a JSON block.
+     * - Calculating the capacity of the image to store metadata and payload.
+     * - Writing the metadata and payload into the image.
      *
-     * @param imageBytes       The byte array representing the image to encode into.
-     * @param payloadDataBytes The byte array containing the payload data to encode.
-     * @param metadata         The metadata object containing encoding details such as LSB depth.
-     * @return A byte array representing the encoded image in PNG format.
-     * @throws LsbEncodingException If an error occurs during the encoding process or the payload is too large.
+     * @param imageBytes       The byte array representing the original image.
+     * @param payloadDataBytes The byte array representing the payload to encode.
+     * @param metadata         Metadata containing encoding details such as LSB depth.
+     * @return A byte array representing the stego image with the encoded payload and metadata.
+     * @throws InvalidLsbDepthException  If the specified LSB depth is invalid.
+     * @throws MetadataNotFoundException If the metadata is null or invalid.
+     * @throws MessageTooLargeException  If the metadata or payload is too large to fit in the image.
+     * @throws LsbEncodingException      If an error occurs during the encoding process.
      */
     private byte[] encodeWithMetadata(
             byte[] imageBytes,
             byte[] payloadDataBytes,
             StegoMetadataDTO metadata
-    ) throws LsbEncodingException {
+    ) throws InvalidLsbDepthException, MetadataNotFoundException, MessageTooLargeException, LsbEncodingException {
 
         // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
         // then [PAYLOAD_LEN(8)][PAYLOAD] at LSB=metadata.lsbDepth()
@@ -156,7 +171,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         try {
 
             if (metadata == null) {
-                throw new LsbEncodingException("Metadata cannot be null");
+                throw new MetadataNotFoundException("Metadata cannot be null");
             }
 
             // Validate the LSB depth in the metadata
@@ -219,10 +234,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             return imageToBytes(working); // Convert the modified image back to a byte array in lossless PNG format
 
-        } catch (MessageTooLargeException e) {
-            throw new LsbEncodingException("Not enough image capacity while writing data", e);
-        } catch (LsbEncodingException e) {
-            throw e;
+        } catch (MessageTooLargeException | InvalidLsbDepthException | MetadataNotFoundException e) {
+            throw e; // Re-throw specific exceptions
         } catch (Exception e) {
             throw new LsbEncodingException("LSB encoding failed", e);
         }
