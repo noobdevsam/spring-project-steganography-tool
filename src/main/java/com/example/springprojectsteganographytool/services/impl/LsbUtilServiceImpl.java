@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.concurrent.ExecutorService;
 
 @Service
 @Slf4j
@@ -36,7 +37,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     private static final int PAYLOAD_LEN_BYTES = 8;
 
     private final ObjectMapper mapper = new ObjectMapper();
+    private final ExecutorService executorService;
 
+    public LsbUtilServiceImpl(ExecutorService executorService) {
+        this.executorService = executorService;
+    }
 
     /**
      * Encodes a payload into an image using LSB steganography.
