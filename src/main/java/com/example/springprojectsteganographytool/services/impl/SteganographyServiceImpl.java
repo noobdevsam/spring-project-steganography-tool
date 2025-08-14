@@ -22,7 +22,9 @@ import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -78,4 +80,13 @@ public class SteganographyServiceImpl implements SteganographyService {
     public void deleteById(UUID id) throws StorageException, StegoImageNotFoundException, OperationNotAllowedException {
 
     }
+
+    // --- helpers ---
+    private byte[] bufferedImageToBytes(BufferedImage image, String format)
+            throws Exception {
+        var baos = new ByteArrayOutputStream();
+        ImageIO.write(image, format, baos);
+        return baos.toByteArray();
+    }
+
 }
