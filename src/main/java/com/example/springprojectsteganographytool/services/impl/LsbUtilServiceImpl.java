@@ -11,6 +11,7 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNo
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -21,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 @Service
+@Slf4j
 public class LsbUtilServiceImpl implements LsbUtilService {
 
     private static final byte[] STEGO_MAGIC = new byte[]{'S', 'T', 'E', 'G'};
@@ -54,6 +56,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      */
     @Override
     public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+        log.info("Encoding payload into image with metadata");
         return encodeWithMetadata(imageBytes, payloadBytes, metadata);
     }
 
@@ -75,9 +78,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     public byte[] decode(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
         try {
             if (lsbDepth == null) {
+                log.warn("lsbDepth is null, extracting metadata from stego image");
                 var metadata = extractMetadata(stegoImageBytes);
                 return extractPayloadUsingDepth(stegoImageBytes, metadata.lsbDepth());
             } else {
+                log.info("Using provided lsbDepth: {}", lsbDepth);
                 return extractPayloadUsingDepth(stegoImageBytes, lsbDepth);
             }
         } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
@@ -106,6 +111,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      */
 
     private StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+
+        log.info("Extracting metadata from stego image");
+
         try {
 
             // Read header and metadata length
