@@ -82,7 +82,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
                             .originalFileName(null)
-                            .embeddedFileBytes(null)
+                            .embeddedFileName(null)
                             .message(null) // No message in StegoData, as we store the encoded bytes
                             .stegoImageBytes(stegoBytes)
                             .embeddedFileBytes(null)
@@ -103,8 +103,49 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public StegoEncodeResponseDTO encodeFile(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws InvalidLsbDepthException, FileTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException {
-        return null;
+    public StegoEncodeResponseDTO encodeFile(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws InvalidLsbDepthException, FileTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException, ExecutionException, InterruptedException {
+        validateLsbDepth(lsbDepth);
+
+        try {
+            var keyHash = aesUtilService.generateKey(password);
+            var metadata = new StegoMetadataDTO(
+                    lsbDepth,
+                    false,
+                    true,
+                    keyHash,
+                    originalFileName
+            );
+
+            var encodedBytes = executorService.submit(
+                    () -> aesUtilService.encryptFile(fileBytes, password)
+            ).get();
+
+            var coverBytes = bufferedImageToPngBytes(coverImage);
+            var stegoBytes = executorService.submit(
+                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
+            ).get();
+
+            var savedData = stegoDataRepository.save(
+                    StegoData.builder()
+                            .originalFileName(originalFileName)
+                            .embeddedFileName(originalFileName)
+                            .message(null) // No message in StegoData, as we store the encoded bytes
+                            .stegoImageBytes(stegoBytes)
+                            .embeddedFileBytes(null)
+                            .encryptionKeyHash(keyHash)
+                            .hasText(false)
+                            .hasFile(true)
+                            .build()
+            );
+
+            return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
+        } catch (Exception e) {
+            switch (e) {
+                case InvalidLsbDepthException _, MessageTooLargeException _, InvalidEncryptionKeyException _,
+                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
+                default -> throw new StorageException("Error during text encoding.", e);
+            }
+        }
     }
 
     @Override
