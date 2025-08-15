@@ -3,6 +3,7 @@ package com.example.springprojectsteganographytool.services.impl;
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
+import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
@@ -65,7 +66,59 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws InvalidEncryptionKeyException, MetadataNotFoundException, StegoDataNotFoundException, LsbDecodingException, AesOperationException, MetadataDecodingException {
-        return null;
+
+        try {
+
+            var stegoBytes = bufferedImageToPngBytes(stegoImage); // Convert BufferedImage to byte array in PNG format
+
+            var metadata = executorService.submit(
+                    () -> lsbUtilService.extractMetadata(stegoBytes)
+            ).get(); // Extract metadata from the stego image bytes
+            if (metadata == null) {
+                throw new MetadataNotFoundException("No metadata found in the provided image.");
+            }
+
+            var providedKeyHash = aesUtilService.generateKey(password); // Generate the key hash from the provided password
+            if (!providedKeyHash.equals(metadata.encryptionKeyHash())) {
+                throw new AesKeyInvalidException("Provided password does not match the encryption key.");
+            }
+
+            if (metadata.hasText()) {
+                var encodedText = executorService.submit(
+                        () -> lsbUtilService.decode(stegoBytes, metadata.lsbDepth())
+                ).get(); // Decode the text from the stego image bytes
+
+                var text = executorService.submit(
+                        () -> aesUtilService.decryptText(encodedText, password)
+                ).get(); // Decrypt the encoded text using the provided password
+
+                return new StegoDecodeResponseDTO(
+                        text, null, true, false
+                );
+            } else if (metadata.hasFile()) {
+                var encodedFile = executorService.submit(
+                        () -> lsbUtilService.decode(stegoBytes, metadata.lsbDepth())
+                ).get();
+
+                var fileBytes = executorService.submit(
+                        () -> aesUtilService.decryptFile(encodedFile, password)
+                ).get(); // Decrypt the encoded file using the provided password
+
+                return new StegoDecodeResponseDTO(
+                        null, metadata.originalFileName(), false, true
+                );
+            } else {
+                throw new MetadataDecodingException("No text or file data found in the provided image.");
+            }
+
+        } catch (Exception e) {
+            switch (e) {
+                case InvalidEncryptionKeyException _, MetadataNotFoundException _, StegoDataNotFoundException _,
+                     LsbDecodingException _, AesOperationException _, MetadataDecodingException _ -> throw e;
+                default -> throw new StorageException("Error during decoding process.", e);
+            }
+        }
+
     }
 
     // ----- Encode operations returning bytes only -----
