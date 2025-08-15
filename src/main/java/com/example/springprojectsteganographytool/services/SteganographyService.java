@@ -6,7 +6,6 @@ import com.example.springprojectsteganographytool.exceptions.data.StorageExcepti
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.file.StegoImageNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
@@ -149,10 +148,8 @@ public interface SteganographyService {
      * Retrieves a list of all encodings performed.
      *
      * @return A list of DTOs containing details of all encodings.
-     * @throws StorageException            If an error occurs while retrieving the encodings.
-     * @throws StegoImageNotFoundException If no stego images are found.
      */
-    List<StegoEncodeResponseDTO> listAllEncodings() throws StorageException, StegoImageNotFoundException;
+    List<StegoEncodeResponseDTO> listAllEncodings();
 
     /**
      * Retrieves the details of a specific encoding by its ID.

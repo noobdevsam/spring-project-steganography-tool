@@ -6,7 +6,6 @@ import com.example.springprojectsteganographytool.exceptions.data.StorageExcepti
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.file.StegoImageNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
@@ -28,6 +27,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
 
 @Service
 public class SteganographyServiceImpl implements SteganographyService {
@@ -78,8 +78,11 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public List<StegoEncodeResponseDTO> listAllEncodings() throws StorageException, StegoImageNotFoundException {
-        return List.of();
+    public List<StegoEncodeResponseDTO> listAllEncodings() {
+        return stegoDataRepository.findAll()
+                .stream()
+                .map(stegoDataMapper::StegoDataToEncodeResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
