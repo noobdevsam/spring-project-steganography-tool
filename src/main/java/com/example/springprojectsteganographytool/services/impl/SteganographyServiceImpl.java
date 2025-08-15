@@ -70,7 +70,34 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public byte[] encodeTextToBytes(BufferedImage coverImage, String message, String password, int lsbDepth) throws Exception {
-        return new byte[0];
+        validateLsbDepth(lsbDepth);
+
+        try {
+            var keyHash = aesUtilService.generateKey(password);
+            var encodedBytes = executorService.submit(
+                    () -> aesUtilService.encryptText(message, password)
+            ).get();
+
+            var metadata = new StegoMetadataDTO(
+                    lsbDepth,
+                    true,
+                    false,
+                    keyHash,
+                    null
+            );
+
+            var coverBytes = bufferedImageToPngBytes(coverImage);
+
+            return executorService.submit(
+                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
+            ).get();
+        } catch (Exception e) {
+            switch (e) {
+                case InvalidLsbDepthException _, MessageTooLargeException _, InvalidEncryptionKeyException _,
+                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
+                default -> throw new StorageException("Error during text encoding.", e);
+            }
+        }
     }
 
     @Override
@@ -80,7 +107,7 @@ public class SteganographyServiceImpl implements SteganographyService {
         try {
             var keyHash = aesUtilService.generateKey(password);
             var encodedBytes = executorService.submit(
-                    () -> aesUtilService.decryptFile(fileBytes, password)
+                    () -> aesUtilService.encryptFile(fileBytes, password)
             ).get();
 
             var metadata = new StegoMetadataDTO(
