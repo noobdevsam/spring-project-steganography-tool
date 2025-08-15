@@ -205,6 +205,8 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
+    /*
+
     // ----- Encode operations returning bytes only -----
 
     @Override
@@ -270,6 +272,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
         }
     }
+    */
 
     // ----- Read operations -----
 
