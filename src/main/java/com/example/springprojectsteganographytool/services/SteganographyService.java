@@ -53,7 +53,7 @@ public interface SteganographyService {
             LsbEncodingException,
             AesOperationException,
             MetadataEncodingException,
-            StorageException;
+            StorageException, ExecutionException, InterruptedException;
 
     /**
      * Encodes a file into a cover image using the specified LSB depth.

@@ -1,5 +1,6 @@
 package com.example.springprojectsteganographytool.services.impl;
 
+import com.example.springprojectsteganographytool.documents.StegoData;
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
@@ -56,8 +57,49 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws InvalidLsbDepthException, MessageTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException {
-        return null;
+    public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws InvalidLsbDepthException, MessageTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException, ExecutionException, InterruptedException {
+        validateLsbDepth(lsbDepth);
+
+        try {
+            var keyHash = aesUtilService.generateKey(password);
+            var metadata = new StegoMetadataDTO(
+                    lsbDepth,
+                    true,
+                    false,
+                    keyHash,
+                    null
+            );
+
+            var encodedBytes = executorService.submit(
+                    () -> aesUtilService.encryptText(message, password)
+            ).get();
+
+            var coverBytes = bufferedImageToPngBytes(coverImage);
+            var stegoBytes = executorService.submit(
+                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
+            ).get();
+
+            var savedData = stegoDataRepository.save(
+                    StegoData.builder()
+                            .originalFileName(null)
+                            .embeddedFileBytes(null)
+                            .message(null) // No message in StegoData, as we store the encoded bytes
+                            .stegoImageBytes(stegoBytes)
+                            .embeddedFileBytes(null)
+                            .encryptionKeyHash(keyHash)
+                            .hasText(true)
+                            .hasFile(false)
+                            .build()
+            );
+
+            return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
+        } catch (Exception e) {
+            switch (e) {
+                case InvalidLsbDepthException _, MessageTooLargeException _, InvalidEncryptionKeyException _,
+                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
+                default -> throw new StorageException("Error during text encoding.", e);
+            }
+        }
     }
 
     @Override
