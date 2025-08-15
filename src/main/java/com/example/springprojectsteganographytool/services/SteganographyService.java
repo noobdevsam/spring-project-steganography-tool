@@ -159,10 +159,9 @@ public interface SteganographyService {
      *
      * @param id The unique identifier of the encoding.
      * @return A DTO containing details of the encoding.
-     * @throws StorageException            If an error occurs while retrieving the encoding.
-     * @throws StegoImageNotFoundException If the specified stego image is not found.
+     * @throws StegoDataNotFoundException If the specified stego data is not found.
      */
-    StegoEncodeResponseDTO getById(UUID id) throws StorageException, StegoImageNotFoundException;
+    StegoEncodeResponseDTO getById(UUID id) throws StegoDataNotFoundException;
 
     /**
      * Deletes a specific encoding by its ID.

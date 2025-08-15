@@ -83,8 +83,11 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public StegoEncodeResponseDTO getById(UUID id) throws StorageException, StegoImageNotFoundException {
-        return null;
+    public StegoEncodeResponseDTO getById(UUID id) throws StegoDataNotFoundException {
+        var stegoData = stegoDataRepository.findById(id)
+                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
+
+        return stegoDataMapper.StegoDataToEncodeResponseDTO(stegoData);
     }
 
     @Override
