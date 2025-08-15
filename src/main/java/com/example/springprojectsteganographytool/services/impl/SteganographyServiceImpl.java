@@ -1,6 +1,5 @@
 package com.example.springprojectsteganographytool.services.impl;
 
-import com.example.springprojectsteganographytool.exceptions.common.OperationNotAllowedException;
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
@@ -89,7 +88,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public void deleteById(UUID id) throws StorageException, StegoImageNotFoundException, OperationNotAllowedException {
+    public void deleteById(UUID id) throws StegoImageNotFoundException {
 
         if (!stegoDataRepository.existsById(id)) {
             throw new StegoImageNotFoundException("Stego image with ID: " + id + " not found.");

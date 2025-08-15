@@ -1,6 +1,5 @@
 package com.example.springprojectsteganographytool.services;
 
-import com.example.springprojectsteganographytool.exceptions.common.OperationNotAllowedException;
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
@@ -169,10 +168,8 @@ public interface SteganographyService {
      * Deletes a specific encoding by its ID.
      *
      * @param id The unique identifier of the encoding to delete.
-     * @throws StorageException             If an error occurs while deleting the encoding.
-     * @throws StegoImageNotFoundException  If the specified stego image is not found.
-     * @throws OperationNotAllowedException If the operation is not allowed.
+     * @throws StegoImageNotFoundException If the specified stego image is not found.
      */
-    void deleteById(UUID id) throws StorageException, StegoImageNotFoundException, OperationNotAllowedException;
+    void deleteById(UUID id) throws StegoImageNotFoundException;
 
 }
