@@ -4,6 +4,7 @@ package com.example.springprojectsteganographytool.models;
 public record StegoDecodeResponseDTO(
         String message,
         String embeddedFileName,
+        byte[] embeddedFileContent,
         boolean hasText,
         boolean hasFile
 ) {
