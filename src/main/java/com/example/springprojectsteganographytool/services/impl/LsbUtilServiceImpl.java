@@ -131,7 +131,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
      * @throws InvalidImageFormatException If the image does not contain a valid LSB header.
      */
 
-    private StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+    @Override
+    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
 
         log.info("Extracting metadata from stego image");
 
