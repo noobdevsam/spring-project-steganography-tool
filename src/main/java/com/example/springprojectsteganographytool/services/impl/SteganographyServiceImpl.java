@@ -94,11 +94,27 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     // --- helpers ---
-    private byte[] bufferedImageToBytes(BufferedImage image, String format)
-            throws Exception {
-        var baos = new ByteArrayOutputStream();
-        ImageIO.write(image, format, baos);
-        return baos.toByteArray();
+
+    private static void validateLsbDepth(int lsbDepth) throws InvalidLsbDepthException {
+        if (lsbDepth != 1 && lsbDepth != 2) {
+            throw new InvalidLsbDepthException("LSB depth must be 1 or 2.");
+        }
+    }
+
+    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) {
+
+        try (var baos = new ByteArrayOutputStream()) {
+            // Always write PNG to preserve RGB 8-bit without loss
+            var ok = ImageIO.write(bufferedImage, "png", baos);
+
+            if (!ok) {
+                throw new StorageException("Failed to write BufferedImage to PNG format.");
+            }
+
+            return baos.toByteArray();
+        } catch (Exception e) {
+            throw new StorageException("Error while converting image to PNG.", e);
+        }
     }
 
 }
