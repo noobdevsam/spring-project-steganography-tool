@@ -109,41 +109,41 @@ public interface SteganographyService {
             AesOperationException,
             MetadataDecodingException, ExecutionException, InterruptedException;
 
-    /**
-     * Encodes a text message into a byte array representation of the stego image.
-     *
-     * @param coverImage The image to be used as the cover for encoding.
-     * @param message    The text message to encode.
-     * @param password   The password for encrypting the message.
-     * @param lsbDepth   The number of least significant bits per channel to use (1 or 2).
-     * @return A byte array representing the stego image.
-     * @throws Exception If an error occurs during encoding.
-     */
-    byte[] encodeTextToBytes(
-            BufferedImage coverImage,
-            String message,
-            String password,
-            int lsbDepth
-    ) throws Exception;
-
-    /**
-     * Encodes a file into a byte array representation of the stego image.
-     *
-     * @param coverImage       The image to be used as the cover for encoding.
-     * @param originalFileName The original name of the file being encoded.
-     * @param fileBytes        The byte array of the file to encode.
-     * @param password         The password for encrypting the file.
-     * @param lsbDepth         The number of least significant bits per channel to use (1 or 2).
-     * @return A byte array representing the stego image.
-     * @throws Exception If an error occurs during encoding.
-     */
-    byte[] encodeFileToBytes(
-            BufferedImage coverImage,
-            String originalFileName,
-            byte[] fileBytes,
-            String password,
-            int lsbDepth
-    ) throws Exception;
+//    /**
+//     * Encodes a text message into a byte array representation of the stego image.
+//     *
+//     * @param coverImage The image to be used as the cover for encoding.
+//     * @param message    The text message to encode.
+//     * @param password   The password for encrypting the message.
+//     * @param lsbDepth   The number of least significant bits per channel to use (1 or 2).
+//     * @return A byte array representing the stego image.
+//     * @throws Exception If an error occurs during encoding.
+//     */
+//    byte[] encodeTextToBytes(
+//            BufferedImage coverImage,
+//            String message,
+//            String password,
+//            int lsbDepth
+//    ) throws Exception;
+//
+//    /**
+//     * Encodes a file into a byte array representation of the stego image.
+//     *
+//     * @param coverImage       The image to be used as the cover for encoding.
+//     * @param originalFileName The original name of the file being encoded.
+//     * @param fileBytes        The byte array of the file to encode.
+//     * @param password         The password for encrypting the file.
+//     * @param lsbDepth         The number of least significant bits per channel to use (1 or 2).
+//     * @return A byte array representing the stego image.
+//     * @throws Exception If an error occurs during encoding.
+//     */
+//    byte[] encodeFileToBytes(
+//            BufferedImage coverImage,
+//            String originalFileName,
+//            byte[] fileBytes,
+//            String password,
+//            int lsbDepth
+//    ) throws Exception;
 
     /**
      * Retrieves a list of all encodings performed.
