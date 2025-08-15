@@ -91,6 +91,12 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public void deleteById(UUID id) throws StorageException, StegoImageNotFoundException, OperationNotAllowedException {
 
+        if (!stegoDataRepository.existsById(id)) {
+            throw new StegoImageNotFoundException("Stego image with ID: " + id + " not found.");
+        }
+
+        stegoDataRepository.deleteById(id);
+
     }
 
     // --- helpers ---
