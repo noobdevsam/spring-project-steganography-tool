@@ -15,6 +15,7 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNo
 import com.example.springprojectsteganographytool.mappers.StegoDataMapper;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
+import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import com.example.springprojectsteganographytool.services.AesUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
@@ -74,7 +75,34 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public byte[] encodeFileToBytes(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws Exception {
-        return new byte[0];
+        validateLsbDepth(lsbDepth);
+
+        try {
+            var keyHash = aesUtilService.generateKey(password);
+            var encodedBytes = executorService.submit(
+                    () -> aesUtilService.decryptFile(fileBytes, password)
+            ).get();
+
+            var metadata = new StegoMetadataDTO(
+                    lsbDepth,
+                    false,
+                    true,
+                    keyHash,
+                    originalFileName
+            );
+
+            var convertedBytes = bufferedImageToPngBytes(coverImage);
+
+            return executorService.submit(
+                    () -> lsbUtilService.encode(convertedBytes, encodedBytes, metadata)
+            ).get();
+        } catch (Exception e) {
+            switch (e) {
+                case InvalidLsbDepthException _, FileTooLargeException _, InvalidEncryptionKeyException _,
+                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
+                default -> throw new StorageException("Error during file encoding.", e);
+            }
+        }
     }
 
     @Override
