@@ -1,13 +1,11 @@
 package com.example.springprojectsteganographytool.services;
 
-import com.example.springprojectsteganographytool.exceptions.common.OperationNotAllowedException;
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.file.StegoImageNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
@@ -20,6 +18,7 @@ import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Service interface for performing steganography operations such as encoding and decoding
@@ -54,7 +53,7 @@ public interface SteganographyService {
             LsbEncodingException,
             AesOperationException,
             MetadataEncodingException,
-            StorageException;
+            StorageException, ExecutionException, InterruptedException;
 
     /**
      * Encodes a file into a cover image using the specified LSB depth.
@@ -85,7 +84,7 @@ public interface SteganographyService {
             LsbEncodingException,
             AesOperationException,
             MetadataEncodingException,
-            StorageException;
+            StorageException, ExecutionException, InterruptedException;
 
     /**
      * Decodes a stego image to extract the hidden message or file.
@@ -108,7 +107,7 @@ public interface SteganographyService {
             StegoDataNotFoundException,
             LsbDecodingException,
             AesOperationException,
-            MetadataDecodingException;
+            MetadataDecodingException, ExecutionException, InterruptedException;
 
     /**
      * Encodes a text message into a byte array representation of the stego image.
@@ -150,29 +149,24 @@ public interface SteganographyService {
      * Retrieves a list of all encodings performed.
      *
      * @return A list of DTOs containing details of all encodings.
-     * @throws StorageException            If an error occurs while retrieving the encodings.
-     * @throws StegoImageNotFoundException If no stego images are found.
      */
-    List<StegoEncodeResponseDTO> listAllEncodings() throws StorageException, StegoImageNotFoundException;
+    List<StegoEncodeResponseDTO> listAllEncodings();
 
     /**
      * Retrieves the details of a specific encoding by its ID.
      *
      * @param id The unique identifier of the encoding.
      * @return A DTO containing details of the encoding.
-     * @throws StorageException            If an error occurs while retrieving the encoding.
-     * @throws StegoImageNotFoundException If the specified stego image is not found.
+     * @throws StegoDataNotFoundException If the specified stego data is not found.
      */
-    StegoEncodeResponseDTO getById(UUID id) throws StorageException, StegoImageNotFoundException;
+    StegoEncodeResponseDTO getById(UUID id) throws StegoDataNotFoundException;
 
     /**
      * Deletes a specific encoding by its ID.
      *
      * @param id The unique identifier of the encoding to delete.
-     * @throws StorageException             If an error occurs while deleting the encoding.
-     * @throws StegoImageNotFoundException  If the specified stego image is not found.
-     * @throws OperationNotAllowedException If the operation is not allowed.
+     * @throws StegoDataNotFoundException If the specified stego data is not found.
      */
-    void deleteById(UUID id) throws StorageException, StegoImageNotFoundException, OperationNotAllowedException;
+    void deleteById(UUID id) throws StegoDataNotFoundException;
 
 }

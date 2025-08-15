@@ -1,5 +1,6 @@
 package com.example.springprojectsteganographytool.documents;
 
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.Id;
@@ -29,6 +30,7 @@ public class StegoData {
     private boolean hasText;
     private boolean hasFile;
 
+    @Builder
     public StegoData(
             String originalFileName,
             String embeddedFileName,

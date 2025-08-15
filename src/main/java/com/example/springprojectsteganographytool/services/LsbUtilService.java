@@ -49,4 +49,6 @@ public interface LsbUtilService {
             Integer lsbDepth
     ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
 
+
+    StegoMetadataDTO extractMetadata(byte[] stegoImageBytes);
 }
