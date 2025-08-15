@@ -18,6 +18,7 @@ import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Service interface for performing steganography operations such as encoding and decoding
@@ -106,7 +107,7 @@ public interface SteganographyService {
             StegoDataNotFoundException,
             LsbDecodingException,
             AesOperationException,
-            MetadataDecodingException;
+            MetadataDecodingException, ExecutionException, InterruptedException;
 
     /**
      * Encodes a text message into a byte array representation of the stego image.

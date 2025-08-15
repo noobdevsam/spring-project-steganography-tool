@@ -28,6 +28,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
@@ -65,7 +66,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws InvalidEncryptionKeyException, MetadataNotFoundException, StegoDataNotFoundException, LsbDecodingException, AesOperationException, MetadataDecodingException {
+    public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws InvalidEncryptionKeyException, MetadataNotFoundException, StegoDataNotFoundException, LsbDecodingException, AesOperationException, MetadataDecodingException, ExecutionException, InterruptedException {
 
         try {
 
@@ -93,7 +94,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 ).get(); // Decrypt the encoded text using the provided password
 
                 return new StegoDecodeResponseDTO(
-                        text, null, true, false
+                        text, null, null, true, false
                 );
             } else if (metadata.hasFile()) {
                 var encodedFile = executorService.submit(
@@ -105,7 +106,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 ).get(); // Decrypt the encoded file using the provided password
 
                 return new StegoDecodeResponseDTO(
-                        null, metadata.originalFileName(), false, true
+                        null, metadata.originalFileName(), fileBytes, false, true
                 );
             } else {
                 throw new MetadataDecodingException("No text or file data found in the provided image.");
