@@ -14,6 +14,7 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingExce
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
+import com.example.springprojectsteganographytool.mappers.StegoDataMapper;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
@@ -27,6 +28,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 
 @Service
 public class SteganographyServiceImpl implements SteganographyService {
@@ -34,11 +36,21 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final AesUtilService aesUtilService;
     private final LsbUtilService lsbUtilService;
     private final StegoDataRepository stegoDataRepository;
+    private final StegoDataMapper stegoDataMapper;
+    private final ExecutorService executorService;
 
-    public SteganographyServiceImpl(AesUtilService aesUtilService, LsbUtilService lsbUtilService, StegoDataRepository stegoDataRepository) {
+    public SteganographyServiceImpl(
+            AesUtilService aesUtilService,
+            LsbUtilService lsbUtilService,
+            StegoDataRepository stegoDataRepository,
+            StegoDataMapper stegoDataMapper,
+            ExecutorService executorService
+    ) {
         this.aesUtilService = aesUtilService;
         this.lsbUtilService = lsbUtilService;
         this.stegoDataRepository = stegoDataRepository;
+        this.stegoDataMapper = stegoDataMapper;
+        this.executorService = executorService;
     }
 
     @Override
