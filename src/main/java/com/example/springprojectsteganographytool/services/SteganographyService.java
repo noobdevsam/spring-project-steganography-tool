@@ -84,7 +84,7 @@ public interface SteganographyService {
             LsbEncodingException,
             AesOperationException,
             MetadataEncodingException,
-            StorageException;
+            StorageException, ExecutionException, InterruptedException;
 
     /**
      * Decodes a stego image to extract the hidden message or file.
