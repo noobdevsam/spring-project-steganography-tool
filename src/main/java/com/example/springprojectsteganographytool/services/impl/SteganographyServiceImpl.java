@@ -68,6 +68,8 @@ public class SteganographyServiceImpl implements SteganographyService {
         return null;
     }
 
+    // ----- Encode operations returning bytes only -----
+
     @Override
     public byte[] encodeTextToBytes(BufferedImage coverImage, String message, String password, int lsbDepth) throws Exception {
         validateLsbDepth(lsbDepth);
@@ -131,6 +133,8 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
         }
     }
+
+    // ----- Read operations -----
 
     @Override
     public List<StegoEncodeResponseDTO> listAllEncodings() {
