@@ -168,8 +168,8 @@ public interface SteganographyService {
      * Deletes a specific encoding by its ID.
      *
      * @param id The unique identifier of the encoding to delete.
-     * @throws StegoImageNotFoundException If the specified stego image is not found.
+     * @throws StegoDataNotFoundException If the specified stego data is not found.
      */
-    void deleteById(UUID id) throws StegoImageNotFoundException;
+    void deleteById(UUID id) throws StegoDataNotFoundException;
 
 }
