@@ -261,7 +261,7 @@ public class AesUtilServiceImpl implements AesUtilService {
         var salt = new byte[SALT_LENGTH];
         var iv = new byte[IV_LENGTH];
         var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-        var cipherText = cipher.doFinal(bytesToEncrypt);
+
 
         // Generate random salt and IV
         RANDOM.nextBytes(salt);
@@ -276,6 +276,8 @@ public class AesUtilServiceImpl implements AesUtilService {
                 keySpec,
                 new IvParameterSpec(iv)
         );
+
+        var cipherText = cipher.doFinal(bytesToEncrypt);
 
         // Combine salt, IV, and cipher text into a single byte array
         var outputBytes = new byte[SALT_LENGTH + IV_LENGTH + cipherText.length];
