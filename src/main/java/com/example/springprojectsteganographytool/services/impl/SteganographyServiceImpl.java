@@ -16,6 +16,7 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEn
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.mappers.StegoDataMapper;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
+import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
@@ -301,6 +302,28 @@ public class SteganographyServiceImpl implements SteganographyService {
 
         stegoDataRepository.deleteById(id);
 
+    }
+
+    @Override
+    public StegoDownloadDTO downloadStegoImage(UUID id) throws StegoDataNotFoundException {
+        var stegoData = stegoDataRepository.findById(id)
+                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
+
+        var baseName = stegoData.getEmbeddedFileName() != null
+                ? stegoData.getEmbeddedFileName()
+                : (stegoData.getOriginalFileName() != null ? stegoData.getOriginalFileName() : id.toString());
+        // strip extension if any
+        var dot = baseName.lastIndexOf('.');
+        if (dot > 0) {
+            baseName = baseName.substring(0, dot);
+        }
+        var fileName = "stego-" + baseName + ".png";
+
+        return new StegoDownloadDTO(
+                fileName,
+                "image/png",
+                stegoData.getStegoImageBytes()
+        );
     }
 
     // --- helpers ---
