@@ -1,5 +1,6 @@
 package com.example.springprojectsteganographytool.models;
 
+import java.time.Instant;
 import java.util.UUID;
 
 // Used for returning a response after processing a stego image
