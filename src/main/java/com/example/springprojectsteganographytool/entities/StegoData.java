@@ -1,20 +1,24 @@
-package com.example.springprojectsteganographytool.documents;
+package com.example.springprojectsteganographytool.entities;
 
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.UUID;
 
-@Document
-@Data
+
 @NoArgsConstructor
+@Getter
+@Setter
+@ToString
+@Entity
 public class StegoData {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID id;
 
     private String originalFileName;
