@@ -1,6 +1,6 @@
 package com.example.springprojectsteganographytool.mappers;
 
-import com.example.springprojectsteganographytool.documents.StegoData;
+import com.example.springprojectsteganographytool.entities.StegoData;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
