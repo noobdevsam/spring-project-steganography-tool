@@ -24,6 +24,8 @@ import com.example.springprojectsteganographytool.services.AesUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -57,6 +59,20 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.executorService = executorService;
     }
 
+    @Transactional(
+            rollbackFor = {
+                    InvalidLsbDepthException.class,
+                    MessageTooLargeException.class,
+                    InvalidEncryptionKeyException.class,
+                    LsbEncodingException.class,
+                    AesOperationException.class,
+                    MetadataEncodingException.class,
+                    StorageException.class,
+                    ExecutionException.class,
+                    InterruptedException.class
+            },
+            propagation = Propagation.REQUIRED
+    )
     @Override
     public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws InvalidLsbDepthException, MessageTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException, ExecutionException, InterruptedException {
         validateLsbDepth(lsbDepth);

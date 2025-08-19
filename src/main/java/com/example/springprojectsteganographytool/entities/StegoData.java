@@ -1,9 +1,6 @@
 package com.example.springprojectsteganographytool.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
@@ -21,11 +18,17 @@ public class StegoData {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
+    @Version
+    private Long version;
+
     private String originalFileName;
     private String embeddedFileName;
     private String message;
 
+    @Lob
     private byte[] stegoImageBytes;
+
+    @Lob
     private byte[] embeddedFileBytes;
 
     private String encryptionKeyHash;
@@ -45,7 +48,6 @@ public class StegoData {
             boolean hasText,
             boolean hasFile
     ) {
-        this.id = UUID.randomUUID();
         this.originalFileName = originalFileName;
         this.embeddedFileName = embeddedFileName;
         this.message = message;
