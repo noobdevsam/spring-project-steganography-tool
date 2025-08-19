@@ -6,8 +6,8 @@ spring:
             enabled: true
     servlet:
         multipart:
-            max-file-size: 10MB
-            max-request-size: 10MB
+            max-file-size: 100MB
+            max-request-size: 100MB
     datasource:
         url: jdbc:mysql://db-mysql:3306/stego
         username: user
@@ -17,7 +17,3 @@ spring:
         hibernate:
             ddl-auto: update
         show-sql: true
-
-logging:
-    level:
-        org.springframework.data.mongodb.core.MongoTemplate: DEBUG
