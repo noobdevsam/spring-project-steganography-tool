@@ -58,7 +58,20 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.executorService = executorService;
     }
 
-    @Transactional
+    @Transactional(
+        rollbackFor = {
+            InvalidLsbDepthException.class,
+            MessageTooLargeException.class,
+            InvalidEncryptionKeyException.class,
+            LsbEncodingException.class,
+            AesOperationException.class,
+            MetadataEncodingException.class,
+            StorageException.class,
+            ExecutionException.class,
+            InterruptedException.class
+        },
+        propagation = Propagation.REQUIRED
+    )
     @Override
     public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws InvalidLsbDepthException, MessageTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException, ExecutionException, InterruptedException {
         validateLsbDepth(lsbDepth);
