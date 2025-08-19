@@ -1,13 +1,18 @@
 services:
-    db-mongo:
-        image: mongo:latest
-        container_name: db-mongo
-        restart: always
+    db-mysql:
+        image: mysql:latest
+        container_name: db-mysql
         ports:
-            - "27017:27017"
+            - "3306:3306"
         environment:
-            - MONGO_INITDB_ROOT_USERNAME=root
-            - MONGO_INITDB_ROOT_PASSWORD=password
-            - MONGO_INITDB_DATABASE=stego
-            - MONGO_INITDB_AUTHENTICATION_DATABASE=admin
+            - MYSQL_ROOT_PASSWORD=password
+            - MYSQL_DATABASE=stego
+            - MYSQL_USER=user
+            - MYSQL_PASSWORD=password
+        volumes:
+            - mysql_data:/var/lib/mysql
+
+volumes:
+    mysql_data:
+        driver: local
         

@@ -8,9 +8,15 @@ spring:
         multipart:
             max-file-size: 10MB
             max-request-size: 10MB
-    data:
-        mongodb:
-            uri: ${MONGODB_URI:mongodb://db-mongo:27017/stego}
+    datasource:
+        url: jdbc:mysql://db-mysql:3306/stego
+        username: user
+        password: password
+        driver-class-name: com.mysql.cj.jdbc.Driver
+    jpa:
+        hibernate:
+            ddl-auto: update
+        show-sql: true
 
 logging:
     level:
