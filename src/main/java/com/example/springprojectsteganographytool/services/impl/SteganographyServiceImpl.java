@@ -1,6 +1,6 @@
 package com.example.springprojectsteganographytool.services.impl;
 
-import com.example.springprojectsteganographytool.documents.StegoData;
+import com.example.springprojectsteganographytool.entities.StegoData;
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
