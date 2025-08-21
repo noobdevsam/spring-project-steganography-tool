@@ -116,7 +116,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                     () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
             ).get();
 
-            var safeName = ("stego-text-" + UUID.randomUUID() + ".png").replace("-", "");
+            var safeName = "stego-text-" + UUID.randomUUID() + ".png";
             var _ = storageService.save(safeName, stegoBytes);
 
             var savedData = stegoDataRepository.save(
