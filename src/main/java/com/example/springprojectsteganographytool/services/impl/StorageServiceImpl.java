@@ -24,4 +24,23 @@ public class StorageServiceImpl implements StorageService {
     public Path resolve(String relativeFileName) throws Exception {
         return null;
     }
+
+    private Path safeResolve(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("File name cannot be null or blank");
+        }
+
+        // allow simple safe name only
+        if (!name.matches("^[A-Za-z0-9._-]+$")) {
+            throw new IllegalArgumentException("Invalid file name: " + name);
+        }
+
+        var targetPath = basePath.resolve(name).normalize();
+
+        if (!targetPath.startsWith(basePath)) {
+            throw new SecurityException("Attempt to escape storage directory: ");
+        }
+
+        return targetPath;
+    }
 }
