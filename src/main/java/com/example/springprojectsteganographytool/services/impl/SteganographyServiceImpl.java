@@ -134,6 +134,8 @@ public class SteganographyServiceImpl implements SteganographyService {
         } catch (Exception e) {
             handle_exceptions(e);
         }
+
+        return null;
     }
 
     @Override
@@ -184,6 +186,7 @@ public class SteganographyServiceImpl implements SteganographyService {
         } catch (Exception e) {
             handle_exceptions(e);
         }
+        return null;
     }
 
     @Override
@@ -234,12 +237,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
 
         } catch (Exception e) {
-            switch (e) {
-                case InvalidEncryptionKeyException _, MetadataNotFoundException _, StegoDataNotFoundException _,
-                     LsbDecodingException _, AesOperationException _, MetadataDecodingException _ -> throw e;
-                default -> throw new StorageException("Error during decoding process.", e);
-            }
+            handle_exceptions(e);
         }
+
+        return null;
 
     }
 
