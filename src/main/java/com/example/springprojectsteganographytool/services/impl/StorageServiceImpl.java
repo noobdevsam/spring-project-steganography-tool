@@ -15,6 +15,11 @@ public class StorageServiceImpl implements StorageService {
     private final Path basePath;
 
     public StorageServiceImpl(@Value("${app.storage.base-path}") Path basePath) {
+
+        if (basePath == null) {
+            throw new IllegalArgumentException("app.storage.base-path must not be null");
+        }
+
         this.basePath = basePath.toAbsolutePath().normalize();
     }
 
