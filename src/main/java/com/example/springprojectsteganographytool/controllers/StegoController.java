@@ -7,6 +7,7 @@ import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
+import com.example.springprojectsteganographytool.services.StorageService;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -25,14 +26,17 @@ import java.util.UUID;
 public class StegoController {
 
     private final SteganographyService steganographyService;
+    private final StorageService storageService;
     private final LsbUtilService lsbUtilService;
 
     public StegoController(
             SteganographyService steganographyService,
+            StorageService storageService,
             LsbUtilService lsbUtilService
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;
+        this.storageService = storageService;
     }
 
     // ----- Encode endpoints -----
