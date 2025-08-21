@@ -168,7 +168,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             if (dot > 0) {
                 baseName = baseName.substring(0, dot);
             }
-            var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replace("[^A-Za-z0-9._-]", "_");
+            var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replaceAll("[^A-Za-z0-9._-]", "_");
             var _ = storageService.save(safeName, stegoBytes);
 
             var savedData = stegoDataRepository.save(
