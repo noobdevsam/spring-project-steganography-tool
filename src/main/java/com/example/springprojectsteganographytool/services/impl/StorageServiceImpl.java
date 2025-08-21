@@ -36,7 +36,7 @@ public class StorageServiceImpl implements StorageService {
         var targetPath = safeResolve(relativeFileName);
 
         if (!Files.exists(targetPath) || !Files.isRegularFile(targetPath)) {
-            throw new NoSuchFieldException("File not found: " + relativeFileName);
+            throw new FileNotFoundException("File not found: " + relativeFileName);
         }
 
         return targetPath;
