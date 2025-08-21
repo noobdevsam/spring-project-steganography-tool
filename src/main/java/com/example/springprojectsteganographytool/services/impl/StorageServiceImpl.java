@@ -12,7 +12,7 @@ public class StorageServiceImpl implements StorageService {
 
     private final Path basePath;
 
-    public StorageServiceImpl(@Value("${app.storage.base-path:/tmp/stego}") Path basePath) {
+    public StorageServiceImpl(@Value("${app.storage.base-path}") Path basePath) {
         this.basePath = basePath.toAbsolutePath().normalize();
     }
 
