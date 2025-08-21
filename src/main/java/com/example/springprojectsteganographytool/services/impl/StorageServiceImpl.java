@@ -4,7 +4,9 @@ import com.example.springprojectsteganographytool.services.StorageService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 @Service
 public class StorageServiceImpl implements StorageService {
@@ -18,7 +20,10 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public Path save(String relativeFileName, byte[] content) throws Exception {
-        return null;
+        var tergetPath = safeResolve(relativeFileName);
+        Files.createDirectories(tergetPath.getParent());
+        Files.write(tergetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        return tergetPath;
     }
 
     @Override
