@@ -23,6 +23,7 @@ import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import com.example.springprojectsteganographytool.services.AesUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
+import com.example.springprojectsteganographytool.services.StorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final LsbUtilService lsbUtilService;
     private final StegoDataRepository stegoDataRepository;
     private final StegoDataMapper stegoDataMapper;
+    private final StorageService storageService;
     private final ExecutorService executorService;
 
     public SteganographyServiceImpl(
@@ -50,12 +52,14 @@ public class SteganographyServiceImpl implements SteganographyService {
             LsbUtilService lsbUtilService,
             StegoDataRepository stegoDataRepository,
             StegoDataMapper stegoDataMapper,
+            StorageService storageService,
             ExecutorService executorService
     ) {
         this.aesUtilService = aesUtilService;
         this.lsbUtilService = lsbUtilService;
         this.stegoDataRepository = stegoDataRepository;
         this.stegoDataMapper = stegoDataMapper;
+        this.storageService = storageService;
         this.executorService = executorService;
     }
 
@@ -96,13 +100,15 @@ public class SteganographyServiceImpl implements SteganographyService {
                     () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
             ).get();
 
+            var safeName = ("stego-text-" + UUID.randomUUID() + ".png").replace("-", "");
+            var _ = storageService.save(safeName, stegoBytes);
+
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
                             .originalFileName(null)
                             .embeddedFileName(null)
-                            .message(null) // No message in StegoData, as we store the encoded bytes
-                            .stegoImageBytes(stegoBytes)
-                            .embeddedFileBytes(null)
+                            .stegoFileName(safeName)
+                            .stegoFileSize((long) stegoBytes.length)
                             .encryptionKeyHash(keyHash)
                             .hasText(true)
                             .hasFile(false)
@@ -112,9 +118,16 @@ public class SteganographyServiceImpl implements SteganographyService {
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
             switch (e) {
-                case InvalidLsbDepthException _, MessageTooLargeException _, InvalidEncryptionKeyException _,
-                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
-                default -> throw new StorageException("Error during text encoding.", e);
+                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
+                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
+                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
+                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
+                case AesOperationException aesOperationException -> throw aesOperationException;
+                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
+                case StorageException storageException -> throw storageException;
+                case ExecutionException executionException -> throw executionException;
+                case InterruptedException interruptedException -> throw interruptedException;
+                default -> throw new StorageException(e.getMessage(), e.getCause());
             }
         }
     }
@@ -322,24 +335,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public StegoDownloadDTO downloadStegoImage(UUID id) throws StegoDataNotFoundException {
-        var stegoData = stegoDataRepository.findById(id)
-                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
-
-        var baseName = stegoData.getEmbeddedFileName() != null
-                ? stegoData.getEmbeddedFileName()
-                : (stegoData.getOriginalFileName() != null ? stegoData.getOriginalFileName() : id.toString());
-        // strip extension if any
-        var dot = baseName.lastIndexOf('.');
-        if (dot > 0) {
-            baseName = baseName.substring(0, dot);
-        }
-        var fileName = "stego-" + baseName + ".png";
-
-        return new StegoDownloadDTO(
-                fileName,
-                "image/png",
-                stegoData.getStegoImageBytes()
-        );
+        return null;
     }
 
     // --- helpers ---
