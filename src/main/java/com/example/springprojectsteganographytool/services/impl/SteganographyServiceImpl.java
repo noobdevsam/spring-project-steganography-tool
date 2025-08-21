@@ -63,6 +63,21 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.executorService = executorService;
     }
 
+    private static void handle_exceptions(Exception e) throws ExecutionException, InterruptedException {
+        switch (e) {
+            case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
+            case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
+            case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
+            case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
+            case AesOperationException aesOperationException -> throw aesOperationException;
+            case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
+            case StorageException storageException -> throw storageException;
+            case ExecutionException executionException -> throw executionException;
+            case InterruptedException interruptedException -> throw interruptedException;
+            default -> throw new StorageException(e.getMessage(), e.getCause());
+        }
+    }
+
     @Transactional(
             rollbackFor = {
                     InvalidLsbDepthException.class,
@@ -117,18 +132,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
-                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
-                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
-                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
-                case AesOperationException aesOperationException -> throw aesOperationException;
-                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
-                case StorageException storageException -> throw storageException;
-                case ExecutionException executionException -> throw executionException;
-                case InterruptedException interruptedException -> throw interruptedException;
-                default -> throw new StorageException(e.getMessage(), e.getCause());
-            }
+            handle_exceptions(e);
         }
     }
 
@@ -155,13 +159,21 @@ public class SteganographyServiceImpl implements SteganographyService {
                     () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
             ).get();
 
+            // save the stego image to storage
+            var baseName = originalFileName != null ? originalFileName : "embedded-file";
+            var dot = baseName.lastIndexOf('.');
+            if (dot > 0) {
+                baseName = baseName.substring(0, dot);
+            }
+            var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replace("[^A-Za-z0-9._-]", "_");
+            var _ = storageService.save(safeName, stegoBytes);
+
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
-                            .originalFileName(originalFileName)
+                            .originalFileName(null)
                             .embeddedFileName(originalFileName)
-                            .message(null) // No message in StegoData, as we store the encoded bytes
-                            .stegoImageBytes(stegoBytes)
-                            .embeddedFileBytes(null)
+                            .stegoFileName(safeName)
+                            .stegoFileSize((long) stegoBytes.length)
                             .encryptionKeyHash(keyHash)
                             .hasText(false)
                             .hasFile(true)
@@ -170,11 +182,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException _, MessageTooLargeException _, InvalidEncryptionKeyException _,
-                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
-                default -> throw new StorageException("Error during text encoding.", e);
-            }
+            handle_exceptions(e);
         }
     }
 
@@ -235,74 +243,6 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
-    /*
-
-    // ----- Encode operations returning bytes only -----
-
-    @Override
-    public byte[] encodeTextToBytes(BufferedImage coverImage, String message, String password, int lsbDepth) throws Exception {
-        validateLsbDepth(lsbDepth);
-
-        try {
-            var keyHash = aesUtilService.generateKey(password);
-            var encodedBytes = executorService.submit(
-                    () -> aesUtilService.encryptText(message, password)
-            ).get();
-
-            var metadata = new StegoMetadataDTO(
-                    lsbDepth,
-                    true,
-                    false,
-                    keyHash,
-                    null
-            );
-
-            var coverBytes = bufferedImageToPngBytes(coverImage);
-
-            return executorService.submit(
-                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
-            ).get();
-        } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException _, MessageTooLargeException _, InvalidEncryptionKeyException _,
-                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
-                default -> throw new StorageException("Error during text encoding.", e);
-            }
-        }
-    }
-
-    @Override
-    public byte[] encodeFileToBytes(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws Exception {
-        validateLsbDepth(lsbDepth);
-
-        try {
-            var keyHash = aesUtilService.generateKey(password);
-            var encodedBytes = executorService.submit(
-                    () -> aesUtilService.encryptFile(fileBytes, password)
-            ).get();
-
-            var metadata = new StegoMetadataDTO(
-                    lsbDepth,
-                    false,
-                    true,
-                    keyHash,
-                    originalFileName
-            );
-
-            var convertedBytes = bufferedImageToPngBytes(coverImage);
-
-            return executorService.submit(
-                    () -> lsbUtilService.encode(convertedBytes, encodedBytes, metadata)
-            ).get();
-        } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException _, FileTooLargeException _, InvalidEncryptionKeyException _,
-                     LsbEncodingException _, AesOperationException _, MetadataEncodingException _ -> throw e;
-                default -> throw new StorageException("Error during file encoding.", e);
-            }
-        }
-    }
-    */
 
     // ----- Read operations -----
 
