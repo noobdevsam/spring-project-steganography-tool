@@ -64,21 +64,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.executorService = executorService;
     }
 
-    private static void handle_exceptions(Exception e) throws ExecutionException, InterruptedException {
-        switch (e) {
-            case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
-            case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
-            case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
-            case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
-            case AesOperationException aesOperationException -> throw aesOperationException;
-            case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
-            case StorageException storageException -> throw storageException;
-            case ExecutionException executionException -> throw executionException;
-            case InterruptedException interruptedException -> throw interruptedException;
-            default -> throw new StorageException(e.getMessage(), e.getCause());
-        }
-    }
-
     @Transactional(
             rollbackFor = {
                     InvalidLsbDepthException.class,
@@ -133,10 +118,21 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
-            handle_exceptions(e);
+            switch (e) {
+                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
+                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
+                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
+                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
+                case AesOperationException aesOperationException -> throw aesOperationException;
+                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
+                case StorageException storageException -> throw storageException;
+                case ExecutionException executionException -> throw executionException;
+                case InterruptedException interruptedException -> throw interruptedException;
+                default -> throw new StorageException(e.getMessage(), e.getCause());
+
+            }
         }
 
-        return null;
     }
 
     @Override
@@ -185,9 +181,20 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
-            handle_exceptions(e);
+            switch (e) {
+                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
+                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
+                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
+                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
+                case AesOperationException aesOperationException -> throw aesOperationException;
+                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
+                case StorageException storageException -> throw storageException;
+                case ExecutionException executionException -> throw executionException;
+                case InterruptedException interruptedException -> throw interruptedException;
+                default -> throw new StorageException(e.getMessage(), e.getCause());
+            }
         }
-        return null;
+
     }
 
     @Override
@@ -238,10 +245,19 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
 
         } catch (Exception e) {
-            handle_exceptions(e);
+            switch (e) {
+                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
+                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
+                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
+                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
+                case AesOperationException aesOperationException -> throw aesOperationException;
+                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
+                case StorageException storageException -> throw storageException;
+                case ExecutionException executionException -> throw executionException;
+                case InterruptedException interruptedException -> throw interruptedException;
+                default -> throw new StorageException(e.getMessage(), e.getCause());
+            }
         }
-
-        return null;
 
     }
 
