@@ -17,3 +17,8 @@ spring:
         hibernate:
             ddl-auto: update
         show-sql: true
+
+
+app:
+    storage:
+        base-path: ${STORAGE_BASE_PATH}
