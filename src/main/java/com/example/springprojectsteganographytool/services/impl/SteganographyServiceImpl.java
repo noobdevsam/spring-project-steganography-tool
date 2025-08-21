@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -276,7 +277,18 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public StegoDownloadDTO downloadStegoImage(UUID id) throws StegoDataNotFoundException {
-        return null;
+        var stegoData = stegoDataRepository.findById(id)
+                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
+
+        var fileName = stegoData.getStegoFileName();
+
+        try {
+            var path = storageService.resolve(fileName);
+            var bytes = Files.readAllBytes(path);
+            return new StegoDownloadDTO(fileName, "image/png", bytes);
+        } catch (Exception e) {
+            throw new StorageException("Failed to download stego image: " + e.getMessage(), e.getCause());
+        }
     }
 
     // --- helpers ---
