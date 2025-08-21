@@ -9,9 +9,10 @@ import java.nio.file.Path;
 @Service
 public class StorageServiceImpl implements StorageService {
 
-    private final Path basePath;
+    @Value("${app.storage.base-path}")
+    private Path basePath;
 
-    public StorageServiceImpl(@Value("${storage.base-path}") Path basePath) {
+    public StorageServiceImpl() {
         this.basePath = basePath.toAbsolutePath().normalize();
     }
 
