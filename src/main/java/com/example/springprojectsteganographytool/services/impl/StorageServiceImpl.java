@@ -1,0 +1,63 @@
+package com.example.springprojectsteganographytool.services.impl;
+
+import com.example.springprojectsteganographytool.services.StorageService;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
+
+@Service
+public class StorageServiceImpl implements StorageService {
+
+
+    private final Path basePath;
+
+    public StorageServiceImpl(@Value("${app.storage.base-path}") Path basePath) {
+
+        if (basePath == null) {
+            throw new IllegalArgumentException("app.storage.base-path must not be null");
+        }
+
+        this.basePath = basePath.toAbsolutePath().normalize();
+    }
+
+    @Override
+    public Path save(String relativeFileName, byte[] content) throws Exception {
+        var tergetPath = safeResolve(relativeFileName);
+        Files.createDirectories(tergetPath.getParent());
+        Files.write(tergetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        return tergetPath;
+    }
+
+    @Override
+    public Path resolve(String relativeFileName) throws Exception {
+        var targetPath = safeResolve(relativeFileName);
+
+        if (!Files.exists(targetPath) || !Files.isRegularFile(targetPath)) {
+            throw new FileNotFoundException("File not found: " + relativeFileName);
+        }
+
+        return targetPath;
+    }
+
+    private Path safeResolve(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("File name cannot be null or blank");
+        }
+
+        // allow simple safe name only
+        if (!name.matches("^[A-Za-z0-9._-]+$")) {
+            throw new IllegalArgumentException("Invalid file name: " + name);
+        }
+
+        var targetPath = basePath.resolve(name).normalize();
+
+        if (!targetPath.startsWith(basePath)) {
+            throw new SecurityException("Attempt to escape storage directory: ");
+        }
+
+        return targetPath;
+    }
+}

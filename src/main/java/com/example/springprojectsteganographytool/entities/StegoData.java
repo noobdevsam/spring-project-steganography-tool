@@ -23,13 +23,10 @@ public class StegoData {
 
     private String originalFileName;
     private String embeddedFileName;
-    private String message;
 
-    @Lob
-    private byte[] stegoImageBytes;
+    private String stegoFileName;
+    private Long stegoFileSize;
 
-    @Lob
-    private byte[] embeddedFileBytes;
 
     private String encryptionKeyHash;
     private Instant createdDate;
@@ -41,18 +38,16 @@ public class StegoData {
     public StegoData(
             String originalFileName,
             String embeddedFileName,
-            String message,
-            byte[] stegoImageBytes,
-            byte[] embeddedFileBytes,
+            String stegoFileName,
+            Long stegoFileSize,
             String encryptionKeyHash,
             boolean hasText,
             boolean hasFile
     ) {
         this.originalFileName = originalFileName;
         this.embeddedFileName = embeddedFileName;
-        this.message = message;
-        this.stegoImageBytes = stegoImageBytes;
-        this.embeddedFileBytes = embeddedFileBytes;
+        this.stegoFileName = stegoFileName;
+        this.stegoFileSize = stegoFileSize;
         this.encryptionKeyHash = encryptionKeyHash;
         this.createdDate = Instant.now();
         this.hasText = hasText;
