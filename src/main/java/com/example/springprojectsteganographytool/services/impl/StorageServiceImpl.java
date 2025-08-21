@@ -28,7 +28,13 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public Path resolve(String relativeFileName) throws Exception {
-        return null;
+        var targetPath = safeResolve(relativeFileName);
+
+        if (!Files.exists(targetPath) || !Files.isRegularFile(targetPath)) {
+            throw new NoSuchFieldException("File not found: " + relativeFileName);
+        }
+
+        return targetPath;
     }
 
     private Path safeResolve(String name) {
