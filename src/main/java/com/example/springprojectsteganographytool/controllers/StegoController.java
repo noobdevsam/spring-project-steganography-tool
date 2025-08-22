@@ -7,7 +7,6 @@ import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
-import com.example.springprojectsteganographytool.services.StorageService;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -26,20 +25,17 @@ import java.util.UUID;
 public class StegoController {
 
     private final SteganographyService steganographyService;
-    private final StorageService storageService;
     private final LsbUtilService lsbUtilService;
 
     public StegoController(
             SteganographyService steganographyService,
-            StorageService storageService,
             LsbUtilService lsbUtilService
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;
-        this.storageService = storageService;
     }
 
-    // ----- Encode endpoints -----
+    // ----- Helper -----
 
     private static BufferedImage toBufferedImage(MultipartFile file) throws IOException {
         try (var is = file.getInputStream()) {
@@ -50,6 +46,8 @@ public class StegoController {
             return image;
         }
     }
+
+    // ----- Encode endpoints -----
 
     @PostMapping(path = "/encode/text", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoEncodeResponseDTO> encodeText(
@@ -62,8 +60,6 @@ public class StegoController {
         var result = steganographyService.encodeText(image, message, password, lsbDepth);
         return ResponseEntity.ok(result);
     }
-
-    // ----- Decode endpoint -----
 
     @PostMapping(path = "/encode/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoEncodeResponseDTO> encodeFile(
@@ -79,7 +75,7 @@ public class StegoController {
         return ResponseEntity.ok(result);
     }
 
-    // ----- Metadata extraction (from stego image) -----
+    // ----- Decode operations -----
 
     @PostMapping(path = "/decode", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoDecodeResponseDTO> decode(
@@ -91,7 +87,7 @@ public class StegoController {
         return ResponseEntity.ok(result);
     }
 
-    // ----- Read/list operations -----
+    // ----- Metadata operations -----
 
     @PostMapping(path = "/metadata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoMetadataDTO> extractMetadata(
@@ -105,6 +101,8 @@ public class StegoController {
         return ResponseEntity.ok(meta);
     }
 
+    // ----- Retrieval operations -----
+
     @GetMapping(path = "/encodings", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<StegoEncodeResponseDTO>> listAllEncodings() {
         return ResponseEntity.ok(steganographyService.listAllEncodings());
@@ -115,15 +113,13 @@ public class StegoController {
         return ResponseEntity.ok(steganographyService.getById(id));
     }
 
-    // ----- Download operations -----
-
     @DeleteMapping(path = "/encodings/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable("id") UUID id) throws Exception {
         steganographyService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 
-    // ----- helpers -----
+    // ----- Download operations -----
 
     @GetMapping(path = "/encodings/{id}/stego-image")
     public ResponseEntity<byte[]> downloadStegoImage(@PathVariable("id") UUID id) throws Exception {
