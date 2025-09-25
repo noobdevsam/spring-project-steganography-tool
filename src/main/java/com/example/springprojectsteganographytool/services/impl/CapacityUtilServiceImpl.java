@@ -41,6 +41,17 @@ public class CapacityUtilServiceImpl implements CapacityUtilService {
 
     @Override
     public EstimationResult estimate(int width, int height, int lsbDepth, int metadataJsonLength, long plainLength) {
-        return null;
+        var capacity = computeTotalCapacityBytes(width, height, lsbDepth);
+        var overhead = computeOverheadBytes(metadataJsonLength);
+        var encryptedLength = estimateEncryptedLength(plainLength);
+        var required = overhead + encryptedLength;
+
+        return new EstimationResult(
+                capacity,
+                overhead,
+                encryptedLength,
+                required,
+                required <= capacity
+        );
     }
 }
