@@ -95,6 +95,9 @@ public class SteganographyServiceImpl implements SteganographyService {
                     null
             );
 
+            // Phase 1: Early capacity estimation before encryption
+            earlyCapacityCheck(coverImage, metadata, message.getBytes().length);
+
             var encodedBytes = executorService.submit(
                     () -> aesUtilService.encryptText(message, password)
             ).get();
@@ -151,6 +154,9 @@ public class SteganographyServiceImpl implements SteganographyService {
                     keyHash,
                     originalFileName
             );
+
+            // Phase 1: Early capacity estimation before encryption
+            earlyCapacityCheck(coverImage, metadata, fileBytes.length);
 
             var encodedBytes = executorService.submit(
                     () -> aesUtilService.encryptFile(fileBytes, password)
