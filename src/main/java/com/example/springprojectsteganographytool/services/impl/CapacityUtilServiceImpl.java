@@ -4,6 +4,17 @@ import com.example.springprojectsteganographytool.models.capacity.EstimationResu
 import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import org.springframework.stereotype.Service;
 
+/**
+ * Utility functions for estimating steganographic capacity and required size
+ * for a payload (plain + AES envelope) before doing expensive work.
+ * <p>
+ * Format costs (current version 1):
+ * Header + metadata (LSB depth 1):
+ * MAGIC(4) + VERSION(1) + META_LEN(4) + META_JSON(variable) + PAYLOAD_LEN(8)
+ * <p>
+ * Payload block (encoded at chosen LSB depth):
+ * PAYLOAD bytes (ciphertext: salt + iv + padded cipher)
+ */
 @Service
 public class CapacityUtilServiceImpl implements CapacityUtilService {
 
