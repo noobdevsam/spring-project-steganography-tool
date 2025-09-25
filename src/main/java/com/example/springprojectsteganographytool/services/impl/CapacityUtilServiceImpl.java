@@ -25,7 +25,7 @@ public class CapacityUtilServiceImpl implements CapacityUtilService {
 
     @Override
     public long computeOverheadBytes(int metadataJsonLength) {
-        return 0;
+        return FIXED_HEADER_OVERHEAD + metadataJsonLength;
     }
 
     @Override
