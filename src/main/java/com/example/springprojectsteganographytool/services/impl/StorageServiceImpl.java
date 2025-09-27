@@ -49,19 +49,15 @@ public class StorageServiceImpl implements StorageService {
     public boolean delete(String relativeFileName) throws Exception {
         var targetPath = safeResolve(relativeFileName);
 
-        if (Files.exists(targetPath)) {
-            var deleted = Files.deleteIfExists(targetPath);
+        var deleted = Files.deleteIfExists(targetPath);
 
-            if (deleted) {
-                log.debug("Deleted file: {}", targetPath);
-            } else {
-                log.warn("Could not delete file: {}", targetPath);
-            }
-
-            return deleted;
+        if (deleted) {
+            log.debug("Deleted file: {}", targetPath);
+        } else {
+            log.warn("Could not delete file (may not exist): {}", targetPath);
         }
 
-        return false;
+        return deleted;
     }
 
     private Path safeResolve(String name) {
