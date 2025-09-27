@@ -155,12 +155,12 @@ public class StegoController {
     }
 
     @GetMapping(path = "/encodings/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<StegoEncodeResponseDTO> getById(@PathVariable("id") UUID id) throws Exception {
+    public ResponseEntity<StegoEncodeResponseDTO> getById(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(steganographyService.getById(id));
     }
 
     @DeleteMapping(path = "/encodings/{id}")
-    public ResponseEntity<Void> deleteById(@PathVariable("id") UUID id) throws Exception {
+    public ResponseEntity<Void> deleteById(@PathVariable("id") UUID id) {
         steganographyService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
@@ -168,7 +168,7 @@ public class StegoController {
     // ----- Download operations -----
 
     @GetMapping(path = "/encodings/{id}/stego-image")
-    public ResponseEntity<byte[]> downloadStegoImage(@PathVariable("id") UUID id) throws Exception {
+    public ResponseEntity<byte[]> downloadStegoImage(@PathVariable("id") UUID id) {
         var dto = steganographyService.downloadStegoImage(id);
         var headers = new HttpHeaders();
 
