@@ -30,6 +30,7 @@ public class StorageServiceImpl implements StorageService {
         var tergetPath = safeResolve(relativeFileName);
         Files.createDirectories(tergetPath.getParent());
         Files.write(tergetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        log.debug("Saved file: {}  ({} bytes)", tergetPath, content.length);
         return tergetPath;
     }
 
