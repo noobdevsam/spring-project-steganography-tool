@@ -22,6 +22,7 @@ import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import com.example.springprojectsteganographytool.services.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class SteganographyServiceImpl implements SteganographyService {
 
     private final AesUtilService aesUtilService;
@@ -289,14 +291,27 @@ public class SteganographyServiceImpl implements SteganographyService {
         return stegoDataMapper.StegoDataToEncodeResponseDTO(stegoData);
     }
 
+    @Transactional
     @Override
     public void deleteById(UUID id) throws StegoDataNotFoundException {
 
-        if (!stegoDataRepository.existsById(id)) {
-            throw new StegoDataNotFoundException("Stego data with ID: " + id + " not found.");
-        }
+        var stegoData = stegoDataRepository.findById(id)
+                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
 
-        stegoDataRepository.deleteById(id);
+        var fileName = stegoData.getStegoFileName();
+        stegoDataRepository.delete(stegoData);
+        log.debug("Deleted DB record for stego id={}  file={}", id, fileName);
+
+        try {
+            var deleted = storageService.delete(fileName);
+
+            if (!deleted) {
+                log.warn("Stego file {} not found during deletion cascade", fileName);
+            }
+        } catch (Exception e) {
+            // Do not rollback DB delete for a file system issue, just log it
+            log.warn("Failed to delete stego file {} after DB delete: {}", fileName, e.getMessage());
+        }
 
     }
 
