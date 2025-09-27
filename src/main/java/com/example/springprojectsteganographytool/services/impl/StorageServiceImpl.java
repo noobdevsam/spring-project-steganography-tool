@@ -48,7 +48,6 @@ public class StorageServiceImpl implements StorageService {
     @Override
     public boolean delete(String relativeFileName) throws Exception {
         var targetPath = safeResolve(relativeFileName);
-
         var deleted = Files.deleteIfExists(targetPath);
 
         if (deleted) {
