@@ -1,6 +1,7 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.services.StorageService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,8 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 @Service
+@Slf4j
 public class StorageServiceImpl implements StorageService {
-
 
     private final Path basePath;
 
@@ -26,10 +27,11 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public Path save(String relativeFileName, byte[] content) throws Exception {
-        var tergetPath = safeResolve(relativeFileName);
-        Files.createDirectories(tergetPath.getParent());
-        Files.write(tergetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        return tergetPath;
+        var targetPath = safeResolve(relativeFileName);
+        Files.createDirectories(targetPath.getParent());
+        Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        log.debug("Saved file: {}  ({} bytes)", targetPath, content.length);
+        return targetPath;
     }
 
     @Override
@@ -41,6 +43,20 @@ public class StorageServiceImpl implements StorageService {
         }
 
         return targetPath;
+    }
+
+    @Override
+    public boolean delete(String relativeFileName) throws Exception {
+        var targetPath = safeResolve(relativeFileName);
+        var deleted = Files.deleteIfExists(targetPath);
+
+        if (deleted) {
+            log.debug("Deleted file: {}", targetPath);
+        } else {
+            log.warn("Could not delete file (may not exist): {}", targetPath);
+        }
+
+        return deleted;
     }
 
     private Path safeResolve(String name) {
