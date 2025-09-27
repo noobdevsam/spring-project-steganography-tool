@@ -27,11 +27,11 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public Path save(String relativeFileName, byte[] content) throws Exception {
-        var tergetPath = safeResolve(relativeFileName);
-        Files.createDirectories(tergetPath.getParent());
-        Files.write(tergetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        log.debug("Saved file: {}  ({} bytes)", tergetPath, content.length);
-        return tergetPath;
+        var targetPath = safeResolve(relativeFileName);
+        Files.createDirectories(targetPath.getParent());
+        Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        log.debug("Saved file: {}  ({} bytes)", targetPath, content.length);
+        return targetPath;
     }
 
     @Override
