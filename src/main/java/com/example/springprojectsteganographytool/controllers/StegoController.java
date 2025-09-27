@@ -4,6 +4,7 @@ import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFo
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
+import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
 import org.springframework.http.ContentDisposition;
@@ -17,6 +18,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -25,13 +27,16 @@ public class StegoController {
 
     private final SteganographyService steganographyService;
     private final LsbUtilService lsbUtilService;
+    private final CapacityUtilService capacityUtilService;
 
     public StegoController(
             SteganographyService steganographyService,
-            LsbUtilService lsbUtilService
+            LsbUtilService lsbUtilService,
+            CapacityUtilService capacityUtilService
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;
+        this.capacityUtilService = capacityUtilService;
     }
 
     // ----- Helper -----
@@ -44,6 +49,48 @@ public class StegoController {
             }
             return image;
         }
+    }
+
+    // ----- Capacity estimation endpoint (Phase 1) -----
+
+    /**
+     * Estimate whether a plain payload of length 'plainLength' bytes will fit into an image of given dimensions
+     * at the specified lsbDepth, using an assumed metadata JSON length (defaults to 120 if not provided).
+     * <p>
+     * This is a heuristic; actual encode still validates precisely.
+     */
+    @GetMapping(path = "/estimate", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Map<String, Object>> estimateCapacity(
+            @RequestParam int width,
+            @RequestParam int height,
+            @RequestParam int lsbDepth,
+            @RequestParam long plainLength,
+            @RequestParam(name = "metadataJsonLength", required = false, defaultValue = "120") int metadataJsonLength
+    ) {
+        if (width <= 0 || height <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "width and height must be > 0"));
+        }
+        if (lsbDepth != 1 && lsbDepth != 2) {
+            return ResponseEntity.badRequest().body(Map.of("error", "lsbDepth must be 1 or 2"));
+        }
+        if (plainLength < 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "plainLength must be >= 0"));
+        }
+        if (metadataJsonLength <= 0) {
+            return ResponseEntity.badRequest().body(Map.of("error", "metadataJsonLength must be > 0"));
+        }
+
+        var result = capacityUtilService.estimate(width, height, lsbDepth, metadataJsonLength, plainLength);
+
+        return ResponseEntity.ok(
+                Map.of(
+                        "capacityBytes", result.capacityBytes(),
+                        "overheadBytes", result.overheadBytes(),
+                        "encryptedBytesEstimate", result.encryptedBytes(),
+                        "requiredBytesEstimate", result.requiredBytes(),
+                        "fits", result.fits()
+                )
+        );
     }
 
     // ----- Encode endpoints -----
