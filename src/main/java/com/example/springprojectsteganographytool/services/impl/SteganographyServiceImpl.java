@@ -20,10 +20,8 @@ import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
-import com.example.springprojectsteganographytool.services.AesUtilService;
-import com.example.springprojectsteganographytool.services.LsbUtilService;
-import com.example.springprojectsteganographytool.services.SteganographyService;
-import com.example.springprojectsteganographytool.services.StorageService;
+import com.example.springprojectsteganographytool.services.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,25 +41,30 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     private final AesUtilService aesUtilService;
     private final LsbUtilService lsbUtilService;
+    private final CapacityUtilService capacityUtilService;
     private final StegoDataRepository stegoDataRepository;
     private final StegoDataMapper stegoDataMapper;
     private final StorageService storageService;
     private final ExecutorService executorService;
+    private final ObjectMapper objectMapper;
 
     public SteganographyServiceImpl(
             AesUtilService aesUtilService,
             LsbUtilService lsbUtilService,
+            CapacityUtilService capacityUtilService,
             StegoDataRepository stegoDataRepository,
             StegoDataMapper stegoDataMapper,
             StorageService storageService,
-            ExecutorService executorService
-    ) {
+            ExecutorService executorService,
+            ObjectMapper objectMapper) {
         this.aesUtilService = aesUtilService;
         this.lsbUtilService = lsbUtilService;
+        this.capacityUtilService = capacityUtilService;
         this.stegoDataRepository = stegoDataRepository;
         this.stegoDataMapper = stegoDataMapper;
         this.storageService = storageService;
         this.executorService = executorService;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(
@@ -91,6 +94,9 @@ public class SteganographyServiceImpl implements SteganographyService {
                     keyHash,
                     null
             );
+
+            // Phase 1: Early capacity estimation before encryption
+            earlyCapacityCheck(coverImage, metadata, message.getBytes().length);
 
             var encodedBytes = executorService.submit(
                     () -> aesUtilService.encryptText(message, password)
@@ -148,6 +154,9 @@ public class SteganographyServiceImpl implements SteganographyService {
                     keyHash,
                     originalFileName
             );
+
+            // Phase 1: Early capacity estimation before encryption
+            earlyCapacityCheck(coverImage, metadata, fileBytes.length);
 
             var encodedBytes = executorService.submit(
                     () -> aesUtilService.encryptFile(fileBytes, password)
@@ -328,6 +337,43 @@ public class SteganographyServiceImpl implements SteganographyService {
             return baos.toByteArray();
         } catch (Exception e) {
             throw new StorageException("Error while converting image to PNG.", e);
+        }
+    }
+
+    // Perform early capacity estimation (Phase 1)
+    // Throw MessageTooLargeException if estimated required
+    // bytes exceed image capacity
+    private void earlyCapacityCheck(
+            BufferedImage coverImage, StegoMetadataDTO metadata, int plainPayloadLength
+    ) throws MessageTooLargeException {
+        try {
+            var metaJsonBytes = objectMapper.writeValueAsBytes(metadata);
+            var estimation = capacityUtilService.estimate(
+                    coverImage.getWidth(),
+                    coverImage.getHeight(),
+                    metadata.lsbDepth(),
+                    metaJsonBytes.length,
+                    plainPayloadLength
+            );
+
+            if (!estimation.fits()) {
+                throw new MessageTooLargeException(
+                        "Payload too large for image with LSB depth %d. Capacity=%d required≈%d (overhead=%d, encrypted≈%d)"
+                                .formatted(
+                                        metadata.lsbDepth(),
+                                        estimation.capacityBytes(),
+                                        estimation.requiredBytes(),
+                                        estimation.overheadBytes(),
+                                        estimation.encryptedBytes()
+                                )
+                );
+            }
+        } catch (MessageTooLargeException e) {
+            throw e;
+        } catch (Exception e) {
+            // Fallback: do not hide unexpected errors
+            throw new MessageTooLargeException(
+                    "Failed early capacity check: " + e.getMessage(), e);
         }
     }
 
