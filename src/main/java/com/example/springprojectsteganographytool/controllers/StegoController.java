@@ -2,7 +2,6 @@ package com.example.springprojectsteganographytool.controllers;
 
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
-import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
@@ -123,10 +122,12 @@ public class StegoController {
 
     @GetMapping(path = "/encodings/{id}/stego-image")
     public ResponseEntity<byte[]> downloadStegoImage(@PathVariable("id") UUID id) throws Exception {
-        StegoDownloadDTO dto = steganographyService.downloadStegoImage(id);
+        var dto = steganographyService.downloadStegoImage(id);
         var headers = new HttpHeaders();
+
         headers.setContentType(MediaType.parseMediaType(dto.contentType()));
         headers.setContentDisposition(ContentDisposition.attachment().filename(dto.fileName()).build());
+
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(dto.fileData());
