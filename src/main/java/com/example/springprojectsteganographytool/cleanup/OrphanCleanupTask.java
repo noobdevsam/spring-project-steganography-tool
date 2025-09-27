@@ -20,7 +20,7 @@ public class OrphanCleanupTask {
     private final StegoDataRepository stegoDataRepository;
 
     public OrphanCleanupTask(
-            @Value("${app.cleanup.enabled.false}") boolean enabled,
+            @Value("${app.cleanup.enabled:false}") boolean enabled,
             @Value("${app.storage.base-path}") Path basePath,
             StegoDataRepository stegoDataRepository
     ) {
