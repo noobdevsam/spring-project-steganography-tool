@@ -45,8 +45,8 @@ public class OrphanCleanupTask {
      * If any errors occur during the process, they are logged as warnings.
      */
     @Scheduled(
-            initialDelayString = "${app.cleanup.initial-delay-ms: 60000}",
-            fixedDelayString = "${app.cleanup.interval-ms: 300000}"
+            initialDelayString = "${app.cleanup.initial-delay-ms:60000}",
+            fixedDelayString = "${app.cleanup.interval-ms:300000}"
     )
     public void runCleanup() {
         // Exit early if the cleanup task is disabled
