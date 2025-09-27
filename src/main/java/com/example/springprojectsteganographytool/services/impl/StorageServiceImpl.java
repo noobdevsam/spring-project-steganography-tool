@@ -1,6 +1,7 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.services.StorageService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -10,8 +11,8 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 @Service
+@Slf4j
 public class StorageServiceImpl implements StorageService {
-
 
     private final Path basePath;
 
@@ -41,6 +42,25 @@ public class StorageServiceImpl implements StorageService {
         }
 
         return targetPath;
+    }
+
+    @Override
+    public boolean delete(String relativeFileName) throws Exception {
+        var targetPath = safeResolve(relativeFileName);
+
+        if (Files.exists(targetPath)) {
+            var deleted = Files.deleteIfExists(targetPath);
+
+            if (deleted) {
+                log.debug("Deleted file: {}", targetPath);
+            } else {
+                log.warn("Could not delete file: {}", targetPath);
+            }
+
+            return deleted;
+        }
+
+        return false;
     }
 
     private Path safeResolve(String name) {
