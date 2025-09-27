@@ -24,7 +24,7 @@ public class CapacityUtilServiceImpl implements CapacityUtilService {
     private static final int IV_LEN = 16;
     private static final int AES_BLOCK_SIZE = 16;
 
-    private CapacityUtilServiceImpl() {
+    CapacityUtilServiceImpl() {
     }
 
     @Override
