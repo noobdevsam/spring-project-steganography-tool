@@ -3,6 +3,7 @@ package com.example.springprojectsteganographytool.cleanup;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.nio.file.Path;
@@ -23,6 +24,14 @@ public class OrphanCleanupTask {
         this.enabled = enabled;
         this.basePath = basePath.toAbsolutePath().normalize();
         this.stegoDataRepository = stegoDataRepository;
+    }
+
+    @Scheduled(
+            initialDelayString = "${app.cleanup.initial-delay-ms: 60000}",
+            fixedDelayString = "${app.cleanup.interval-ms: 300000}"
+    )
+    public void runCleanup() {
+
     }
 
 }
