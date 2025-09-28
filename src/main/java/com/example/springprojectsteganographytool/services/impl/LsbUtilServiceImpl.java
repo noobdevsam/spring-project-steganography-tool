@@ -120,7 +120,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
-        return null;
+        try {
+            return extractMetadataFromImage(convertForLsb(image));
+        } catch (MetadataNotFoundException e) {
+            throw new InvalidImageFormatException("Metadata not found: " + e.getMessage());
+        } catch (InvalidImageFormatException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
+        }
     }
 
     // ----- Private High-Level Helper Methods -----
