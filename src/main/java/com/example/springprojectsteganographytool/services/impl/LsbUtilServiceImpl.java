@@ -43,7 +43,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         this.executorService = executorService;
     }
 
-    // ------- Existing  byte[]  API (unchanged external contract) -------
+    // ------- New  BufferedImage-based public API -------
 
     @Override
     public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
@@ -59,8 +59,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbEncodingException("Failed to encode payload into image", e);
         }
     }
-
-    // ------- New  BufferedImage-based  API (phase 3) -------
 
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
@@ -85,6 +83,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbDecodingException("Decoding failed: " + e.getMessage());
         }
     }
+
+    // ----- Private High-Level Helper Methods -----
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
 
@@ -137,7 +137,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
         return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
     }
-    // ----- Private High-Level Helper Methods -----
 
     private byte[] encodeWithMetadata(
             byte[] imageBytes,
@@ -221,7 +220,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
-    // ----- Header / Metadata helpers -----
+    // ----- Private Mid-Level Header / Metadata helpers -----
 
     private HeaderInfo readHeaderAndMetaLength(BufferedImage image) throws Exception {
 
