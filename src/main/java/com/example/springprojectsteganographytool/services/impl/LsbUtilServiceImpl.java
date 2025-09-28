@@ -258,9 +258,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Header / Metadata helpers -----
 
-    private HeaderInfo readHeaderAndMetaLength(byte[] stegoImageBytes) throws Exception {
-
-        var image = bytesToImage(stegoImageBytes);
+    private HeaderInfo readHeaderAndMetaLength(BufferedImage image) throws Exception {
 
         // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
         var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
