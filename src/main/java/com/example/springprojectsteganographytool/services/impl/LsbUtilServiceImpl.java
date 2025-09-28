@@ -44,6 +44,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         this.executorService = executorService;
     }
 
+    // ------- Existing  byte[]  API (unchanged external contract) -------
 
     @Override
     public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
@@ -84,46 +85,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
 
     }
-
-
-    // ----- Private High-Level Helper Methods -----
-
-
-    @Override
-    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
-
-        log.info("Extracting metadata from stego image");
-
-        Callable<StegoMetadataDTO> task = () -> {
-            // Read header and metadata length
-            var info = readHeaderAndMetaLength(stegoImageBytes);
-
-            // 3) Read metadata JSON: [META_JSON] at LSB=1
-            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
-            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
-
-            // 4) Deserialize metadata JSON and return
-            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-
-            // Note: We intentionally do not validate fields such as lsbDepth here,
-            // because extraction/decoding paths validate them when needed.
-        };
-
-        try {
-            return executorService.submit(task).get();
-        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
-            throw e; // Re-throw specific exceptions
-        } catch (Exception e) {
-            throw new MetadataDecodingException("Failed to decode metadata from image", e);
-        }
-
-    }
-
-    @Override
-    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
-        return null;
-    }
-
 
     private byte[] encodeWithMetadata(
             byte[] imageBytes,
@@ -207,6 +168,45 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    // ------- New  BufferedImage-based  API (phase 3) -------
+
+    // ----- Private High-Level Helper Methods -----
+
+
+    @Override
+    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+
+        log.info("Extracting metadata from stego image");
+
+        Callable<StegoMetadataDTO> task = () -> {
+            // Read header and metadata length
+            var info = readHeaderAndMetaLength(stegoImageBytes);
+
+            // 3) Read metadata JSON: [META_JSON] at LSB=1
+            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
+            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
+
+            // 4) Deserialize metadata JSON and return
+            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+
+            // Note: We intentionally do not validate fields such as lsbDepth here,
+            // because extraction/decoding paths validate them when needed.
+        };
+
+        try {
+            return executorService.submit(task).get();
+        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (Exception e) {
+            throw new MetadataDecodingException("Failed to decode metadata from image", e);
+        }
+
+    }
+
+    @Override
+    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
+        return null;
+    }
 
     private byte[] extractPayloadUsingDepth(byte[] stegoImageBytes, int lsbDepth) throws Exception {
         if (lsbDepth != 1 && lsbDepth != 2) {
@@ -243,6 +243,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return readBytesFromImage(info.image(), payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
+    // ----- Header / Metadata helpers -----
 
     private HeaderInfo readHeaderAndMetaLength(byte[] stegoImageBytes) throws Exception {
 
