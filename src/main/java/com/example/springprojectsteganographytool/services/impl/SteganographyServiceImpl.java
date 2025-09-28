@@ -213,10 +213,8 @@ public class SteganographyServiceImpl implements SteganographyService {
 
         try {
 
-            var stegoBytes = bufferedImageToPngBytes(stegoImage); // Convert BufferedImage to byte array in PNG format
-
             var metadata = executorService.submit(
-                    () -> lsbUtilService.extractMetadata(stegoBytes)
+                    () -> lsbUtilService.extractMetadata(stegoImage)
             ).get(); // Extract metadata from the stego image bytes
             if (metadata == null) {
                 throw new MetadataNotFoundException("No metadata found in the provided image.");
@@ -229,7 +227,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             if (metadata.hasText()) {
                 var encodedText = executorService.submit(
-                        () -> lsbUtilService.decode(stegoBytes, metadata.lsbDepth())
+                        () -> lsbUtilService.decode(stegoImage, metadata.lsbDepth())
                 ).get(); // Decode the text from the stego image bytes
 
                 var text = executorService.submit(
@@ -241,7 +239,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 );
             } else if (metadata.hasFile()) {
                 var encodedFile = executorService.submit(
-                        () -> lsbUtilService.decode(stegoBytes, metadata.lsbDepth())
+                        () -> lsbUtilService.decode(stegoImage, metadata.lsbDepth())
                 ).get();
 
                 var fileBytes = executorService.submit(
