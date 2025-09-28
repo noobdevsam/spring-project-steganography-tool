@@ -131,6 +131,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
+        var info = readHeaderAndMetaLength(image);
+        var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
+        var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
+        return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+    }
     // ----- Private High-Level Helper Methods -----
 
     private byte[] encodeWithMetadata(
