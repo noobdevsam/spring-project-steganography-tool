@@ -92,25 +92,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         log.info("Extracting metadata from stego image");
 
         Callable<StegoMetadataDTO> task = () -> {
-            // Read header and metadata length
-            var info = readHeaderAndMetaLength(stegoImageBytes);
-
-            // 3) Read metadata JSON: [META_JSON] at LSB=1
-            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
-            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
-
-            // 4) Deserialize metadata JSON and return
-            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-
-            // Note: We intentionally do not validate fields such as lsbDepth here,
-            // because extraction/decoding paths validate them when needed.
+            var image = bytesToImage(stegoImageBytes);
+            return extractMetadataFromImage(image);
         };
-
         try {
             return executorService.submit(task).get();
-        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
-            throw e; // Re-throw specific exceptions
         } catch (Exception e) {
+            if (e.getCause() instanceof InvalidImageFormatException || e.getCause() instanceof MetadataNotFoundException) {
+                throw e;
+            }
             throw new MetadataDecodingException("Failed to decode metadata from image", e);
         }
 
@@ -121,7 +111,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
         try {
-            return extractMetadataFromImage(convertForLsb(image));
+            return extractMetadataFromImage(convertForLsb(stegoImage));
         } catch (MetadataNotFoundException e) {
             throw new InvalidImageFormatException("Metadata not found: " + e.getMessage());
         } catch (InvalidImageFormatException e) {
