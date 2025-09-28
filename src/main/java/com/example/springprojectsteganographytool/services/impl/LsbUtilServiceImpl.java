@@ -121,6 +121,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    @Override
+    public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+        return new byte[0];
+    }
+
     private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
         var info = readHeaderAndMetaLength(image);
         var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
