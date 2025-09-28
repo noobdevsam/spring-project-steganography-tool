@@ -6,7 +6,6 @@ import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFo
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
-import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
@@ -61,51 +60,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
-
-    @Override
-    public byte[] decode(byte[] stegoImageBytes, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-
-        Callable<byte[]> task = () -> {
-            if (lsbDepth == null) {
-                log.warn("lsbDepth is null, extracting metadata from stego image");
-                var metadata = extractMetadata(stegoImageBytes);
-                return extractPayloadUsingDepth(stegoImageBytes, metadata.lsbDepth());
-            } else {
-                log.info("Using provided lsbDepth: {}", lsbDepth);
-                return extractPayloadUsingDepth(stegoImageBytes, lsbDepth);
-            }
-        };
-
-        try {
-            return executorService.submit(task).get();
-        } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new LsbDecodingException(e.getMessage());
-        }
-
-    }
-
-    @Override
-    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
-
-        log.info("Extracting metadata from stego image");
-
-        Callable<StegoMetadataDTO> task = () -> {
-            var image = bytesToImage(stegoImageBytes);
-            return extractMetadataFromImage(image);
-        };
-        try {
-            return executorService.submit(task).get();
-        } catch (Exception e) {
-            if (e.getCause() instanceof InvalidImageFormatException || e.getCause() instanceof MetadataNotFoundException) {
-                throw e;
-            }
-            throw new MetadataDecodingException("Failed to decode metadata from image", e);
-        }
-
-    }
-
     // ------- New  BufferedImage-based  API (phase 3) -------
 
     @Override
@@ -125,9 +79,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
         try {
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
-        } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
-            throw e;
-        } catch (LsbDecodingException e) {
+        } catch (InvalidLsbDepthException | InvalidImageFormatException | LsbDecodingException e) {
             throw e;
         } catch (Exception e) {
             throw new LsbDecodingException("Decoding failed: " + e.getMessage());
@@ -135,7 +87,48 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
-        return null;
+
+        StegoMetadataDTO meta = null;
+
+        if (lsbDepth == null) {
+            meta = extractMetadataFromImage(bufferedImage);
+            lsbDepth = meta.lsbDepth();
+        }
+
+        if (lsbDepth != 1 && lsbDepth != 2) {
+            throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
+        }
+
+        // 1) Read and validate header + meta length (at LSB=1)
+        var headerInfo = readHeaderAndMetaLength(bufferedImage);
+
+        // 2) Derive meta pixel usages by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + headerInfo.metaLength();
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+
+        // 3) Read payload length at chosen depth by user
+        var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, lsbDepth, PAYLOAD_LEN_BYTES);
+        var payloadLength = ByteBuffer
+                .wrap(payloadLenBytes)
+                .order(ByteOrder.BIG_ENDIAN)
+                .getLong();
+        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
+            throw new LsbDecodingException("Payload length invalid or too large");
+        }
+
+        // 4) Capacity check
+        var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
+        var remainingPixels = totalPixels - metaPixelCount;
+        var maxPayloadBytes = ((remainingPixels * 3L * lsbDepth) / 8L) - PAYLOAD_LEN_BYTES;
+        if (payloadLength > maxPayloadBytes) {
+            throw new LsbDecodingException("Payload length exceeds capacity");
+        }
+
+        // 5) Read payload at chosen depth by user
+        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, lsbDepth);
+        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
+
+        return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
     private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
@@ -226,41 +219,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         } catch (Exception e) {
             throw new LsbEncodingException("LSB encoding failed", e);
         }
-    }
-
-    private byte[] extractPayloadUsingDepth(byte[] stegoImageBytes, int lsbDepth) throws Exception {
-        if (lsbDepth != 1 && lsbDepth != 2) {
-            throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
-        }
-
-        // 1) Read and validate header + metadata length (both at LSB=1)
-        var info = readHeaderAndMetaLength(stegoImageBytes);
-
-        // 2) Compute how many pixels were used by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
-        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
-        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
-
-        // 3) Read payload length (at caller-provided LSB depth)
-        var payloadLenBytes = readBytesFromImage(info.image(), metaPixelCount, lsbDepth, PAYLOAD_LEN_BYTES);
-        var payloadLength = ByteBuffer.wrap(payloadLenBytes).order(ByteOrder.BIG_ENDIAN).getLong();
-
-        if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload length is invalid or too large");
-        }
-
-        // 4) Capacity check for remaining pixels at the chosen depth
-        var totalPixels = (long) info.image().getWidth() * info.image().getHeight();
-        var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = ((remainingPixels * 3L * lsbDepth) / 8L) - PAYLOAD_LEN_BYTES;
-        if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length exceeds the maximum allowed size for the image");
-        }
-
-        // 5) Read payload bytes (at caller-provided LSB depth)
-        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, lsbDepth);
-        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
-
-        return readBytesFromImage(info.image(), payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
     // ----- Header / Metadata helpers -----

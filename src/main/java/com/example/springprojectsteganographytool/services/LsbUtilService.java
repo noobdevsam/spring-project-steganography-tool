@@ -18,15 +18,6 @@ public interface LsbUtilService {
             StegoMetadataDTO metadata
     ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
 
-
-    byte[] decode(
-            byte[] stegoImageBytes,
-            Integer lsbDepth
-    ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
-
-
-    StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws Exception;
-
     //New: BufferedImage-based APIs (Phase 3)
     StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException;
 
