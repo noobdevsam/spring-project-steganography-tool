@@ -285,6 +285,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private Low-Level Helper Methods -----
 
+    private BufferedImage convertForLsb(BufferedImage source) {
+
+        if (source.getType() == BufferedImage.TYPE_INT_ARGB) {
+            return source; // Already in the desired format
+        }
+
+        // Convert to TYPE_INT_ARGB to ensure consistent pixel operations
+        var convertedImage = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
+
+        // Draw the original image onto the converted image
+        convertedImage.getGraphics().drawImage(source, 0, 0, null);
+
+        return convertedImage;
+    }
+
 
     private BufferedImage bytesToImage(
             byte[] imageBytes
