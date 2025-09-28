@@ -212,12 +212,17 @@ public class SteganographyServiceImpl implements SteganographyService {
     public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws InvalidEncryptionKeyException, MetadataNotFoundException, StegoDataNotFoundException, LsbDecodingException, AesOperationException, MetadataDecodingException, ExecutionException, InterruptedException {
 
         try {
-
-            var stegoBytes = bufferedImageToPngBytes(stegoImage); // Convert BufferedImage to byte array in PNG format
-
+            // Use direct BufferedImage metadata extraction (no intermediate PNG serialization)
             var metadata = executorService.submit(
-                    () -> lsbUtilService.extractMetadata(stegoBytes)
+                    () -> {
+                        try {
+                            return lsbUtilService.extractMetadata(stegoImage);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
             ).get(); // Extract metadata from the stego image bytes
+
             if (metadata == null) {
                 throw new MetadataNotFoundException("No metadata found in the provided image.");
             }
@@ -229,8 +234,14 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             if (metadata.hasText()) {
                 var encodedText = executorService.submit(
-                        () -> lsbUtilService.decode(stegoBytes, metadata.lsbDepth())
-                ).get(); // Decode the text from the stego image bytes
+                        () -> {
+                            try {
+                                return lsbUtilService.decode(stegoImage, metadata.lsbDepth());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                ).get();
 
                 var text = executorService.submit(
                         () -> aesUtilService.decryptText(encodedText, password)
@@ -241,7 +252,13 @@ public class SteganographyServiceImpl implements SteganographyService {
                 );
             } else if (metadata.hasFile()) {
                 var encodedFile = executorService.submit(
-                        () -> lsbUtilService.decode(stegoBytes, metadata.lsbDepth())
+                        () -> {
+                            try {
+                                return lsbUtilService.decode(stegoImage, metadata.lsbDepth());
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
                 ).get();
 
                 var fileBytes = executorService.submit(
