@@ -25,7 +25,7 @@ public interface LsbUtilService {
     ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
 
 
-    StegoMetadataDTO extractMetadata(byte[] stegoImageBytes);
+    StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws Exception;
 
     //New: BufferedImage-based APIs (Phase 3)
     StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException;
