@@ -86,6 +86,40 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    @Override
+    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
+
+        log.info("Extracting metadata from stego image");
+
+        Callable<StegoMetadataDTO> task = () -> {
+            // Read header and metadata length
+            var info = readHeaderAndMetaLength(stegoImageBytes);
+
+            // 3) Read metadata JSON: [META_JSON] at LSB=1
+            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
+            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
+
+            // 4) Deserialize metadata JSON and return
+            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+
+            // Note: We intentionally do not validate fields such as lsbDepth here,
+            // because extraction/decoding paths validate them when needed.
+        };
+
+        try {
+            return executorService.submit(task).get();
+        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
+            throw e; // Re-throw specific exceptions
+        } catch (Exception e) {
+            throw new MetadataDecodingException("Failed to decode metadata from image", e);
+        }
+
+    }
+
+    // ------- New  BufferedImage-based  API (phase 3) -------
+
+    // ----- Private High-Level Helper Methods -----
+
     private byte[] encodeWithMetadata(
             byte[] imageBytes,
             byte[] payloadDataBytes,
@@ -166,41 +200,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         } catch (Exception e) {
             throw new LsbEncodingException("LSB encoding failed", e);
         }
-    }
-
-    // ------- New  BufferedImage-based  API (phase 3) -------
-
-    // ----- Private High-Level Helper Methods -----
-
-
-    @Override
-    public StegoMetadataDTO extractMetadata(byte[] stegoImageBytes) throws MetadataNotFoundException, MetadataDecodingException, InvalidImageFormatException {
-
-        log.info("Extracting metadata from stego image");
-
-        Callable<StegoMetadataDTO> task = () -> {
-            // Read header and metadata length
-            var info = readHeaderAndMetaLength(stegoImageBytes);
-
-            // 3) Read metadata JSON: [META_JSON] at LSB=1
-            var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
-            var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
-
-            // 4) Deserialize metadata JSON and return
-            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-
-            // Note: We intentionally do not validate fields such as lsbDepth here,
-            // because extraction/decoding paths validate them when needed.
-        };
-
-        try {
-            return executorService.submit(task).get();
-        } catch (InvalidImageFormatException | MetadataNotFoundException e) {
-            throw e; // Re-throw specific exceptions
-        } catch (Exception e) {
-            throw new MetadataDecodingException("Failed to decode metadata from image", e);
-        }
-
     }
 
     @Override
