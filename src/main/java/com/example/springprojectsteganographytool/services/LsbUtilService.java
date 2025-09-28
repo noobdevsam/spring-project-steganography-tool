@@ -8,6 +8,8 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingExce
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 
+import java.awt.image.BufferedImage;
+
 /**
  * Service interface for performing Least Significant Bit (LSB) steganography operations.
  * Provides methods for encoding data into images, decoding data from stego images,
@@ -51,4 +53,7 @@ public interface LsbUtilService {
 
 
     StegoMetadataDTO extractMetadata(byte[] stegoImageBytes);
+
+    //New: BufferedImage-based APIs (Phase 3)
+    StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException;
 }
