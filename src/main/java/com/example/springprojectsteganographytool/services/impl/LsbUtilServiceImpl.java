@@ -118,6 +118,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ------- New  BufferedImage-based  API (phase 3) -------
 
+    @Override
+    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
+        return null;
+    }
+
     // ----- Private High-Level Helper Methods -----
 
     private byte[] encodeWithMetadata(
@@ -200,11 +205,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         } catch (Exception e) {
             throw new LsbEncodingException("LSB encoding failed", e);
         }
-    }
-
-    @Override
-    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
-        return null;
     }
 
     private byte[] extractPayloadUsingDepth(byte[] stegoImageBytes, int lsbDepth) throws Exception {
