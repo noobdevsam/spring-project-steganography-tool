@@ -123,7 +123,19 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     @Override
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
-        return new byte[0];
+        try {
+            return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
+        } catch (InvalidLsbDepthException | InvalidImageFormatException e) {
+            throw e;
+        } catch (LsbDecodingException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new LsbDecodingException("Decoding failed: " + e.getMessage());
+        }
+    }
+
+    private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) {
+        return null;
     }
 
     private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
