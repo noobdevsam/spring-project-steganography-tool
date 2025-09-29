@@ -402,13 +402,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             byte[] dataBytes
     ) throws MessageTooLargeException {
-        int width = image.getWidth(); // get image width
-        int height = image.getHeight(); // get image height
-        int totalPixels = width * height; // calculate total number of pixels in the image
-        int bitPointer = 0; // bit pointer to track the current bit in the byte
-        int bytePointer = 0; // byte pointer to track the current byte in the dataBytes array
-        int totalBits = dataBytes.length * 8; // total bits in the dataBytes array
-        int pixelIndex = startPixel; // start pixel index to begin writing data
+        var width = image.getWidth(); // get image width
+        var height = image.getHeight(); // get image height
+        var totalPixels = width * height; // calculate total number of pixels in the image
+        var bitPointer = 0; // bit pointer to track the current bit in the byte
+        var bytePointer = 0; // byte pointer to track the current byte in the dataBytes array
+        var totalBits = dataBytes.length * 8; // total bits in the dataBytes array
+        var pixelIndex = startPixel; // start pixel index to begin writing data
 
         // label for breaking out of nested loops
         outer:
