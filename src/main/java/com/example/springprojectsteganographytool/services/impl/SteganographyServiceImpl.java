@@ -7,9 +7,7 @@ import com.example.springprojectsteganographytool.exceptions.data.StorageExcepti
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
-import com.example.springprojectsteganographytool.exceptions.file.FileTooLargeException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
-import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEncodingException;
@@ -34,7 +32,6 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,7 +44,6 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final StegoDataRepository stegoDataRepository;
     private final StegoDataMapper stegoDataMapper;
     private final StorageService storageService;
-    private final ExecutorService executorService;
     private final ObjectMapper objectMapper;
 
     public SteganographyServiceImpl(
@@ -57,7 +53,6 @@ public class SteganographyServiceImpl implements SteganographyService {
             StegoDataRepository stegoDataRepository,
             StegoDataMapper stegoDataMapper,
             StorageService storageService,
-            ExecutorService executorService,
             ObjectMapper objectMapper) {
         this.aesUtilService = aesUtilService;
         this.lsbUtilService = lsbUtilService;
@@ -65,7 +60,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.stegoDataRepository = stegoDataRepository;
         this.stegoDataMapper = stegoDataMapper;
         this.storageService = storageService;
-        this.executorService = executorService;
         this.objectMapper = objectMapper;
     }
 
@@ -84,7 +78,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             propagation = Propagation.REQUIRED
     )
     @Override
-    public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws InvalidLsbDepthException, MessageTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException, ExecutionException, InterruptedException {
+    public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws Exception {
         validateLsbDepth(lsbDepth);
 
         try {
@@ -100,14 +94,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             // Phase 1: Early capacity estimation before encryption
             earlyCapacityCheck(coverImage, metadata, message.getBytes().length);
 
-            var encodedBytes = executorService.submit(
-                    () -> aesUtilService.encryptText(message, password)
-            ).get();
+            var encodedBytes = aesUtilService.encryptText(message, password);
 
             var coverBytes = bufferedImageToPngBytes(coverImage);
-            var stegoBytes = executorService.submit(
-                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
-            ).get();
+            var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
             var safeName = "stego-text-" + UUID.randomUUID() + ".png";
             var _ = storageService.save(safeName, stegoBytes);
@@ -126,25 +116,13 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
-                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
-                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
-                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
-                case AesOperationException aesOperationException -> throw aesOperationException;
-                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
-                case StorageException storageException -> throw storageException;
-                case ExecutionException executionException -> throw executionException;
-                case InterruptedException interruptedException -> throw interruptedException;
-                default -> throw new StorageException(e.getMessage(), e.getCause());
-
-            }
+            throw new RuntimeException(e);
         }
 
     }
 
     @Override
-    public StegoEncodeResponseDTO encodeFile(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws InvalidLsbDepthException, FileTooLargeException, InvalidEncryptionKeyException, LsbEncodingException, AesOperationException, MetadataEncodingException, StorageException, ExecutionException, InterruptedException {
+    public StegoEncodeResponseDTO encodeFile(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws Exception {
         validateLsbDepth(lsbDepth);
 
         try {
@@ -160,14 +138,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             // Phase 1: Early capacity estimation before encryption
             earlyCapacityCheck(coverImage, metadata, fileBytes.length);
 
-            var encodedBytes = executorService.submit(
-                    () -> aesUtilService.encryptFile(fileBytes, password)
-            ).get();
+            var encodedBytes = aesUtilService.encryptFile(fileBytes, password);
 
             var coverBytes = bufferedImageToPngBytes(coverImage);
-            var stegoBytes = executorService.submit(
-                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
-            ).get();
+            var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
             // save the stego image to storage
             var baseName = originalFileName != null ? originalFileName : "embedded-file";
@@ -192,99 +166,44 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
-                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
-                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
-                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
-                case AesOperationException aesOperationException -> throw aesOperationException;
-                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
-                case StorageException storageException -> throw storageException;
-                case ExecutionException executionException -> throw executionException;
-                case InterruptedException interruptedException -> throw interruptedException;
-                default -> throw new StorageException(e.getMessage(), e.getCause());
-            }
+            throw new RuntimeException(e);
         }
 
     }
 
     @Override
-    public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws InvalidEncryptionKeyException, MetadataNotFoundException, StegoDataNotFoundException, LsbDecodingException, AesOperationException, MetadataDecodingException, ExecutionException, InterruptedException {
+    public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws Exception {
 
-        try {
-            // Use direct BufferedImage metadata extraction (no intermediate PNG serialization)
-            var metadata = executorService.submit(
-                    () -> {
-                        try {
-                            return lsbUtilService.extractMetadata(stegoImage);
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }
-            ).get(); // Extract metadata from the stego image bytes
+        // Use direct BufferedImage metadata extraction (no intermediate PNG serialization)
+        var metadata = lsbUtilService.extractMetadata(stegoImage);
 
-            if (metadata == null) {
-                throw new MetadataNotFoundException("No metadata found in the provided image.");
-            }
+        if (metadata == null) {
+            throw new MetadataNotFoundException("No metadata found in the provided image.");
+        }
 
-            var providedKeyHash = aesUtilService.generateKey(password); // Generate the key hash from the provided password
-            if (!providedKeyHash.equals(metadata.encryptionKeyHash())) {
-                throw new AesKeyInvalidException("Provided password does not match the encryption key.");
-            }
+        var providedKeyHash = aesUtilService.generateKey(password); // Generate the key hash from the provided password
+        if (!providedKeyHash.equals(metadata.encryptionKeyHash())) {
+            throw new AesKeyInvalidException("Provided password does not match the encryption key.");
+        }
 
-            if (metadata.hasText()) {
-                var encodedText = executorService.submit(
-                        () -> {
-                            try {
-                                return lsbUtilService.decode(stegoImage, metadata.lsbDepth());
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                ).get();
+        if (metadata.hasText()) {
+            var encodedText = lsbUtilService.decode(
+                    stegoImage, metadata.lsbDepth()
+            );
+            var text = aesUtilService.decryptText(encodedText, password);
 
-                var text = executorService.submit(
-                        () -> aesUtilService.decryptText(encodedText, password)
-                ).get(); // Decrypt the encoded text using the provided password
+            return new StegoDecodeResponseDTO(
+                    text, null, null, true, false
+            );
+        } else if (metadata.hasFile()) {
+            var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
+            var fileBytes = aesUtilService.decryptFile(encodedFile, password);
 
-                return new StegoDecodeResponseDTO(
-                        text, null, null, true, false
-                );
-            } else if (metadata.hasFile()) {
-                var encodedFile = executorService.submit(
-                        () -> {
-                            try {
-                                return lsbUtilService.decode(stegoImage, metadata.lsbDepth());
-                            } catch (Exception e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                ).get();
-
-                var fileBytes = executorService.submit(
-                        () -> aesUtilService.decryptFile(encodedFile, password)
-                ).get(); // Decrypt the encoded file using the provided password
-
-                return new StegoDecodeResponseDTO(
-                        null, metadata.originalFileName(), fileBytes, false, true
-                );
-            } else {
-                throw new MetadataDecodingException("No text or file data found in the provided image.");
-            }
-
-        } catch (Exception e) {
-            switch (e) {
-                case InvalidLsbDepthException invalidLsbDepthException -> throw invalidLsbDepthException;
-                case MessageTooLargeException messageTooLargeException -> throw messageTooLargeException;
-                case InvalidEncryptionKeyException invalidEncryptionKeyException -> throw invalidEncryptionKeyException;
-                case LsbEncodingException lsbEncodingException -> throw lsbEncodingException;
-                case AesOperationException aesOperationException -> throw aesOperationException;
-                case MetadataEncodingException metadataEncodingException -> throw metadataEncodingException;
-                case StorageException storageException -> throw storageException;
-                case ExecutionException executionException -> throw executionException;
-                case InterruptedException interruptedException -> throw interruptedException;
-                default -> throw new StorageException(e.getMessage(), e.getCause());
-            }
+            return new StegoDecodeResponseDTO(
+                    null, metadata.originalFileName(), fileBytes, false, true
+            );
+        } else {
+            throw new MetadataDecodingException("No text or file data found in the provided image.");
         }
 
     }

@@ -3,13 +3,12 @@ package com.example.springprojectsteganographytool.services.impl;
 import org.junit.jupiter.api.Test;
 
 import java.awt.image.BufferedImage;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class LsbUtilServiceImplImageDecodePathTest {
 
-    private final LsbUtilServiceImpl service = new LsbUtilServiceImpl(Executors.newVirtualThreadPerTaskExecutor());
+    private final LsbUtilServiceImpl service = new LsbUtilServiceImpl();
 
     @Test
     void extractMetadataOnNotStegoImageFails() {
