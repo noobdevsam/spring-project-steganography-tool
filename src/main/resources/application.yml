@@ -22,8 +22,9 @@ spring:
 app:
     storage:
         base-path: ${STORAGE_BASE_PATH}
-
     cleanup:
-        enabled: false # Set to true to enable cleanup task
+        enabled: true # Set to true to enable cleanup task
         initial-delay-ms: 60000 # 1 minute
         interval-ms: 300000 # 5 minutes
+    stream:
+        threshold-bytes: 10485760 # 5 MB streaming cutoff
