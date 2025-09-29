@@ -7,6 +7,7 @@ import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -28,15 +29,18 @@ public class StegoController {
     private final SteganographyService steganographyService;
     private final LsbUtilService lsbUtilService;
     private final CapacityUtilService capacityUtilService;
+    private final long streamThreshold;
 
     public StegoController(
             SteganographyService steganographyService,
             LsbUtilService lsbUtilService,
-            CapacityUtilService capacityUtilService
+            CapacityUtilService capacityUtilService,
+            @Value("${app.stream.threshold-bytes:5242880}") long streamThreshold
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;
         this.capacityUtilService = capacityUtilService;
+        this.streamThreshold = streamThreshold;
     }
 
     // ----- Helper -----
