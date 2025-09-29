@@ -160,7 +160,6 @@ public class StegoController {
     public ResponseEntity<StegoMetadataDTO> extractMetadata(
             @RequestParam("stegoImage") MultipartFile stegoImage
     ) throws IOException {
-        var bytes = stegoImage.getBytes();
         var meta = lsbUtilService.extractMetadata(toBufferedImage(stegoImage));
         if (meta == null) {
             throw new InvalidImageFormatException("No metadata found or invalid image provided.");
