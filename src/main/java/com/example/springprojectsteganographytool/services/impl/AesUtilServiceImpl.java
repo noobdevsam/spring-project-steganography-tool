@@ -25,14 +25,14 @@ import java.util.HexFormat;
 public class AesUtilServiceImpl implements AesUtilService {
 
     // Constants for encryption configuration
-    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
-    private static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
-    private static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
-    private static final int KEY_LENGTH = 256; // AES-256 key length in bits
-    private static final int SALT_LENGTH = 16; // Length of the salt in bytes
-    private static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
+    static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
+    static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
+    static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
+    static final int KEY_LENGTH = 256; // AES-256 key length in bits
+    static final int SALT_LENGTH = 16; // Length of the salt in bytes
+    static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
 
-    private static final SecureRandom RANDOM = new SecureRandom(); // Secure random generator for salt and IV
+    static final SecureRandom RANDOM = new SecureRandom(); // Secure random generator for salt and IV
 
     public AesUtilServiceImpl() {
     }
@@ -194,9 +194,9 @@ public class AesUtilServiceImpl implements AesUtilService {
         return cipher.doFinal(cipherText);
     }
 
-    //  --- Public helper method for key derivation ---
+    //  --- package-private helper method for key derivation ---
 
-    public static SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
+    static SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
         var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
         var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
         var keyBytes = factory.generateSecret(spec).getEncoded();
