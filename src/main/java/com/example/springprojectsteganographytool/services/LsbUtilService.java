@@ -20,7 +20,7 @@ public interface LsbUtilService {
     ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
 
     // Streaming encode: payload length known, data provided as stream
-    byte[] encode(
+    byte[] encodeStream(
             byte[] imageBytes,
             InputStream payloadStream,
             long payloadLength,

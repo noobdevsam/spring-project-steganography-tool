@@ -57,7 +57,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     @Override
-    public byte[] encode(byte[] imageBytes, InputStream payloadStream, long payloadLength, StegoMetadataDTO metadata) throws Exception {
+    public byte[] encodeStream(
+            byte[] imageBytes,
+            InputStream payloadStream,
+            long payloadLength,
+            StegoMetadataDTO metadata
+    ) throws Exception {
         return new byte[0];
     }
 
