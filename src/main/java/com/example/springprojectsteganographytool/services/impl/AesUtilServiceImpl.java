@@ -56,29 +56,18 @@ public class AesUtilServiceImpl implements AesUtilService {
      */
     @Override
     public byte[] encryptText(String plainText, String key)
-            throws AesKeyInvalidException, AesOperationException {
+            throws Exception {
 
         // Validate the key
         if (key == null || key.isBlank()) {
             throw new AesKeyInvalidException("Encryption key is required and cannot be null or blank.");
         }
 
-        // Create a callable task to perform the encryption
-        Callable<byte[]> task = () -> encryptBytes(
-                plainText.getBytes(StandardCharsets.UTF_8), key
-        );
-
         try {
-            // Submit the encryption task to the executor service and wait for the result
-            // The get() method blocks until the task is complete and retrieves the result
-            return executorService.submit(task).get();
-        } catch (InterruptedException interruptedException) {
-            // Restore the interrupted status and throw an exception
-            Thread.currentThread().interrupt();
-            throw new AesOperationException("AES encryption interrupted", interruptedException);
-        } catch (ExecutionException ee) {
-            // Handle the cause of the execution exception
-            handleExecutionCause(ee);
+            return encryptBytes(
+                    plainText.getBytes(StandardCharsets.UTF_8), key
+            );
+        } catch (Exception ee) {
             throw new AesOperationException("AES operation failed", ee);
         }
     }
@@ -96,7 +85,7 @@ public class AesUtilServiceImpl implements AesUtilService {
      */
     @Override
     public String decryptText(byte[] cipherBytes, String key)
-            throws AesKeyInvalidException, AesOperationException {
+            throws Exception {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -140,7 +129,7 @@ public class AesUtilServiceImpl implements AesUtilService {
      */
     @Override
     public byte[] encryptFile(byte[] fileBytes, String key)
-            throws AesKeyInvalidException, AesOperationException {
+            throws Exception {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -178,7 +167,7 @@ public class AesUtilServiceImpl implements AesUtilService {
      */
     @Override
     public byte[] decryptFile(byte[] cipherBytes, String key)
-            throws AesKeyInvalidException, AesOperationException {
+            throws Exception {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -214,7 +203,7 @@ public class AesUtilServiceImpl implements AesUtilService {
      * @throws AesOperationException  If an error occurs during the hash generation process.
      */
     @Override
-    public String generateKey(String key) throws AesKeyInvalidException, AesOperationException {
+    public String generateKey(String key) throws Exception {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -339,26 +328,4 @@ public class AesUtilServiceImpl implements AesUtilService {
         return new SecretKeySpec(keyBytes, "AES");
     }
 
-    /**
-     * Handles the cause of an ExecutionException by rethrowing it as a specific exception
-     * or wrapping it in a generic AesOperationException.
-     *
-     * @param ee The ExecutionException to handle.
-     * @throws AesKeyInvalidException If the cause is an AesKeyInvalidException.
-     * @throws AesOperationException  If the cause is an AesOperationException or any other exception.
-     */
-    private void handleExecutionCause(ExecutionException ee) throws AesKeyInvalidException, AesOperationException {
-        var cause = ee.getCause();
-
-        if (cause instanceof AesKeyInvalidException) {
-            throw (AesKeyInvalidException) cause;
-        }
-
-        if (cause instanceof AesOperationException) {
-            throw (AesOperationException) cause;
-        }
-
-        // Otherwise, wrap the cause in a generic AesOperationException
-        throw new AesOperationException("Unexpected error during AES operation", cause);
-    }
 }
