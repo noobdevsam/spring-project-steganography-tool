@@ -25,10 +25,10 @@ import java.util.HexFormat;
 public class AesUtilServiceImpl implements AesUtilService {
 
     // Constants for encryption configuration
-    static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
+    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
     static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
-    static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
-    static final int KEY_LENGTH = 256; // AES-256 key length in bits
+    private static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
+    private static final int KEY_LENGTH = 256; // AES-256 key length in bits
     static final int SALT_LENGTH = 16; // Length of the salt in bytes
     static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
 
