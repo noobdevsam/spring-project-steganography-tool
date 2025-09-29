@@ -165,7 +165,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
 
-        StegoMetadataDTO meta;
+        StegoMetadataDTO meta = null;
 
         if (lsbDepth == null) {
             meta = extractMetadataFromImage(bufferedImage);
