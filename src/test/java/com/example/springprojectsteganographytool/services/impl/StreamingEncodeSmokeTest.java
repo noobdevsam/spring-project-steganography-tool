@@ -1,9 +1,5 @@
 package com.example.springprojectsteganographytool.services.impl;
 
-import com.example.springprojectsteganographytool.services.AesUtilService;
-import com.example.springprojectsteganographytool.services.CapacityUtilService;
-import com.example.springprojectsteganographytool.services.LargeFileEncryptionService;
-import com.example.springprojectsteganographytool.services.LsbUtilService;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
@@ -19,10 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Disabled
 class StreamingEncodeSmokeTest {
 
-    private final LsbUtilService lsb = new LsbUtilServiceImpl();
-    private final AesUtilService aes = new AesUtilServiceImpl();
-    private final CapacityUtilService cap = new CapacityUtilServiceImpl();
-    private final LargeFileEncryptionService large = new LargeFileEncryptionServiceImpl();
+    private final LsbUtilServiceImpl lsb = new LsbUtilServiceImpl();
+    private final AesUtilServiceImpl aes = new AesUtilServiceImpl();
+    private final CapacityUtilServiceImpl cap = new CapacityUtilServiceImpl();
+    private final LargeFileEncryptionServiceImpl large = new LargeFileEncryptionServiceImpl();
 
     @Test
     void streamingEncryptionAndEncodeRoundTrip() throws Exception {
@@ -32,9 +28,12 @@ class StreamingEncodeSmokeTest {
         g.fillRect(0, 0, 800, 800);
 
         byte[] bigPlain = new byte[6_000_000]; // 6MB
-        for (int i = 0; i < bigPlain.length; i++) bigPlain[i] = (byte) (i % 251);
+        for (int i = 0; i < bigPlain.length; i++) {
+            bigPlain[i] = (byte) (i % 251); // Fill with some data
+        }
 
         var encTemp = large.encryptToTempFile(new ByteArrayInputStream(bigPlain), "password");
+
         assertNotNull(encTemp);
     }
 }
