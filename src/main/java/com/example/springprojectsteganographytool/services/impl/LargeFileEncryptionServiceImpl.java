@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.InputStream;
+import java.nio.file.Files;
 
 @Service
 @Slf4j
@@ -29,6 +30,9 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
         var key = AesUtilServiceImpl.deriveKey(password, salt);
         var cipher = Cipher.getInstance(AesUtilServiceImpl.CIPHER_ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
+
+        var tempFile = Files.createTempFile("enc-", ".bin");
+        var succcess = false;
 
 
         return null;
