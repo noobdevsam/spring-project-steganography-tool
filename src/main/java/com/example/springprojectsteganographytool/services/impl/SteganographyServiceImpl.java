@@ -396,6 +396,27 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     private void preciseCapacityCheck(BufferedImage coverImage, StegoMetadataDTO metadata, long encryptedLength) {
+        try {
+            var metaJsonBytes = objectMapper.writeValueAsBytes(metadata);
+            long capacity = capacityUtilService.computeTotalCapacityBytes(
+                    coverImage.getWidth(),
+                    coverImage.getHeight(),
+                    metadata.lsbDepth()
+            );
+            long overhead = (4 + 1 + 4 + metaJsonBytes.length + 8); // same format overhead
+            long required = overhead + encryptedLength;
+
+            if (required > capacity) {
+                throw new MessageTooLargeException(
+                        "Encrypted payload does not fit (post-encryption) capacity=%d required=%d overhead=%d"
+                                .formatted(capacity, required, overhead)
+                );
+            }
+        } catch (MessageTooLargeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new MessageTooLargeException("Precise capacity check failed: " + e.getMessage(), e);
+        }
     }
 
     private Object sanitizeBaseName(String originalFileName) {
