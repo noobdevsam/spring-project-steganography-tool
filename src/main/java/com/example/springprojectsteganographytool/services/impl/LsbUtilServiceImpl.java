@@ -508,6 +508,14 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    private void writeStreamToImage(
+            BufferedImage working,
+            int payloadStartPixel,
+            int lsbDepth,
+            InputStream payloadStream,
+            long payloadLength
+    ) {
+    }
 
     private byte[] readBytesFromImage(
             BufferedImage image,
