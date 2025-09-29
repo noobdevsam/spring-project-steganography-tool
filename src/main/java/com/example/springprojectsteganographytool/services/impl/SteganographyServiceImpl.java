@@ -32,7 +32,6 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,7 +44,6 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final StegoDataRepository stegoDataRepository;
     private final StegoDataMapper stegoDataMapper;
     private final StorageService storageService;
-    private final ExecutorService executorService;
     private final ObjectMapper objectMapper;
 
     public SteganographyServiceImpl(
@@ -55,7 +53,6 @@ public class SteganographyServiceImpl implements SteganographyService {
             StegoDataRepository stegoDataRepository,
             StegoDataMapper stegoDataMapper,
             StorageService storageService,
-            ExecutorService executorService,
             ObjectMapper objectMapper) {
         this.aesUtilService = aesUtilService;
         this.lsbUtilService = lsbUtilService;
@@ -63,7 +60,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.stegoDataRepository = stegoDataRepository;
         this.stegoDataMapper = stegoDataMapper;
         this.storageService = storageService;
-        this.executorService = executorService;
         this.objectMapper = objectMapper;
     }
 
@@ -98,14 +94,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             // Phase 1: Early capacity estimation before encryption
             earlyCapacityCheck(coverImage, metadata, message.getBytes().length);
 
-            var encodedBytes = executorService.submit(
-                    () -> aesUtilService.encryptText(message, password)
-            ).get();
+            var encodedBytes = aesUtilService.encryptText(message, password);
 
             var coverBytes = bufferedImageToPngBytes(coverImage);
-            var stegoBytes = executorService.submit(
-                    () -> lsbUtilService.encode(coverBytes, encodedBytes, metadata)
-            ).get();
+            var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
             var safeName = "stego-text-" + UUID.randomUUID() + ".png";
             var _ = storageService.save(safeName, stegoBytes);
