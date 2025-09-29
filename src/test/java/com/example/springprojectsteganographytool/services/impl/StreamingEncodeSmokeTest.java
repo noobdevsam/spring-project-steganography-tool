@@ -15,9 +15,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @Disabled
 class StreamingEncodeSmokeTest {
 
-    private final LsbUtilServiceImpl lsb = new LsbUtilServiceImpl();
-    private final AesUtilServiceImpl aes = new AesUtilServiceImpl();
-    private final CapacityUtilServiceImpl cap = new CapacityUtilServiceImpl();
     private final LargeFileEncryptionServiceImpl large = new LargeFileEncryptionServiceImpl();
 
     @Test
