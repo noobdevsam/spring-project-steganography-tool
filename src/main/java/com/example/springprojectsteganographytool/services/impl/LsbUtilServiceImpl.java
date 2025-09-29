@@ -515,6 +515,94 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InputStream payloadStream,
             long payloadLength
     ) {
+
+        var width = working.getWidth();
+        var height = working.getHeight();
+        var totalPixels = (long) width * height;
+        var pixelIndex = payloadStartPixel;
+
+        var bytesWritten = 0;
+        var bitPointer = 0;
+        var currentByte = -1;  // if -1 means need to read new byte
+        var channels = new int[3];
+
+        // Buffer read
+        var buffer = new byte[8192];
+        var bufferPos = 0;
+        var bufferLimit = 0;
+
+        // Helper to fetch next bit
+        while (bytesWritten < payloadLength) {
+            if (pixelIndex >= totalPixels) {
+                throw new MessageTooLargeException("Ran out of pixels while streaming payload");
+            }
+
+            var x = (pixelIndex % width);
+            var y = (pixelIndex / width);
+            var rgb = working.getRGB(x, y);
+            var alpha = (rgb >> 24) & 0xFF;
+            channels[0] = (rgb >> 16) & 0xFF;
+            channels[1] = (rgb >> 8) & 0xFF;
+            channels[2] = rgb & 0xFF;
+
+            for (var c = 0; c < 3 && bytesWritten < payloadLength; c++) {
+
+                var bitsToWrite = 0;
+
+                for (var bit = 0; bit < lsbDepth; bit++) {
+
+                    if (currentByte == -1) {
+
+                        if (bufferPos >= bufferLimit) {
+                            bufferLimit = in.read(buffer);
+                            bufferPos = 0;
+
+                            if (bufferLimit == -1) {
+                                // End prematurely (should not happen)
+                                bitsToWrite <<= (lsbDepth - bit);
+                                bytesWritten = totalBytes;
+                                break;
+                            }
+
+                        }
+
+                        currentByte = buffer[bufferPos++] & 0xFF;
+
+                    }
+
+                    var shift = 7 - bitPointer;
+                    var bitVal = (currentByte >> shift) & 0x01;
+
+                    bitsToWrite = (bitsToWrite << 1) | bitVal;
+                    bitPointer++;
+
+                    if (bitPointer == 8) {
+                        bitPointer = 0;
+                        currentByte = -1;
+                        bytesWritten++;
+
+                        if (bytesWritten >= payloadLength) {
+                            // If done but still mid-channel fill remaining bits with zeros
+                            // (not strictly necessary; final partial group is fine)
+                            break;
+                        }
+
+                    }
+
+                }
+
+                int mask = ~((1 << lsbDepth) - 1);
+                channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1));
+            }
+
+            var newRgb = (alpha << 24)
+                    | ((channels[0] & 0xFF) << 16)
+                    | ((channels[1] & 0xFF) << 8)
+                    | (channels[2] & 0xFF);
+            working.setRGB(x, y, newRgb);
+            pixelIndex++;
+        }
+
     }
 
     private byte[] readBytesFromImage(
