@@ -63,11 +63,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
         try {
-            return extractMetadataFromImage(convertForLsb(stegoImage));
-        } catch (MetadataNotFoundException e) {
-            throw new InvalidImageFormatException("Metadata not found: " + e.getMessage());
-        } catch (InvalidImageFormatException e) {
-            throw e;
+            return extractMetadataFromImage(
+                    convertForLsb(stegoImage)
+            );
         } catch (Exception e) {
             throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
         }
@@ -77,8 +75,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
         try {
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
-        } catch (InvalidLsbDepthException | InvalidImageFormatException | LsbDecodingException e) {
-            throw e;
         } catch (Exception e) {
             throw new LsbDecodingException("Decoding failed: " + e.getMessage());
         }
