@@ -19,8 +19,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 
 @Service
 @Slf4j
@@ -37,27 +35,24 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     private static final int PAYLOAD_LEN_BYTES = 8;
 
     private final ObjectMapper mapper = new ObjectMapper();
-    private final ExecutorService executorService;
 
-    public LsbUtilServiceImpl(ExecutorService executorService) {
-        this.executorService = executorService;
+    public LsbUtilServiceImpl() {
+
     }
 
     // ------- New  BufferedImage-based public API -------
 
     @Override
     public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
-        Callable<byte[]> task = () -> {
-            log.info("Encoding payload into image with metadata");
-            return encodeWithMetadata(imageBytes, payloadBytes, metadata);
-        };
 
         try {
-            return executorService.submit(task).get(); // Submit the encoding task to the executor service and wait for the result
+            log.info("Encoding payload into image with metadata");
+            return encodeWithMetadata(imageBytes, payloadBytes, metadata);
         } catch (Exception e) {
             log.error("Error during LSB encoding", e);
             throw new LsbEncodingException("Failed to encode payload into image", e);
         }
+
     }
 
     @Override
