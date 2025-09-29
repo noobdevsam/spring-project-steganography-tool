@@ -8,6 +8,8 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingExce
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
+import com.example.springprojectsteganographytool.models.lsb.HeaderInfoDTO;
+import com.example.springprojectsteganographytool.models.lsb.MetadataBlockDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -94,7 +96,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
-    private Result getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws Exception {
+    private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws Exception {
         if (metadata == null) {
             throw new MetadataNotFoundException("Metadata cannot be null");
         }
@@ -136,10 +138,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var remainingPixels = totalPixels - metaPixelCount;
         var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
         var payloadCapacityBytes = payloadCapacityBits / 8L;
-        return new Result(working, metaBlock, metaPixelCount, payloadCapacityBytes);
-    }
-
-    private record Result(BufferedImage working, byte[] metaBlock, int metaPixelCount, long payloadCapacityBytes) {
+        return new MetadataBlockDTO(working, metaBlock, metaPixelCount, payloadCapacityBytes);
     }
 
     @Override
@@ -258,7 +257,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private Mid-Level Header / Metadata helpers -----
 
-    private HeaderInfo readHeaderAndMetaLength(BufferedImage image) throws Exception {
+    private HeaderInfoDTO readHeaderAndMetaLength(BufferedImage image) throws Exception {
 
         // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
         var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
@@ -284,15 +283,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new MetadataNotFoundException("Metadata length is invalid or zero");
         }
 
-        return new HeaderInfo(image, headerPixels, metaLength);
-    }
-
-
-    private record HeaderInfo(
-            BufferedImage image,
-            int headerPixels,
-            int metaLength
-    ) {
+        return new HeaderInfoDTO(image, headerPixels, metaLength);
     }
 
     // ----- Private Low-Level Helper Methods -----
