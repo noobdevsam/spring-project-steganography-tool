@@ -5,12 +5,8 @@ import com.example.springprojectsteganographytool.exceptions.data.MessageTooLarg
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
-import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
-import com.example.springprojectsteganographytool.exceptions.encryption.InvalidEncryptionKeyException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
-import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
-import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.mappers.StegoDataMapper;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
@@ -33,7 +29,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,17 +68,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Transactional(
-            rollbackFor = {
-                    InvalidLsbDepthException.class,
-                    MessageTooLargeException.class,
-                    InvalidEncryptionKeyException.class,
-                    LsbEncodingException.class,
-                    AesOperationException.class,
-                    MetadataEncodingException.class,
-                    StorageException.class,
-                    ExecutionException.class,
-                    InterruptedException.class
-            },
+            rollbackFor = {Exception.class},
             propagation = Propagation.REQUIRED
     )
     @Override
@@ -130,6 +115,10 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
+    @Transactional(
+            rollbackFor = {Exception.class},
+            propagation = Propagation.REQUIRED
+    )
     @Override
     public StegoEncodeResponseDTO encodeFile(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws Exception {
         validateLsbDepth(lsbDepth);
@@ -180,6 +169,10 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
+    @Transactional(
+            rollbackFor = {Exception.class},
+            propagation = Propagation.REQUIRED
+    )
     @Override
     public StegoEncodeResponseDTO encodeFileStream(BufferedImage coverImage, String originalFileName, InputStream fileStream, long fileSize, String password, int lsbDepth) throws Exception {
         return null;
