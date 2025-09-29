@@ -55,7 +55,7 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
 
                 try {
                     Files.deleteIfExists(tempFile);
-                } catch (Exception ignored) {
+                } catch (Exception ignore) {
                 }
 
             }
