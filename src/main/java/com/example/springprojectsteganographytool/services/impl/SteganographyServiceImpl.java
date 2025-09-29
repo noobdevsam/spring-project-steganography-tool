@@ -28,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.UUID;
@@ -169,6 +170,11 @@ public class SteganographyServiceImpl implements SteganographyService {
             throw new RuntimeException(e);
         }
 
+    }
+
+    @Override
+    public StegoEncodeResponseDTO encodeFileStream(BufferedImage coverImage, String originalFileName, InputStream fileStream, long fileSize, String password, int lsbDepth) throws Exception {
+        return null;
     }
 
     @Override
