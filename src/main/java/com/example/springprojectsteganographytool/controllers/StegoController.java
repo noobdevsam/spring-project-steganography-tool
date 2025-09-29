@@ -7,6 +7,7 @@ import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -28,15 +29,18 @@ public class StegoController {
     private final SteganographyService steganographyService;
     private final LsbUtilService lsbUtilService;
     private final CapacityUtilService capacityUtilService;
+    private final long streamThreshold;
 
     public StegoController(
             SteganographyService steganographyService,
             LsbUtilService lsbUtilService,
-            CapacityUtilService capacityUtilService
+            CapacityUtilService capacityUtilService,
+            @Value("${app.stream.threshold-bytes:5242880}") long streamThreshold
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;
         this.capacityUtilService = capacityUtilService;
+        this.streamThreshold = streamThreshold;
     }
 
     // ----- Helper -----
@@ -88,7 +92,8 @@ public class StegoController {
                         "overheadBytes", result.overheadBytes(),
                         "encryptedBytesEstimate", result.encryptedBytes(),
                         "requiredBytesEstimate", result.requiredBytes(),
-                        "fits", result.fits()
+                        "fits", result.fits(),
+                        "streamThresholdBytes", streamThreshold
                 )
         );
     }
@@ -115,10 +120,26 @@ public class StegoController {
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
         var image = toBufferedImage(coverImage);
+        var embeddedFileSize = embeddedFile.getSize();
         var originalFileName = embeddedFile.getOriginalFilename();
-        var fileBytes = embeddedFile.getBytes();
-        var result = steganographyService.encodeFile(image, originalFileName, fileBytes, password, lsbDepth);
-        return ResponseEntity.ok(result);
+
+        if (embeddedFileSize > streamThreshold) {
+
+            try (var input = embeddedFile.getInputStream()) {
+                return ResponseEntity.ok(
+                        steganographyService.encodeFileStream(
+                                image, originalFileName, input, embeddedFileSize, password, lsbDepth
+                        )
+                );
+            }
+
+        } else {
+            var fileBytes = embeddedFile.getBytes();
+
+            return ResponseEntity.ok(
+                    steganographyService.encodeFile(image, originalFileName, fileBytes, password, lsbDepth)
+            );
+        }
     }
 
     // ----- Decode operations -----
@@ -139,7 +160,6 @@ public class StegoController {
     public ResponseEntity<StegoMetadataDTO> extractMetadata(
             @RequestParam("stegoImage") MultipartFile stegoImage
     ) throws IOException {
-        var bytes = stegoImage.getBytes();
         var meta = lsbUtilService.extractMetadata(toBufferedImage(stegoImage));
         if (meta == null) {
             throw new InvalidImageFormatException("No metadata found or invalid image provided.");

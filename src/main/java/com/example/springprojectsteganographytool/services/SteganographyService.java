@@ -6,6 +6,7 @@ import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,6 +27,15 @@ public interface SteganographyService {
             BufferedImage coverImage,
             String originalFileName,
             byte[] fileBytes,
+            String password,
+            int lsbDepth
+    ) throws Exception;
+
+    StegoEncodeResponseDTO encodeFileStream(
+            BufferedImage coverImage,
+            String originalFileName,
+            InputStream fileStream,
+            long fileSize,
             String password,
             int lsbDepth
     ) throws Exception;

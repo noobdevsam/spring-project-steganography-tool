@@ -9,6 +9,7 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingExce
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
 
 public interface LsbUtilService {
 
@@ -17,6 +18,14 @@ public interface LsbUtilService {
             byte[] payloadBytes,
             StegoMetadataDTO metadata
     ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
+
+    // Streaming encode: payload length known, data provided as stream
+    byte[] encodeStream(
+            byte[] imageBytes,
+            InputStream payloadStream,
+            long payloadLength,
+            StegoMetadataDTO metadata
+    ) throws Exception;
 
     //New: BufferedImage-based APIs (Phase 3)
     StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException;
