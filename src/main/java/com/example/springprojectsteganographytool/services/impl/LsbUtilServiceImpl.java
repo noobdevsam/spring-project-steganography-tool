@@ -514,14 +514,14 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             InputStream payloadStream,
             long payloadLength
-    ) {
+    ) throws Exception {
 
         var width = working.getWidth();
         var height = working.getHeight();
         var totalPixels = (long) width * height;
         var pixelIndex = payloadStartPixel;
 
-        var bytesWritten = 0;
+        var bytesWritten = 0L;
         var bitPointer = 0;
         var currentByte = -1;  // if -1 means need to read new byte
         var channels = new int[3];
@@ -554,13 +554,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     if (currentByte == -1) {
 
                         if (bufferPos >= bufferLimit) {
-                            bufferLimit = in.read(buffer);
+                            bufferLimit = payloadStream.read(buffer);
                             bufferPos = 0;
 
                             if (bufferLimit == -1) {
                                 // End prematurely (should not happen)
                                 bitsToWrite <<= (lsbDepth - bit);
-                                bytesWritten = totalBytes;
+                                bytesWritten = payloadLength;
                                 break;
                             }
 
