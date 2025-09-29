@@ -194,7 +194,9 @@ public class AesUtilServiceImpl implements AesUtilService {
         return cipher.doFinal(cipherText);
     }
 
-    private SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
+    //  --- Public helper method for key derivation ---
+
+    public static SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
         var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
         var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
         var keyBytes = factory.generateSecret(spec).getEncoded();
