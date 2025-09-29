@@ -17,7 +17,6 @@ import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import com.example.springprojectsteganographytool.services.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,7 +42,6 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final StorageService storageService;
     private final ObjectMapper objectMapper;
     private final LargeFileEncryptionService largeFileEncryptionService;
-    private final long streamThreshold;
 
     public SteganographyServiceImpl(
             AesUtilService aesUtilService,
@@ -53,8 +51,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             StegoDataMapper stegoDataMapper,
             StorageService storageService,
             ObjectMapper objectMapper,
-            LargeFileEncryptionService largeFileEncryptionService,
-            @Value("${app.stream.threshold-bytes:5242880}") long streamThreshold
+            LargeFileEncryptionService largeFileEncryptionService
     ) {
         this.aesUtilService = aesUtilService;
         this.lsbUtilService = lsbUtilService;
@@ -64,7 +61,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.storageService = storageService;
         this.objectMapper = objectMapper;
         this.largeFileEncryptionService = largeFileEncryptionService;
-        this.streamThreshold = streamThreshold;
     }
 
     @Transactional(
