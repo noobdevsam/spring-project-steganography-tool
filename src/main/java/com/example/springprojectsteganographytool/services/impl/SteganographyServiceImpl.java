@@ -72,7 +72,12 @@ public class SteganographyServiceImpl implements SteganographyService {
             propagation = Propagation.REQUIRED
     )
     @Override
-    public StegoEncodeResponseDTO encodeText(BufferedImage coverImage, String message, String password, int lsbDepth) throws Exception {
+    public StegoEncodeResponseDTO encodeText(
+            BufferedImage coverImage,
+            String message,
+            String password,
+            int lsbDepth
+    ) throws Exception {
         validateLsbDepth(lsbDepth);
 
         try {
@@ -120,7 +125,13 @@ public class SteganographyServiceImpl implements SteganographyService {
             propagation = Propagation.REQUIRED
     )
     @Override
-    public StegoEncodeResponseDTO encodeFile(BufferedImage coverImage, String originalFileName, byte[] fileBytes, String password, int lsbDepth) throws Exception {
+    public StegoEncodeResponseDTO encodeFile(
+            BufferedImage coverImage,
+            String originalFileName,
+            byte[] fileBytes,
+            String password,
+            int lsbDepth
+    ) throws Exception {
         validateLsbDepth(lsbDepth);
 
         try {
@@ -239,7 +250,10 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     @Override
-    public StegoDecodeResponseDTO decodeProcess(BufferedImage stegoImage, String password) throws Exception {
+    public StegoDecodeResponseDTO decodeProcess(
+            BufferedImage stegoImage,
+            String password
+    ) throws Exception {
 
         // Use direct BufferedImage metadata extraction (no intermediate PNG serialization)
         var metadata = lsbUtilService.extractMetadata(stegoImage);
