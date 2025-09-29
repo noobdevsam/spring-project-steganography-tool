@@ -34,7 +34,7 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
         cipher.init(Cipher.ENCRYPT_MODE, key, new IvParameterSpec(iv));
 
         var tempFile = Files.createTempFile("enc-", ".bin");
-        var succcess = false;
+        var success = false;
 
         try (var fos = Files.newOutputStream(tempFile)) {
             var cipherOutStream = new CipherOutputStream(fos, cipher);
@@ -47,11 +47,11 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
             plain.transferTo(cipherOutStream);
             cipherOutStream.flush();
 
-            succcess = true;
+            success = true;
         } catch (Exception e) {
             throw new AesOperationException("Streaming encryption failed: " + e.getMessage(), e);
         } finally {
-            if (!succcess) {
+            if (!success) {
 
                 try {
                     Files.deleteIfExists(tempFile);
