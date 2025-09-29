@@ -92,7 +92,8 @@ public class StegoController {
                         "overheadBytes", result.overheadBytes(),
                         "encryptedBytesEstimate", result.encryptedBytes(),
                         "requiredBytesEstimate", result.requiredBytes(),
-                        "fits", result.fits()
+                        "fits", result.fits(),
+                        "streamThresholdBytes", streamThreshold
                 )
         );
     }
