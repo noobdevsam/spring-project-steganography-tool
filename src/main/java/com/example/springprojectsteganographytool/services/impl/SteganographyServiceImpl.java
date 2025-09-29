@@ -174,8 +174,68 @@ public class SteganographyServiceImpl implements SteganographyService {
             propagation = Propagation.REQUIRED
     )
     @Override
-    public StegoEncodeResponseDTO encodeFileStream(BufferedImage coverImage, String originalFileName, InputStream fileStream, long fileSize, String password, int lsbDepth) throws Exception {
-        return null;
+    public StegoEncodeResponseDTO encodeFileStream(
+            BufferedImage coverImage,
+            String originalFileName,
+            InputStream fileStream,
+            long fileSize,
+            String password,
+            int lsbDepth
+    ) throws Exception {
+
+        validateLsbDepth(lsbDepth);
+
+        var keyHash = aesUtilService.generateKey(password);
+        var metadata = new StegoMetadataDTO(
+                lsbDepth,
+                false,
+                true,
+                keyHash,
+                originalFileName
+        );
+
+        // Early capacity estimation before encryption
+        earlyCapacityCheck(coverImage, metadata, fileSize);
+
+        // Streaming encryption -> temp file
+        var encTemp = largeFileEncryptionService.encryptToTempFile(fileStream, password);
+
+        try {
+            // Strict precise capacity check now that we know the exact encrypted size
+            var coverBytes = bufferedImageToPngBytes(coverImage);
+
+            var encryptedLength = encTemp.length();
+
+            // Validate capacity precisely (metadata + encrypted file size)
+            preciseCapacityCheck(coverImage, metadata, encryptedLength);
+
+            try (var encIn = Files.newInputStream(encTemp.path())) {
+                var stegoBytes = lsbUtilService.encodeStream(coverBytes, encIn, encryptedLength, metadata);
+                var baseName = sanitizeBaseName(originalFileName);
+                var fileName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png");
+                storageService.save(fileName, stegoBytes);
+
+                return stegoDataMapper.StegoDataToEncodeResponseDTO(
+                        stegoDataRepository.save(
+                                StegoData.builder()
+                                        .embeddedFileName(originalFileName)
+                                        .stegoFileName(fileName)
+                                        .stegoFileSize((long) stegoBytes.length)
+                                        .encryptionKeyHash(keyHash)
+                                        .hasText(false)
+                                        .hasFile(true)
+                                        .build()
+                        )
+                );
+            }
+        } finally {
+            try {
+                Files.deleteIfExists(encTemp.path());
+            } catch (Exception e) {
+                log.warn("Failed to delete temp encrypted file {} : {}", encTemp.path(), e.getMessage());
+            }
+        }
+
     }
 
     @Override
@@ -302,7 +362,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     // Throw MessageTooLargeException if estimated required
     // bytes exceed image capacity
     private void earlyCapacityCheck(
-            BufferedImage coverImage, StegoMetadataDTO metadata, int plainPayloadLength
+            BufferedImage coverImage, StegoMetadataDTO metadata, long plainPayloadLength
     ) throws MessageTooLargeException {
         try {
             var metaJsonBytes = objectMapper.writeValueAsBytes(metadata);
@@ -333,6 +393,12 @@ public class SteganographyServiceImpl implements SteganographyService {
             throw new MessageTooLargeException(
                     "Failed early capacity check: " + e.getMessage(), e);
         }
+    }
+
+    private void preciseCapacityCheck(BufferedImage coverImage, StegoMetadataDTO metadata, long encryptedLength) {
+    }
+
+    private Object sanitizeBaseName(String originalFileName) {
     }
 
 }
