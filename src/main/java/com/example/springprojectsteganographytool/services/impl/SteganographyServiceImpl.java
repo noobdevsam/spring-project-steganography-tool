@@ -419,7 +419,17 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
-    private Object sanitizeBaseName(String originalFileName) {
+    private String sanitizeBaseName(String originalFileName) {
+        if (originalFileName == null || originalFileName.isBlank()) {
+            return "embedded-file";
+        }
+        var baseName = originalFileName.replaceAll("[^a-zA-Z0-9._-]", "_");
+        var dot = baseName.lastIndexOf('.');
+
+        if (dot > 0) {
+            baseName = baseName.substring(0, dot);
+        }
+        return baseName;
     }
 
 }
