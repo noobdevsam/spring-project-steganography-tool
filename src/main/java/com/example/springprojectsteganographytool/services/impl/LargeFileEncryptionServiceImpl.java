@@ -1,12 +1,14 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
+import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.models.EncryptedTempFile;
 import com.example.springprojectsteganographytool.services.LargeFileEncryptionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
+import javax.crypto.CipherOutputStream;
 import javax.crypto.spec.IvParameterSpec;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -34,8 +36,35 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
         var tempFile = Files.createTempFile("enc-", ".bin");
         var succcess = false;
 
+        try (var fos = Files.newOutputStream(tempFile)) {
+            var cipherOutStream = new CipherOutputStream(fos, cipher);
 
-        return null;
+            // write salt + iv first (prefix)
+            fos.write(salt);
+            fos.write(iv);
+
+            // Stream copy
+            plain.transferTo(cipherOutStream);
+            cipherOutStream.flush();
+
+            succcess = true;
+        } catch (Exception e) {
+            throw new AesOperationException("Streaming encryption failed: " + e.getMessage(), e);
+        } finally {
+            if (!succcess) {
+
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (Exception ignored) {
+                }
+
+            }
+        }
+
+        var length = Files.size(tempFile);
+        log.debug("Encrypted large file to temp {} ({} bytes)", tempFile, length);
+
+        return new EncryptedTempFile(tempFile, length);
     }
 
 }
