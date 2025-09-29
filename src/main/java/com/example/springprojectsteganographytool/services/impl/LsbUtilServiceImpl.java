@@ -17,6 +17,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -53,6 +54,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbEncodingException("Failed to encode payload into image", e);
         }
 
+    }
+
+    @Override
+    public byte[] encode(byte[] imageBytes, InputStream payloadStream, long payloadLength, StegoMetadataDTO metadata) throws Exception {
+        return new byte[0];
     }
 
     @Override
