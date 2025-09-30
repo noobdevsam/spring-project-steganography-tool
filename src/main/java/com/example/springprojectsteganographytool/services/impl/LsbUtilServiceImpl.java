@@ -74,6 +74,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
             }
 
+            // write metadata block
             writeBytesToImage(result.working(), 0, 1, result.metaBlock()); // Write the metadata block to the image using LSB depth of 1
 
             //Write payload length
@@ -82,16 +83,19 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .order(ByteOrder.BIG_ENDIAN)
                     .putLong(payloadLength)
                     .array(); // Convert the payload length to an 8-byte array
+
+            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
+
+            // Calculate where the payload data starts
             var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
             var payloadStartPixel = result.metaPixelCount() + payloadHeaderPixels;
-            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
 
             // Stream the encrypted payload data
             writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength);
 
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new LsbEncodingException("LSB stream encoding failed", e);
         }
 
     }
