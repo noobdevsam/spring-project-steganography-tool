@@ -45,8 +45,9 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
 
             // Stream copy
             plain.transferTo(cipherOutStream);
-            cipherOutStream.flush();
 
+            cipherOutStream.flush();
+            cipherOutStream.close(); // closing this will trigger doFinal() in CipherOutputStream
             success = true;
         } catch (Exception e) {
             throw new AesOperationException("Streaming encryption failed: " + e.getMessage(), e);

@@ -140,6 +140,16 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles AesKeyInvalidException (e.g., wrong password supplied for decode)
+     * Returning 403 clarifies it's an authentication/authorization style failure
+     * rather than a server error.
+     */
+    @ExceptionHandler(AesKeyInvalidException.class)
+    public ResponseEntity<Object> handleAesKeyInvalid(AesKeyInvalidException ex) {
+        return buildResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    /**
      * Handles various processing-related exceptions and returns a 500 Internal Server Error response.
      *
      * @param ex the exception to handle
@@ -148,7 +158,6 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({
             LsbEncodingException.class,
             LsbDecodingException.class,
-            AesKeyInvalidException.class,
             AesOperationException.class,
             MetadataEncodingException.class,
             MetadataDecodingException.class
