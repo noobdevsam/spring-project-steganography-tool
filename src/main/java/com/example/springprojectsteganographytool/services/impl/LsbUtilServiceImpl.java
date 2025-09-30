@@ -84,11 +84,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putLong(payloadLength)
                     .array(); // Convert the payload length to an 8-byte array
 
-            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
-
             // Calculate where the payload data starts
             var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
             var payloadStartPixel = result.metaPixelCount() + payloadHeaderPixels;
+
+            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
 
             // Stream the encrypted payload data
             writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength);
