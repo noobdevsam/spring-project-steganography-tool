@@ -1,7 +1,6 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
@@ -12,7 +11,7 @@ import java.nio.file.Files;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Disabled("Enable when Spring context or manual wiring is acceptable")
+//@Disabled("Enable when Spring context or manual wiring is acceptable")
 class StreamingRoundTripTest {
 
     private final AesUtilServiceImpl aes = new AesUtilServiceImpl();

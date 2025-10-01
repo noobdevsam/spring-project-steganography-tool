@@ -1,6 +1,5 @@
 package com.example.springprojectsteganographytool.services.impl;
 
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.awt.*;
@@ -12,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 /**
  * Disabled by default; enable when LargeFileEncryptionService is available in test context.
  */
-@Disabled
+//@Disabled
 class StreamingEncodeSmokeTest {
 
     private final LargeFileEncryptionServiceImpl large = new LargeFileEncryptionServiceImpl();
