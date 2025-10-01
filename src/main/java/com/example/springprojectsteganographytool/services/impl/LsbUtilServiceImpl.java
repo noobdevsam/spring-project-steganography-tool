@@ -182,22 +182,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 .order(ByteOrder.BIG_ENDIAN)
                 .getLong();
         if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload length invalid or too large");
+            throw new LsbDecodingException("Payload length invalid or too large. Got: " + payloadLength);
         }
 
         // 4) Capacity check
         var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
-        var remainingPixels = totalPixels - metaPixelCount;
 
         // Calculate payload length pixels at LSB=1
         var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
 
         // Remaining pixels after metadata and payload length header
-        var payloadDataPixels = remainingPixels - payloadLenPixels;
+        var payloadDataPixels = totalPixels - metaPixelCount - payloadLenPixels;
         var maxPayloadBytes = ((payloadDataPixels * 3L * lsbDepth) / 8L);
 
         if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length exceeds capacity");
+            throw new LsbDecodingException("Payload length " + payloadLength + " exceeds capacity" + maxPayloadBytes);
         }
 
         // 5) Read payload at chosen depth by user
