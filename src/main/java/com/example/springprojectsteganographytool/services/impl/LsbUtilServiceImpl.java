@@ -226,7 +226,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     ) throws InvalidLsbDepthException, MetadataNotFoundException, MessageTooLargeException, LsbEncodingException {
 
         // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
-        // then [PAYLOAD_LEN(8)][PAYLOAD] at LSB=metadata.lsbDepth()
+        // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
 
         try {
 
@@ -241,18 +241,18 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             // Step 1: Write metadata block at LSB=1
             writeBytesToImage(result.working(), 0, 1, result.metaBlock());
 
-            // Step 2: Write payload length and payload data at metadata.lsbDepth()
+            // Step 2: Write payload length  at LSB=1
             var payloadLengthBytes = ByteBuffer
                     .allocate(PAYLOAD_LEN_BYTES)
                     .order(ByteOrder.BIG_ENDIAN)
                     .putLong(payloadDataBytes.length)
                     .array(); // Convert the payload length to an 8-byte array
-            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
+
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
+            writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
 
             // Step 3: Write actual payload data at metadata.lsbDepth()
-            var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
-            var payloadStartPixel = result.metaPixelCount() + payloadHeaderPixels;
-
+            var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
             writeBytesToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadDataBytes); // Write the actual payload data to the image using the specified LSB depth
 
             // Step 4: Return the modified image as a byte array in lossless PNG format
