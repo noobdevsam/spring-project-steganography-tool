@@ -76,7 +76,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putLong(payloadBytes.length)
                     .array(); // Convert the payload length to an 8-byte array
 
-            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES); // Calculate pixels used by payload length at LSB=1
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
             writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
 
             // Step 3: Write actual payload data at metadata.lsbDepth()
@@ -120,7 +120,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putLong(payloadLength)
                     .array(); // Convert the payload length to an 8-byte array
 
-            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES); // Calculate pixels used by payload length at LSB=1
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
             writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
 
             var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
@@ -173,7 +173,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         // 2) Derive meta pixel usages by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
         var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + headerInfo.metaLength();
-        var metaPixelCount = bytesToPixelCount(metaTotalBytes);
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
         // 3) Read payload length at LSB=1
         var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, 1, PAYLOAD_LEN_BYTES);
@@ -182,22 +182,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 .order(ByteOrder.BIG_ENDIAN)
                 .getLong();
         if (payloadLength < 0 || payloadLength > Integer.MAX_VALUE) {
-            throw new LsbDecodingException("Payload length invalid or too large");
+            throw new LsbDecodingException("Payload length invalid or too large. Got: " + payloadLength);
         }
 
         // 4) Capacity check
         var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
-        var remainingPixels = totalPixels - metaPixelCount;
 
         // Calculate payload length pixels at LSB=1
-        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES);
+        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
 
         // Remaining pixels after metadata and payload length header
-        var payloadDataPixels = remainingPixels - payloadLenPixels;
+        var payloadDataPixels = totalPixels - metaPixelCount - payloadLenPixels;
         var maxPayloadBytes = ((payloadDataPixels * 3L * lsbDepth) / 8L);
 
         if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length exceeds capacity");
+            throw new LsbDecodingException("Payload length " + payloadLength + " exceeds capacity" + maxPayloadBytes);
         }
 
         // 5) Read payload at chosen depth by user
@@ -217,52 +216,56 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         var working = deepCopy(bytesToImage(imageBytes));
 
-        //Build metadata block
-        var metaJson = mapper.writeValueAsBytes(metadata); // Convert metadata to JSON bytes
-        var metaLength = metaJson.length; // Get the length of the metadata in bytes
+        // Build metadata components (but don't combine them yet)
+        var metaJson = mapper.writeValueAsBytes(metadata);
+        var metaLength = metaJson.length;
         var metaLengthBytes = ByteBuffer
                 .allocate(META_LEN_BYTES)
                 .order(ByteOrder.BIG_ENDIAN)
                 .putInt(metaLength)
-                .array(); // Convert the length to a 4-byte array
-        var metaBlockLength = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength; // Calculate the total length of the metadata block
-        var metaBlock = new byte[metaBlockLength]; // Create a byte array for the metadata block
+                .array();
 
-        // [MAGIC(4)]
-        System.arraycopy(STEGO_MAGIC, 0, metaBlock, 0, HEADER_MAGIC_LEN); // Copy the magic bytes to the metadata block
-        // [VERSION(1)]
-        metaBlock[HEADER_MAGIC_LEN] = STEGO_VERSION; // Set the version byte in the metadata block
-        // [META_LENGTH(4)]
-        System.arraycopy(metaLengthBytes, 0, metaBlock, HEADER_TOTAL_LEN, META_LEN_BYTES); // Copy the metadata length bytes to the metadata block
-        // [META_JSON]
-        System.arraycopy(metaJson, 0, metaBlock, (HEADER_TOTAL_LEN + META_LEN_BYTES), metaLength); // Copy the metadata JSON bytes to the metadata block
+        // Calculate total metadata size for capacity checking
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
 
-        //Check capacity for metadata
+        // Check capacity for metadata
         var totalPixels = (long) working.getWidth() * working.getHeight();
-        var metaPixelCount = bytesToPixelCount(metaBlock.length);
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
         if (metaPixelCount > totalPixels) {
             throw new MessageTooLargeException("Metadata is too large for the image with the given LSB depth");
         }
 
-        //Calculate payload capacity in pixels and bytes
-        // Payload length is stored at LSB=1
-        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES);
-
-        // Remaining pixels after metadata and payload length header
+        // Calculate payload capacity
+        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
         var remainingPixels = totalPixels - metaPixelCount - payloadLenPixels;
-
-        // Actual payload capacity at metadata.lsbDepth()
         var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
         var payloadCapacityBytes = payloadCapacityBits / 8L;
 
-        // Return the prepared data
+        // Create the combined metaBlock for backward compatibility with the DTO
+        var metaBlock = new byte[metaTotalBytes];
+        System.arraycopy(STEGO_MAGIC, 0, metaBlock, 0, HEADER_MAGIC_LEN);
+        metaBlock[HEADER_MAGIC_LEN] = STEGO_VERSION;
+        System.arraycopy(metaLengthBytes, 0, metaBlock, HEADER_TOTAL_LEN, META_LEN_BYTES);
+        System.arraycopy(metaJson, 0, metaBlock, HEADER_TOTAL_LEN + META_LEN_BYTES, metaLength);
+
         return new MetadataBlockDTO(working, metaBlock, metaPixelCount, payloadCapacityBytes);
     }
 
     private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
+
+        // 1. Read just the header and meta length to know the total size of the metadata
         var info = readHeaderAndMetaLength(image);
-        var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES);
-        var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
+
+        // 2. Read the full metadata block at LSB=1
+        var metaBlockBytes = readBytesFromImage(image, 0, 1, metaTotalBytes);
+
+        // 3. Extract the JSON part from it
+        var metaJsonStart = HEADER_TOTAL_LEN + META_LEN_BYTES;
+        var metaJsonBytes = new byte[info.metaLength()];
+        System.arraycopy(metaBlockBytes, metaJsonStart, metaJsonBytes, 0, info.metaLength());
+
+        // 4. Deserialize and return
         return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
     }
 
@@ -284,7 +287,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
 
         // 2) Read metadata length: [META_LEN(4)] at LSB=1
-        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN);
+        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
         var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
         var metaLength = ByteBuffer
                 .wrap(metaLengthBytes)
@@ -372,14 +375,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     private int bytesToPixelCount(
-            int numberOfBytes
+            int numberOfBytes,
+            int lsbDepth
     ) {
 
         // Convert bytes to bits
         var bits = (long) numberOfBytes * 8L;
 
-        // 3 color channels (RGB), assuming LSB depth of 1 (i.e., 1 bit per channel)
-        var bitsPerPixel = 3L;
+        // 3 color channels (RGB) times lsbDepth bits per channel
+        var bitsPerPixel = 3L * lsbDepth;
 
         // Return the ceil of bits divided by bits per pixel
         // Round up to the nearest whole pixel
