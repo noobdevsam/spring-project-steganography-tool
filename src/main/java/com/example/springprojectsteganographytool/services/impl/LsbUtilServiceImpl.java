@@ -378,7 +378,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // Convert bytes to bits
         var bits = (long) numberOfBytes * 8L;
 
-        // 3 color channels (RGB) times the LSB depth
+        // 3 color channels (RGB), assuming LSB depth of 1 (i.e., 1 bit per channel)
         var bitsPerPixel = 3L;
 
         // Return the ceil of bits divided by bits per pixel
