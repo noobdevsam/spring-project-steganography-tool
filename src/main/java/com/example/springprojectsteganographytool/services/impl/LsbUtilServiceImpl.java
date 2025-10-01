@@ -135,8 +135,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
         try {
+
+            // 1. Read the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1
             var preliminaryHeader = readBytesFromImage(convertForLsb(stegoImage), 0, 1, (HEADER_TOTAL_LEN + META_LEN_BYTES));
 
+            // 2. Check for the "STEG" magic bytes and version
             if (
                     preliminaryHeader[0] != STEGO_MAGIC[0] ||
                             preliminaryHeader[1] != STEGO_MAGIC[1] ||
@@ -146,6 +149,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             ) {
                 throw new InvalidImageFormatException("Image does not contain valid stego metadata (magic/version mismatch)");
             }
+
+            // 3. Extract the metadata length from the bytes we just read
             var metaLength = ByteBuffer
                     .wrap(preliminaryHeader, HEADER_TOTAL_LEN, META_LEN_BYTES)
                     .order(ByteOrder.BIG_ENDIAN)
@@ -155,13 +160,16 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 throw new MetadataNotFoundException("Metadata length is invalid or zero");
             }
 
+            // 4. Read the full metadata block in one go: (MAGIC + VERSION + META_LEN + META_JSON) at LSB=1
             var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
             var metaBlockBytes = readBytesFromImage(convertForLsb(stegoImage), 0, 1, metaTotalBytes);
 
+            // 5. Extract the JSON part and deserialize it
             var metaJsonStart = HEADER_TOTAL_LEN + META_LEN_BYTES;
             var metaJsonBytes = new byte[metaLength];
             System.arraycopy(metaBlockBytes, metaJsonStart, metaJsonBytes, 0, metaLength);
 
+            // 6. Deserialize JSON to StegoMetadataDTO
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
         } catch (Exception e) {
             throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
