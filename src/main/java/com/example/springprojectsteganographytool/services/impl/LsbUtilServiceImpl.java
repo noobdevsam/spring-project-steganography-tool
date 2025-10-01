@@ -8,7 +8,6 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingExce
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
-import com.example.springprojectsteganographytool.models.lsb.HeaderInfoDTO;
 import com.example.springprojectsteganographytool.models.lsb.MetadataBlockDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -267,37 +266,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         // 4. Deserialize and return
         return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-    }
-
-    // ----- Private Mid-Level Header / Metadata helpers -----
-
-    private HeaderInfoDTO readHeaderAndMetaLength(BufferedImage image) throws Exception {
-
-        // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
-        var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
-        if (
-                header.length != HEADER_TOTAL_LEN
-                        || header[0] != STEGO_MAGIC[0]
-                        || header[1] != STEGO_MAGIC[1]
-                        || header[2] != STEGO_MAGIC[2]
-                        || header[3] != STEGO_MAGIC[3]
-                        || header[4] != STEGO_VERSION
-        ) {
-            throw new InvalidImageFormatException("Image does not contain valid LSB header");
-        }
-
-        // 2) Read metadata length: [META_LEN(4)] at LSB=1
-        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
-        var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
-        var metaLength = ByteBuffer
-                .wrap(metaLengthBytes)
-                .order(ByteOrder.BIG_ENDIAN)
-                .getInt();
-        if (metaLength <= 0) {
-            throw new MetadataNotFoundException("Metadata length is invalid or zero");
-        }
-
-        return new HeaderInfoDTO(image, headerPixels, metaLength);
     }
 
     // ----- Private Low-Level Helper Methods -----
