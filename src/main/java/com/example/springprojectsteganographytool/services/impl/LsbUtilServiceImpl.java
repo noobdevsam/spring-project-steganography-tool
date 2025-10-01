@@ -372,14 +372,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     private int bytesToPixelCount(
-            int numberOfBytes
+            int numberOfBytes,
+            int lsbDepth
     ) {
 
         // Convert bytes to bits
         var bits = (long) numberOfBytes * 8L;
 
-        // 3 color channels (RGB), assuming LSB depth of 1 (i.e., 1 bit per channel)
-        var bitsPerPixel = 3L;
+        // 3 color channels (RGB) times lsbDepth bits per channel
+        var bitsPerPixel = 3L * lsbDepth;
 
         // Return the ceil of bits divided by bits per pixel
         // Round up to the nearest whole pixel
