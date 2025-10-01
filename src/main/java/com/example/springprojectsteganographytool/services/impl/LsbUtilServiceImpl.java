@@ -76,7 +76,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putLong(payloadBytes.length)
                     .array(); // Convert the payload length to an 8-byte array
 
-            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES); // Calculate pixels used by payload length at LSB=1
             writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
 
             // Step 3: Write actual payload data at metadata.lsbDepth()
@@ -120,7 +120,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                     .putLong(payloadLength)
                     .array(); // Convert the payload length to an 8-byte array
 
-            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES); // Calculate pixels used by payload length at LSB=1
             writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
 
             var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
@@ -166,7 +166,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         //Check capacity for metadata
         var totalPixels = (long) working.getWidth() * working.getHeight();
-        var metaPixelCount = bytesToPixelCount(metaBlock.length, 1);
+        var metaPixelCount = bytesToPixelCount(metaBlock.length);
         if (metaPixelCount > totalPixels) {
             throw new MessageTooLargeException("Metadata is too large for the image with the given LSB depth");
         }
@@ -218,7 +218,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         // 2) Derive meta pixel usages by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
         var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + headerInfo.metaLength();
-        var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
+        var metaPixelCount = bytesToPixelCount(metaTotalBytes);
 
         // 3) Read payload length at LSB=1
         var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, 1, PAYLOAD_LEN_BYTES);
@@ -235,7 +235,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var remainingPixels = totalPixels - metaPixelCount;
 
         // Calculate payload length pixels at LSB=1
-        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
+        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES);
 
         // Remaining pixels after metadata and payload length header
         var payloadDataPixels = remainingPixels - payloadLenPixels;
@@ -253,7 +253,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
         var info = readHeaderAndMetaLength(image);
-        var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
+        var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES);
         var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
         return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
     }
@@ -276,7 +276,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
 
         // 2) Read metadata length: [META_LEN(4)] at LSB=1
-        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
+        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN);
         var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
         var metaLength = ByteBuffer
                 .wrap(metaLengthBytes)
@@ -297,13 +297,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             return source; // Already in the desired format
         }
 
-        // Convert to TYPE_INT_ARGB to ensure consistent pixel operations
-        var convertedImage = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
-
-        // Draw the original image onto the converted image
-        convertedImage.getGraphics().drawImage(source, 0, 0, null);
-
-        return convertedImage;
+        return deepCopy(source);
     }
 
 
@@ -373,15 +367,14 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
 
     private int bytesToPixelCount(
-            int numberOfBytes,
-            int lsbDepth
+            int numberOfBytes
     ) {
 
         // Convert bytes to bits
         var bits = (long) numberOfBytes * 8L;
 
         // 3 color channels (RGB) times the LSB depth
-        var bitsPerPixel = 3L * lsbDepth;
+        var bitsPerPixel = 3L;
 
         // Return the ceil of bits divided by bits per pixel
         // Round up to the nearest whole pixel
