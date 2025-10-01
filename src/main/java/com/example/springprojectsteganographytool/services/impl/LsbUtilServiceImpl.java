@@ -175,9 +175,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
 
         //Calculate payload capacity in pixels and bytes
-        var remainingPixels = totalPixels - metaPixelCount;
+        // Payload length is stored at LSB=1
+        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES);
+
+        // Remaining pixels after metadata and payload length header
+        var remainingPixels = totalPixels - metaPixelCount - payloadLenPixels;
+
+        // Actual payload capacity at metadata.lsbDepth()
         var payloadCapacityBits = remainingPixels * 3L * metadata.lsbDepth();
         var payloadCapacityBytes = payloadCapacityBits / 8L;
+
+        // Return the prepared data
         return new MetadataBlockDTO(working, metaBlock, metaPixelCount, payloadCapacityBytes);
     }
 
