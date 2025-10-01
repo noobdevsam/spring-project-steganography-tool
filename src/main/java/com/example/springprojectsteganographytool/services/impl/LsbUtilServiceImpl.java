@@ -135,7 +135,34 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
         try {
-            return null;
+            var preliminaryHeader = readBytesFromImage(convertForLsb(stegoImage), 0, 1, (HEADER_TOTAL_LEN + META_LEN_BYTES));
+
+            if (
+                    preliminaryHeader[0] != STEGO_MAGIC[0] ||
+                            preliminaryHeader[1] != STEGO_MAGIC[1] ||
+                            preliminaryHeader[2] != STEGO_MAGIC[2] ||
+                            preliminaryHeader[3] != STEGO_MAGIC[3] ||
+                            preliminaryHeader[4] != STEGO_VERSION
+            ) {
+                throw new InvalidImageFormatException("Image does not contain valid stego metadata (magic/version mismatch)");
+            }
+            var metaLength = ByteBuffer
+                    .wrap(preliminaryHeader, HEADER_TOTAL_LEN, META_LEN_BYTES)
+                    .order(ByteOrder.BIG_ENDIAN)
+                    .getInt();
+
+            if (metaLength <= 0) {
+                throw new MetadataNotFoundException("Metadata length is invalid or zero");
+            }
+
+            var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
+            var metaBlockBytes = readBytesFromImage(convertForLsb(stegoImage), 0, 1, metaTotalBytes);
+
+            var metaJsonStart = HEADER_TOTAL_LEN + META_LEN_BYTES;
+            var metaJsonBytes = new byte[metaLength];
+            System.arraycopy(metaBlockBytes, metaJsonStart, metaJsonBytes, 0, metaLength);
+
+            return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
         } catch (Exception e) {
             throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
         }
@@ -153,8 +180,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     // ----- Private High-Level Helper Methods -----
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
-
-        StegoMetadataDTO meta = null;
 
         if (lsbDepth == null) {
             lsbDepth = 1; // Default to 1 if not provided
