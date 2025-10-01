@@ -189,9 +189,14 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
 
+        StegoMetadataDTO meta;
+
         if (lsbDepth == null) {
-            lsbDepth = 1; // Default to 1 if not provided
-        } else if (lsbDepth != 1 && lsbDepth != 2) {
+            meta = extractMetadata(bufferedImage);
+            lsbDepth = meta.lsbDepth();
+        }
+
+        if (lsbDepth != 1 && lsbDepth != 2) {
             throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
         }
 
