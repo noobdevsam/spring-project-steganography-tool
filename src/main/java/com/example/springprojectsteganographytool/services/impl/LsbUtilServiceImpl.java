@@ -56,9 +56,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
 
         try {
-
-            //TODO: refactor to remove duplicate code blocks with encodeStream
-
             log.info("Encoding payload into image with metadata");
 
             var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
