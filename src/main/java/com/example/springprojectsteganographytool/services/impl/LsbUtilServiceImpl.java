@@ -46,11 +46,47 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     // ------- New  BufferedImage-based public API -------
 
     @Override
-    public byte[] encode(byte[] imageBytes, byte[] payloadBytes, StegoMetadataDTO metadata) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+    public byte[] encode(
+            byte[] imageBytes,
+            byte[] payloadBytes,
+            StegoMetadataDTO metadata
+    ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+
+        // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
+        // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
 
         try {
             log.info("Encoding payload into image with metadata");
-            return encodeWithMetadata(imageBytes, payloadBytes, metadata);
+
+            var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
+
+            // Check capacity for payload: [PAYLOAD_LEN(8)][PAYLOAD]
+            var requiredPayloadBytes = PAYLOAD_LEN_BYTES + payloadBytes.length;
+            if (requiredPayloadBytes > result.payloadCapacityBytes()) {
+                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
+            }
+
+            // Step 1: Write metadata block at LSB=1
+            writeBytesToImage(result.working(), 0, 1, result.metaBlock());
+
+            // Step 2: Write payload length  at LSB=1
+            var payloadLengthBytes = ByteBuffer
+                    .allocate(PAYLOAD_LEN_BYTES)
+                    .order(ByteOrder.BIG_ENDIAN)
+                    .putLong(payloadBytes.length)
+                    .array(); // Convert the payload length to an 8-byte array
+
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
+            writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
+
+            // Step 3: Write actual payload data at metadata.lsbDepth()
+            var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
+            writeBytesToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadBytes); // Write the actual payload data to the image using the specified LSB depth
+
+            // Step 4: Return the modified image as a byte array in lossless PNG format
+            return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
+        } catch (MessageTooLargeException | InvalidLsbDepthException | MetadataNotFoundException e) {
+            throw e; // Re-throw specific exceptions
         } catch (Exception e) {
             log.error("Error during LSB encoding", e);
             throw new LsbEncodingException("Failed to encode payload into image", e);
@@ -217,52 +253,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaJsonStartPixel = bytesToPixelCount(HEADER_TOTAL_LEN + META_LEN_BYTES, 1);
         var metaJsonBytes = readBytesFromImage(info.image(), metaJsonStartPixel, 1, info.metaLength());
         return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-    }
-
-    private byte[] encodeWithMetadata(
-            byte[] imageBytes,
-            byte[] payloadDataBytes,
-            StegoMetadataDTO metadata
-    ) throws InvalidLsbDepthException, MetadataNotFoundException, MessageTooLargeException, LsbEncodingException {
-
-        // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
-        // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
-
-        try {
-
-            var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
-
-            // Check capacity for payload: [PAYLOAD_LEN(8)][PAYLOAD]
-            var requiredPayloadBytes = PAYLOAD_LEN_BYTES + payloadDataBytes.length;
-            if (requiredPayloadBytes > result.payloadCapacityBytes()) {
-                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
-            }
-
-            // Step 1: Write metadata block at LSB=1
-            writeBytesToImage(result.working(), 0, 1, result.metaBlock());
-
-            // Step 2: Write payload length  at LSB=1
-            var payloadLengthBytes = ByteBuffer
-                    .allocate(PAYLOAD_LEN_BYTES)
-                    .order(ByteOrder.BIG_ENDIAN)
-                    .putLong(payloadDataBytes.length)
-                    .array(); // Convert the payload length to an 8-byte array
-
-            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
-            writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
-
-            // Step 3: Write actual payload data at metadata.lsbDepth()
-            var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
-            writeBytesToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadDataBytes); // Write the actual payload data to the image using the specified LSB depth
-
-            // Step 4: Return the modified image as a byte array in lossless PNG format
-            return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
-
-        } catch (MessageTooLargeException | InvalidLsbDepthException | MetadataNotFoundException e) {
-            throw e; // Re-throw specific exceptions
-        } catch (Exception e) {
-            throw new LsbEncodingException("LSB encoding failed", e);
-        }
     }
 
     // ----- Private Mid-Level Header / Metadata helpers -----
