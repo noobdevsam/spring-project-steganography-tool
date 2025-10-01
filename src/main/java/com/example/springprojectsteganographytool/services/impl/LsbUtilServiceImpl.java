@@ -113,21 +113,18 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             // write metadata block
             writeBytesToImage(result.working(), 0, 1, result.metaBlock()); // Write the metadata block to the image using LSB depth of 1
 
-            //Write payload length
+            //Write payload length at LSB=1
             var payloadLengthBytes = ByteBuffer
                     .allocate(PAYLOAD_LEN_BYTES)
                     .order(ByteOrder.BIG_ENDIAN)
                     .putLong(payloadLength)
                     .array(); // Convert the payload length to an 8-byte array
 
-            // Calculate where the payload data starts
-            var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
-            var payloadStartPixel = result.metaPixelCount() + payloadHeaderPixels;
+            var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1); // Calculate pixels used by payload length at LSB=1
+            writeBytesToImage(result.working(), result.metaPixelCount(), 1, payloadLengthBytes); // Write the payload length to the image using LSB depth of 1
 
-            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
-
-            // Stream the encrypted payload data
-            writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength);
+            var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
+            writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength); // Stream the payload data into the image using the specified LSB depth
 
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
         } catch (Exception e) {
