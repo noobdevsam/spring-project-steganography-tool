@@ -232,24 +232,30 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
 
+            // Check capacity for payload: [PAYLOAD_LEN(8)][PAYLOAD]
+            var requiredPayloadBytes = PAYLOAD_LEN_BYTES + payloadDataBytes.length;
+            if (requiredPayloadBytes > result.payloadCapacityBytes()) {
+                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
+            }
+
+            // Step 1: Write metadata block at LSB=1
+            writeBytesToImage(result.working(), 0, 1, result.metaBlock());
+
+            // Step 2: Write payload length and payload data at metadata.lsbDepth()
             var payloadLengthBytes = ByteBuffer
                     .allocate(PAYLOAD_LEN_BYTES)
                     .order(ByteOrder.BIG_ENDIAN)
                     .putLong(payloadDataBytes.length)
                     .array(); // Convert the payload length to an 8-byte array
+            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadLengthBytes); // Write the payload length to the image using the specified LSB depth
 
-            var payloadBlock = new byte[PAYLOAD_LEN_BYTES + payloadDataBytes.length]; // Create a byte array for the payload block
-            System.arraycopy(payloadLengthBytes, 0, payloadBlock, 0, PAYLOAD_LEN_BYTES); // Copy the payload length bytes to the payload block
-            System.arraycopy(payloadDataBytes, 0, payloadBlock, PAYLOAD_LEN_BYTES, payloadDataBytes.length); // Copy the actual payload data to the payload block
+            // Step 3: Write actual payload data at metadata.lsbDepth()
+            var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, metadata.lsbDepth());
+            var payloadStartPixel = result.metaPixelCount() + payloadHeaderPixels;
 
-            // Check if the payload fits within the image capacity
-            if ((long) payloadBlock.length > result.payloadCapacityBytes()) {
-                throw new MessageTooLargeException("Payload is too large for the image with the given LSB depth");
-            }
+            writeBytesToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadDataBytes); // Write the actual payload data to the image using the specified LSB depth
 
-            writeBytesToImage(result.working(), 0, 1, result.metaBlock()); // Write the metadata block to the image using LSB depth of 1
-            writeBytesToImage(result.working(), result.metaPixelCount(), metadata.lsbDepth(), payloadBlock); // Write the payload block to the image using the specified LSB depth
-
+            // Step 4: Return the modified image as a byte array in lossless PNG format
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
 
         } catch (MessageTooLargeException | InvalidLsbDepthException | MetadataNotFoundException e) {
