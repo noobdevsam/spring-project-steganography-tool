@@ -8,7 +8,6 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingExce
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
-import com.example.springprojectsteganographytool.models.lsb.HeaderInfoDTO;
 import com.example.springprojectsteganographytool.models.lsb.MetadataBlockDTO;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -136,9 +135,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
         try {
-            return extractMetadataFromImage(
-                    convertForLsb(stegoImage)
-            );
+            return null;
         } catch (Exception e) {
             throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
         }
@@ -160,19 +157,20 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         StegoMetadataDTO meta = null;
 
         if (lsbDepth == null) {
-            meta = extractMetadataFromImage(bufferedImage);
-            lsbDepth = meta.lsbDepth();
-        }
-
-        if (lsbDepth != 1 && lsbDepth != 2) {
+            lsbDepth = 1; // Default to 1 if not provided
+        } else if (lsbDepth != 1 && lsbDepth != 2) {
             throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
         }
 
         // 1) Read and validate header + meta length (at LSB=1)
-        var headerInfo = readHeaderAndMetaLength(bufferedImage);
+        var preliminaryHeader = readBytesFromImage(bufferedImage, 0, 1, (HEADER_TOTAL_LEN + META_LEN_BYTES));
+        var metaLength = ByteBuffer
+                .wrap(preliminaryHeader, HEADER_TOTAL_LEN, META_LEN_BYTES)
+                .order(ByteOrder.BIG_ENDIAN)
+                .getInt();
 
         // 2) Derive meta pixel usages by [MAGIC|VERSION|META_LEN|META_JSON] (all at LSB=1)
-        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + headerInfo.metaLength();
+        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
         var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
         // 3) Read payload length at LSB=1
@@ -187,16 +185,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         // 4) Capacity check
         var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
-
-        // Calculate payload length pixels at LSB=1
         var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
-
-        // Remaining pixels after metadata and payload length header
         var payloadDataPixels = totalPixels - metaPixelCount - payloadLenPixels;
         var maxPayloadBytes = ((payloadDataPixels * 3L * lsbDepth) / 8L);
 
         if (payloadLength > maxPayloadBytes) {
-            throw new LsbDecodingException("Payload length " + payloadLength + " exceeds capacity" + maxPayloadBytes);
+            throw new LsbDecodingException("Payload length " + payloadLength + " exceeds capacity " + maxPayloadBytes);
         }
 
         // 5) Read payload at chosen depth by user
@@ -249,55 +243,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         System.arraycopy(metaJson, 0, metaBlock, HEADER_TOTAL_LEN + META_LEN_BYTES, metaLength);
 
         return new MetadataBlockDTO(working, metaBlock, metaPixelCount, payloadCapacityBytes);
-    }
-
-    private StegoMetadataDTO extractMetadataFromImage(BufferedImage image) throws Exception {
-
-        // 1. Read just the header and meta length to know the total size of the metadata
-        var info = readHeaderAndMetaLength(image);
-        var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + info.metaLength();
-
-        // 2. Read the full metadata block at LSB=1
-        var metaBlockBytes = readBytesFromImage(image, 0, 1, metaTotalBytes);
-
-        // 3. Extract the JSON part from it
-        var metaJsonStart = HEADER_TOTAL_LEN + META_LEN_BYTES;
-        var metaJsonBytes = new byte[info.metaLength()];
-        System.arraycopy(metaBlockBytes, metaJsonStart, metaJsonBytes, 0, info.metaLength());
-
-        // 4. Deserialize and return
-        return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-    }
-
-    // ----- Private Mid-Level Header / Metadata helpers -----
-
-    private HeaderInfoDTO readHeaderAndMetaLength(BufferedImage image) throws Exception {
-
-        // 1) Validate header: [MAGIC(4)][VERSION(1)] at LSB=1
-        var header = readBytesFromImage(image, 0, 1, HEADER_TOTAL_LEN);
-        if (
-                header.length != HEADER_TOTAL_LEN
-                        || header[0] != STEGO_MAGIC[0]
-                        || header[1] != STEGO_MAGIC[1]
-                        || header[2] != STEGO_MAGIC[2]
-                        || header[3] != STEGO_MAGIC[3]
-                        || header[4] != STEGO_VERSION
-        ) {
-            throw new InvalidImageFormatException("Image does not contain valid LSB header");
-        }
-
-        // 2) Read metadata length: [META_LEN(4)] at LSB=1
-        var headerPixels = bytesToPixelCount(HEADER_TOTAL_LEN, 1);
-        var metaLengthBytes = readBytesFromImage(image, headerPixels, 1, META_LEN_BYTES);
-        var metaLength = ByteBuffer
-                .wrap(metaLengthBytes)
-                .order(ByteOrder.BIG_ENDIAN)
-                .getInt();
-        if (metaLength <= 0) {
-            throw new MetadataNotFoundException("Metadata length is invalid or zero");
-        }
-
-        return new HeaderInfoDTO(image, headerPixels, metaLength);
     }
 
     // ----- Private Low-Level Helper Methods -----
