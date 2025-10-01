@@ -220,8 +220,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + headerInfo.metaLength();
         var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
-        // 3) Read payload length at chosen depth by user
-        var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, lsbDepth, PAYLOAD_LEN_BYTES);
+        // 3) Read payload length at LSB=1
+        var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, 1, PAYLOAD_LEN_BYTES);
         var payloadLength = ByteBuffer
                 .wrap(payloadLenBytes)
                 .order(ByteOrder.BIG_ENDIAN)
@@ -233,14 +233,20 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // 4) Capacity check
         var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
         var remainingPixels = totalPixels - metaPixelCount;
-        var maxPayloadBytes = ((remainingPixels * 3L * lsbDepth) / 8L) - PAYLOAD_LEN_BYTES;
+
+        // Calculate payload length pixels at LSB=1
+        var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
+
+        // Remaining pixels after metadata and payload length header
+        var payloadDataPixels = remainingPixels - payloadLenPixels;
+        var maxPayloadBytes = ((payloadDataPixels * 3L * lsbDepth) / 8L);
+
         if (payloadLength > maxPayloadBytes) {
             throw new LsbDecodingException("Payload length exceeds capacity");
         }
 
         // 5) Read payload at chosen depth by user
-        var payloadHeaderPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, lsbDepth);
-        var payloadStartPixel = metaPixelCount + payloadHeaderPixels;
+        var payloadStartPixel = metaPixelCount + payloadLenPixels;
 
         return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
