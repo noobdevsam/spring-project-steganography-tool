@@ -7,7 +7,7 @@ public record StegoDecodeResponseDTO(
         String message,
         String extractedFileName,
         Long extractedFileSize,
-        String extractedFieAbsolutePath,
+        String extractedFileAbsolutePath,
         long createdAtEpochMillis,
         long expiredAtEpochMillis
 ) {
