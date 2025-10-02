@@ -36,21 +36,6 @@ public class OrphanCleanupTask {
         this.extractedTtlMs = extractedTtlMs;
     }
 
-    /**
-     * This method is scheduled to run periodically to clean up orphaned stego files
-     * from the storage directory. Orphaned files are those that exist in the storage
-     * directory but are not referenced in the database.
-     * <p>
-     * The method performs the following steps:
-     * 1. Checks if the cleanup task is enabled. If not, it exits early.
-     * 2. Verifies if the base storage path exists. If not, logs a debug message and exits.
-     * 3. Retrieves all referenced stego file names from the database.
-     * 4. Lists all files in the base storage path that match the naming pattern for stego files.
-     * 5. Deletes files that are not referenced in the database and logs the deletion.
-     * 6. Logs the total number of deleted files, if any.
-     * <p>
-     * If any errors occur during the process, they are logged as warnings.
-     */
     @Scheduled(
             initialDelayString = "${app.cleanup.initial-delay-ms:60000}",
             fixedDelayString = "${app.cleanup.interval-ms:300000}"
