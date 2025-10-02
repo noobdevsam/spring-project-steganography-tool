@@ -43,7 +43,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final ObjectMapper objectMapper;
     private final LargeFileEncryptionService largeFileEncryptionService;
 
-    @Value("${app.extraction.temp-ttl-ms:300000}") // default 5 minutes
+    @Value("${app.extraction.temp-ttl-ms}")
     private long extractionTempTtlMs;
 
     public SteganographyServiceImpl(
