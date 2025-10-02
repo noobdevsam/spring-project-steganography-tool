@@ -10,7 +10,6 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDe
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.mappers.StegoDataMapper;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
-import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
@@ -367,22 +366,6 @@ public class SteganographyServiceImpl implements SteganographyService {
             log.warn("Failed to delete stego file {} after DB delete: {}", fileName, e.getMessage());
         }
 
-    }
-
-    @Override
-    public StegoDownloadDTO downloadStegoImage(UUID id) throws StegoDataNotFoundException {
-        var stegoData = stegoDataRepository.findById(id)
-                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
-
-        var fileName = stegoData.getStegoFileName();
-
-        try {
-            var path = storageService.resolve(fileName);
-            var bytes = Files.readAllBytes(path);
-            return new StegoDownloadDTO(fileName, "image/png", bytes);
-        } catch (Exception e) {
-            throw new StorageException("Failed to download stego image: " + e.getMessage(), e.getCause());
-        }
     }
 
     // --- helpers ---
