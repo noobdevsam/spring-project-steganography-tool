@@ -33,7 +33,7 @@ public class StegoController {
             SteganographyService steganographyService,
             LsbUtilService lsbUtilService,
             CapacityUtilService capacityUtilService,
-            @Value("${app.stream.threshold-bytes:5242880}") long streamThreshold
+            @Value("${app.stream.threshold-bytes}") long streamThreshold
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;

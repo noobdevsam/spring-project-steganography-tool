@@ -28,7 +28,7 @@ public class OrphanCleanupTask {
             @Value("${app.cleanup.enabled:false}") boolean enabled,
             @Value("${app.storage.base-path}") Path basePath,
             StegoDataRepository stegoDataRepository,
-            @Value("${app.extraction.temp-ttl-ms:300000}") long extractedTtlMs
+            @Value("${app.extraction.temp-ttl-ms}") long extractedTtlMs
     ) {
         this.enabled = enabled;
         this.basePath = basePath.toAbsolutePath().normalize();
@@ -37,8 +37,8 @@ public class OrphanCleanupTask {
     }
 
     @Scheduled(
-            initialDelayString = "${app.cleanup.initial-delay-ms:60000}",
-            fixedDelayString = "${app.cleanup.interval-ms:300000}"
+            initialDelayString = "${app.cleanup.initial-delay-ms}",
+            fixedDelayString = "${app.cleanup.interval-ms}"
     )
     public void runCleanup() {
         // Exit early if the cleanup task is disabled
