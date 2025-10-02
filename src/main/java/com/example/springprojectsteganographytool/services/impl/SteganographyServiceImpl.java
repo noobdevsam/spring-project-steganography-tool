@@ -288,8 +288,37 @@ public class SteganographyServiceImpl implements SteganographyService {
             var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
             var fileBytes = aesUtilService.decryptFile(encodedFile, password);
 
+            // Persist extracted file temporarily
+            var created = System.currentTimeMillis();
+            var expires = created + extractionTempTtlMs;
+
+            // Sanitize base name
+            var baseName = sanitizeBaseName(metadata.originalFileName());
+            var extension = "";
+
+            // Try to preserve original file extension if any
+            if (metadata.originalFileName() != null) {
+                var dot = metadata.originalFileName().lastIndexOf('.');
+                if (dot > 0 && dot < metadata.originalFileName().length() - 1) {
+                    extension = metadata.originalFileName().substring(dot);
+                    extension = extension.replaceAll("[^A-Za-z0-9._-]", "");
+                }
+            }
+
+            // Create a unique temp file name
+            var tempFileName = "extracted-" + created + "-" + UUID.randomUUID() + "-" + baseName + extension;
+            var savedPath = storageService.save(tempFileName, fileBytes);
+            log.debug("Extracted file saved to {} (expires at {})", savedPath, expires);
+
             return new StegoDecodeResponseDTO(
-                    null, metadata.originalFileName(), fileBytes, false, true
+                    false,
+                    true,
+                    null,
+                    tempFileName,
+                    (long) fileBytes.length,
+                    savedPath.toAbsolutePath().toString(),
+                    created,
+                    expires
             );
         } else {
             throw new MetadataDecodingException("No text or file data found in the provided image.");
