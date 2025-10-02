@@ -73,6 +73,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public StegoEncodeResponseDTO encodeText(
             BufferedImage coverImage,
+            String coverImageName,
             String message,
             String password,
             int lsbDepth

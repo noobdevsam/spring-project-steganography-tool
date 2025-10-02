@@ -17,6 +17,7 @@ public interface SteganographyService {
 
     StegoEncodeResponseDTO encodeText(
             BufferedImage coverImage,
+            String coverImageName,
             String message,
             String password,
             int lsbDepth

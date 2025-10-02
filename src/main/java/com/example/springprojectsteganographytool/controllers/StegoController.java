@@ -106,7 +106,8 @@ public class StegoController {
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
         var image = toBufferedImage(coverImage);
-        var result = steganographyService.encodeText(image, message, password, lsbDepth);
+        var coverImageName = coverImage.getOriginalFilename();
+        var result = steganographyService.encodeText(image, coverImageName, message, password, lsbDepth);
         return ResponseEntity.ok(result);
     }
 
