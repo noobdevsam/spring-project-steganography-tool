@@ -53,41 +53,57 @@ public class OrphanCleanupTask {
                 return;
             }
 
-            // Retrieve all referenced stego file names from the database
-            var referenced = stegoDataRepository.findAll()
+            var referencedStegoNames = stegoDataRepository.findAll()
                     .stream()
                     .map(StegoData::getStegoFileName)
                     .collect(Collectors.toSet());
+            var now = System.currentTimeMillis();
+            int deletedCount = 0;
 
             // List all files in the base storage path
             try (var paths = Files.list(basePath)) {
-                var candidates = paths
-                        .filter(Files::isRegularFile) // Filter regular files
-                        .filter(path -> path.getFileName().toString().matches("^stego-.*\\.png$")) // Match stego file pattern
-                        .toList();
 
-                int deletedCount = 0;
-
-                // Iterate over candidate files and delete unreferenced ones
-                for (var file : candidates) {
+                for (var file : paths.filter(Files::isRegularFile).toList()) {
                     var name = file.getFileName().toString();
 
-                    if (!referenced.contains(name)) {
+                    // 1. Orphaned stego image deletion
+
+                    if (STEGO_PATTERN.matcher(name).matches()) {
+                        if (!referencedStegoNames.contains(name)) {
+                            try {
+                                Files.deleteIfExists(file); // Attempt to delete the file
+                                deletedCount++;
+                                log.info("Deleted orphaned stego file: {}", name);
+                            } catch (Exception e) {
+                                log.warn("Failed to delete orphaned stego file: {}: {}", name, e.getMessage());
+                            }
+                        }
+                        continue;
+                    }
+
+                    // 2. Expired extracted image deletion
+                    var extractedMatcher = EXTRACTED_PATTERN.matcher(name);
+                    if (extractedMatcher.matches()) {
                         try {
-                            Files.deleteIfExists(file); // Attempt to delete the file
-                            deletedCount++;
-                            log.info("Deleted orphaned stego file: {}", name);
+                            var created = Long.parseLong(extractedMatcher.group(1));
+
+                            if (now - created > extractedTtlMs) {
+                                Files.deleteIfExists(file); // Attempt to delete the file
+                                deletedCount++;
+                                log.info("Deleted expired extracted file: {}", name);
+                            }
                         } catch (Exception e) {
-                            log.warn("Failed to delete orphaned stego file: {}: {}", name, e.getMessage());
+                            log.warn("Failed evaluating extracted file {} for cleanup: {}", name, e.getMessage());
                         }
                     }
                 }
-
-                // Log the total number of deleted files, if any
-                if (deletedCount > 0) {
-                    log.info("Orphan cleanup completed, deleted {} files", deletedCount);
-                }
             }
+
+            // Log the total number of deleted files, if any
+            if (deletedCount > 0) {
+                log.info("Orphan cleanup completed, deleted {} files (orphan/expired)", deletedCount);
+            }
+
         } catch (Exception e) {
             // Log any errors encountered during the cleanup process
             log.warn("Orphan cleanup encountered an error: {}", e.getMessage());
