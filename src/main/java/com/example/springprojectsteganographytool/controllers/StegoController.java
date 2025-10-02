@@ -119,15 +119,17 @@ public class StegoController {
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
         var image = toBufferedImage(coverImage);
-        var embeddedFileSize = fileToEmbed.getSize();
-        var originalFileName = fileToEmbed.getOriginalFilename();
+        var coverImageName = coverImage.getOriginalFilename();
+        var nameOfFileToEmbed = fileToEmbed.getOriginalFilename();
+        var sizeOfFileToEmbed = fileToEmbed.getSize();
 
-        if (embeddedFileSize > streamThreshold) {
+
+        if (sizeOfFileToEmbed > streamThreshold) {
 
             try (var input = fileToEmbed.getInputStream()) {
                 return ResponseEntity.ok(
                         steganographyService.encodeFileStream(
-                                image, originalFileName, input, embeddedFileSize, password, lsbDepth
+                                image, coverImageName, nameOfFileToEmbed, input, sizeOfFileToEmbed, password, lsbDepth
                         )
                 );
             }
@@ -136,7 +138,7 @@ public class StegoController {
             var fileBytes = fileToEmbed.getBytes();
 
             return ResponseEntity.ok(
-                    steganographyService.encodeFile(image, originalFileName, fileBytes, password, lsbDepth)
+                    steganographyService.encodeFile(image, coverImageName, nameOfFileToEmbed, fileBytes, password, lsbDepth)
             );
         }
     }
