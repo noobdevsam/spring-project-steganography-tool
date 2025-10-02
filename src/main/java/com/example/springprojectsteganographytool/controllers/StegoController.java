@@ -33,7 +33,7 @@ public class StegoController {
             SteganographyService steganographyService,
             LsbUtilService lsbUtilService,
             CapacityUtilService capacityUtilService,
-            @Value("${app.stream.threshold-bytes:5242880}") long streamThreshold
+            @Value("${app.stream.threshold-bytes}") long streamThreshold
     ) {
         this.steganographyService = steganographyService;
         this.lsbUtilService = lsbUtilService;
@@ -106,36 +106,39 @@ public class StegoController {
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
         var image = toBufferedImage(coverImage);
-        var result = steganographyService.encodeText(image, message, password, lsbDepth);
+        var coverImageName = coverImage.getOriginalFilename();
+        var result = steganographyService.encodeText(image, coverImageName, message, password, lsbDepth);
         return ResponseEntity.ok(result);
     }
 
     @PostMapping(path = "/encode/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoEncodeResponseDTO> encodeFile(
             @RequestParam("coverImage") MultipartFile coverImage,
-            @RequestParam("embeddedFile") MultipartFile embeddedFile,
+            @RequestParam("fileToEmbed") MultipartFile fileToEmbed,
             @RequestParam("password") String password,
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
         var image = toBufferedImage(coverImage);
-        var embeddedFileSize = embeddedFile.getSize();
-        var originalFileName = embeddedFile.getOriginalFilename();
+        var coverImageName = coverImage.getOriginalFilename();
+        var nameOfFileToEmbed = fileToEmbed.getOriginalFilename();
+        var sizeOfFileToEmbed = fileToEmbed.getSize();
 
-        if (embeddedFileSize > streamThreshold) {
 
-            try (var input = embeddedFile.getInputStream()) {
+        if (sizeOfFileToEmbed > streamThreshold) {
+
+            try (var input = fileToEmbed.getInputStream()) {
                 return ResponseEntity.ok(
                         steganographyService.encodeFileStream(
-                                image, originalFileName, input, embeddedFileSize, password, lsbDepth
+                                image, coverImageName, nameOfFileToEmbed, input, sizeOfFileToEmbed, password, lsbDepth
                         )
                 );
             }
 
         } else {
-            var fileBytes = embeddedFile.getBytes();
+            var fileBytes = fileToEmbed.getBytes();
 
             return ResponseEntity.ok(
-                    steganographyService.encodeFile(image, originalFileName, fileBytes, password, lsbDepth)
+                    steganographyService.encodeFile(image, coverImageName, nameOfFileToEmbed, fileBytes, password, lsbDepth)
             );
         }
     }

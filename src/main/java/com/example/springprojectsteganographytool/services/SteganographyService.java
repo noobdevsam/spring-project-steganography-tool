@@ -17,6 +17,7 @@ public interface SteganographyService {
 
     StegoEncodeResponseDTO encodeText(
             BufferedImage coverImage,
+            String coverImageName,
             String message,
             String password,
             int lsbDepth
@@ -24,7 +25,8 @@ public interface SteganographyService {
 
     StegoEncodeResponseDTO encodeFile(
             BufferedImage coverImage,
-            String originalFileName,
+            String coverImageName,
+            String nameOfFileToEmbed,
             byte[] fileBytes,
             String password,
             int lsbDepth
@@ -32,7 +34,8 @@ public interface SteganographyService {
 
     StegoEncodeResponseDTO encodeFileStream(
             BufferedImage coverImage,
-            String originalFileName,
+            String coverImageName,
+            String nameOfFileToEmbed,
             InputStream fileStream,
             long fileSize,
             String password,

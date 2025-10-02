@@ -5,6 +5,6 @@ public record StegoMetadataDTO(
         boolean hasText,
         boolean hasFile,
         String encryptionKeyHash, // SHA-256 hash of the AES key
-        String originalFileName // Original file name
+        String nameOfFileToEmbed // Original file name
 ) {
 }

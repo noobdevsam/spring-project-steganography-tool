@@ -43,7 +43,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final ObjectMapper objectMapper;
     private final LargeFileEncryptionService largeFileEncryptionService;
 
-    @Value("${app.extraction.temp-ttl-ms:300000}") // default 5 minutes
+    @Value("${app.extraction.temp-ttl-ms}")
     private long extractionTempTtlMs;
 
     public SteganographyServiceImpl(
@@ -73,6 +73,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public StegoEncodeResponseDTO encodeText(
             BufferedImage coverImage,
+            String coverImageName,
             String message,
             String password,
             int lsbDepth
@@ -97,14 +98,14 @@ public class SteganographyServiceImpl implements SteganographyService {
             var coverBytes = bufferedImageToPngBytes(coverImage);
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
-            var safeName = "stego-text-" + UUID.randomUUID() + ".png";
-            var _ = storageService.save(safeName, stegoBytes);
+            var stegoFileName = "stego-text-" + UUID.randomUUID() + ".png";
+            storageService.save(stegoFileName, stegoBytes);
 
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
-                            .originalFileName(null)
-                            .embeddedFileName(null)
-                            .stegoFileName(safeName)
+                            .coverImageName(coverImageName)
+                            .fileNameOfEmbeddedData(null)
+                            .stegoFileName(stegoFileName)
                             .stegoFileSize((long) stegoBytes.length)
                             .encryptionKeyHash(keyHash)
                             .hasText(true)
@@ -112,7 +113,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                             .build()
             );
 
-            return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
+            return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -126,7 +127,8 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public StegoEncodeResponseDTO encodeFile(
             BufferedImage coverImage,
-            String originalFileName,
+            String coverImageName,
+            String nameOfFileToEmbed,
             byte[] fileBytes,
             String password,
             int lsbDepth
@@ -140,7 +142,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                     false,
                     true,
                     keyHash,
-                    originalFileName
+                    nameOfFileToEmbed
             );
 
             // Phase 1: Early capacity estimation before encryption
@@ -152,27 +154,27 @@ public class SteganographyServiceImpl implements SteganographyService {
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
             // save the stego image to storage
-            var baseName = originalFileName != null ? originalFileName : "embedded-file";
+            var baseName = nameOfFileToEmbed != null ? nameOfFileToEmbed : "embedded-file";
             var dot = baseName.lastIndexOf('.');
             if (dot > 0) {
                 baseName = baseName.substring(0, dot);
             }
             var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replaceAll("[^A-Za-z0-9._-]", "_");
-            var _ = storageService.save(safeName, stegoBytes);
+            storageService.save(safeName, stegoBytes);
 
-            var savedData = stegoDataRepository.save(
-                    StegoData.builder()
-                            .originalFileName(null)
-                            .embeddedFileName(originalFileName)
-                            .stegoFileName(safeName)
-                            .stegoFileSize((long) stegoBytes.length)
-                            .encryptionKeyHash(keyHash)
-                            .hasText(false)
-                            .hasFile(true)
-                            .build()
+            return stegoDataMapper.stegoDataToEncodeResponseDTO(
+                    stegoDataRepository.save(
+                            StegoData.builder()
+                                    .coverImageName(coverImageName)
+                                    .fileNameOfEmbeddedData(nameOfFileToEmbed)
+                                    .stegoFileName(safeName)
+                                    .stegoFileSize((long) stegoBytes.length)
+                                    .encryptionKeyHash(keyHash)
+                                    .hasText(false)
+                                    .hasFile(true)
+                                    .build()
+                    )
             );
-
-            return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -186,7 +188,8 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public StegoEncodeResponseDTO encodeFileStream(
             BufferedImage coverImage,
-            String originalFileName,
+            String coverImageName,
+            String nameOfFileToEmbed,
             InputStream fileStream,
             long fileSize,
             String password,
@@ -201,7 +204,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 false,
                 true,
                 keyHash,
-                originalFileName
+                nameOfFileToEmbed
         );
 
         // Early capacity estimation before encryption
@@ -221,14 +224,15 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             try (var encIn = Files.newInputStream(encTemp.path())) {
                 var stegoBytes = lsbUtilService.encodeStream(coverBytes, encIn, encryptedLength, metadata);
-                var baseName = sanitizeBaseName(originalFileName);
+                var baseName = sanitizeBaseName(nameOfFileToEmbed);
                 var fileName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png");
                 storageService.save(fileName, stegoBytes);
 
-                return stegoDataMapper.StegoDataToEncodeResponseDTO(
+                return stegoDataMapper.stegoDataToEncodeResponseDTO(
                         stegoDataRepository.save(
                                 StegoData.builder()
-                                        .embeddedFileName(originalFileName)
+                                        .coverImageName(coverImageName)
+                                        .fileNameOfEmbeddedData(nameOfFileToEmbed)
                                         .stegoFileName(fileName)
                                         .stegoFileSize((long) stegoBytes.length)
                                         .encryptionKeyHash(keyHash)
@@ -284,6 +288,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                     now
             );
         } else if (metadata.hasFile()) {
+            // Extract file bytes
             var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
             var fileBytes = aesUtilService.decryptFile(encodedFile, password);
 
@@ -292,14 +297,14 @@ public class SteganographyServiceImpl implements SteganographyService {
             var expires = created + extractionTempTtlMs;
 
             // Sanitize base name
-            var baseName = sanitizeBaseName(metadata.originalFileName());
+            var baseName = sanitizeBaseName(metadata.nameOfFileToEmbed());
             var extension = "";
 
             // Try to preserve original file extension if any
-            if (metadata.originalFileName() != null) {
-                var dot = metadata.originalFileName().lastIndexOf('.');
-                if (dot > 0 && dot < metadata.originalFileName().length() - 1) {
-                    extension = metadata.originalFileName().substring(dot);
+            if (metadata.nameOfFileToEmbed() != null) {
+                var dot = metadata.nameOfFileToEmbed().lastIndexOf('.');
+                if (dot > 0 && dot < metadata.nameOfFileToEmbed().length() - 1) {
+                    extension = metadata.nameOfFileToEmbed().substring(dot);
                     extension = extension.replaceAll("[^A-Za-z0-9._-]", "");
                 }
             }
@@ -332,7 +337,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     public List<StegoEncodeResponseDTO> listAllEncodings() {
         return stegoDataRepository.findAll()
                 .stream()
-                .map(stegoDataMapper::StegoDataToEncodeResponseDTO)
+                .map(stegoDataMapper::stegoDataToEncodeResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -341,7 +346,7 @@ public class SteganographyServiceImpl implements SteganographyService {
         var stegoData = stegoDataRepository.findById(id)
                 .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
 
-        return stegoDataMapper.StegoDataToEncodeResponseDTO(stegoData);
+        return stegoDataMapper.stegoDataToEncodeResponseDTO(stegoData);
     }
 
     @Transactional

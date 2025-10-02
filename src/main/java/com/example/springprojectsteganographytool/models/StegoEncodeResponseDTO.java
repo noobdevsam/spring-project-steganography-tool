@@ -3,11 +3,15 @@ package com.example.springprojectsteganographytool.models;
 import java.time.Instant;
 import java.util.UUID;
 
-// Used for returning a response after processing a stego image
+// Used for returning a response after encoding data into an image
+// Excludes sensitive information like encryptionKeyHash
+// and focuses on metadata about the stego file and embedded data
 public record StegoEncodeResponseDTO(
         UUID id,
-        String originalFileName,
-        String embeddedFileName,
+        String coverImageName,
+        String nameOfEmbeddedData,
+        String stegoFileName,
+        Long stegoFileSize,
         boolean hasText,
         boolean hasFile,
         Instant createdDate
