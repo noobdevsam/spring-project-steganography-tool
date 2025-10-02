@@ -10,13 +10,13 @@ import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDe
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.mappers.StegoDataMapper;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
-import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import com.example.springprojectsteganographytool.services.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +42,9 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final StorageService storageService;
     private final ObjectMapper objectMapper;
     private final LargeFileEncryptionService largeFileEncryptionService;
+
+    @Value("${app.extraction.temp-ttl-ms:300000}") // default 5 minutes
+    private long extractionTempTtlMs;
 
     public SteganographyServiceImpl(
             AesUtilService aesUtilService,
@@ -268,16 +271,53 @@ public class SteganographyServiceImpl implements SteganographyService {
                     stegoImage, metadata.lsbDepth()
             );
             var text = aesUtilService.decryptText(encodedText, password);
+            var now = System.currentTimeMillis();
 
             return new StegoDecodeResponseDTO(
-                    text, null, null, true, false
+                    true,
+                    false,
+                    text,
+                    null,
+                    null,
+                    null,
+                    now,
+                    now
             );
         } else if (metadata.hasFile()) {
             var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
             var fileBytes = aesUtilService.decryptFile(encodedFile, password);
 
+            // Persist extracted file temporarily
+            var created = System.currentTimeMillis();
+            var expires = created + extractionTempTtlMs;
+
+            // Sanitize base name
+            var baseName = sanitizeBaseName(metadata.originalFileName());
+            var extension = "";
+
+            // Try to preserve original file extension if any
+            if (metadata.originalFileName() != null) {
+                var dot = metadata.originalFileName().lastIndexOf('.');
+                if (dot > 0 && dot < metadata.originalFileName().length() - 1) {
+                    extension = metadata.originalFileName().substring(dot);
+                    extension = extension.replaceAll("[^A-Za-z0-9._-]", "");
+                }
+            }
+
+            // Create a unique temp file name
+            var tempFileName = "extracted-" + created + "-" + UUID.randomUUID() + "-" + baseName + extension;
+            var savedPath = storageService.save(tempFileName, fileBytes);
+            log.debug("Extracted file saved to {} (expires at {})", savedPath, expires);
+
             return new StegoDecodeResponseDTO(
-                    null, metadata.originalFileName(), fileBytes, false, true
+                    false,
+                    true,
+                    null,
+                    tempFileName,
+                    (long) fileBytes.length,
+                    savedPath.toAbsolutePath().toString(),
+                    created,
+                    expires
             );
         } else {
             throw new MetadataDecodingException("No text or file data found in the provided image.");
@@ -326,22 +366,6 @@ public class SteganographyServiceImpl implements SteganographyService {
             log.warn("Failed to delete stego file {} after DB delete: {}", fileName, e.getMessage());
         }
 
-    }
-
-    @Override
-    public StegoDownloadDTO downloadStegoImage(UUID id) throws StegoDataNotFoundException {
-        var stegoData = stegoDataRepository.findById(id)
-                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
-
-        var fileName = stegoData.getStegoFileName();
-
-        try {
-            var path = storageService.resolve(fileName);
-            var bytes = Files.readAllBytes(path);
-            return new StegoDownloadDTO(fileName, "image/png", bytes);
-        } catch (Exception e) {
-            throw new StorageException("Failed to download stego image: " + e.getMessage(), e.getCause());
-        }
     }
 
     // --- helpers ---

@@ -2,7 +2,6 @@ package com.example.springprojectsteganographytool.services;
 
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
-import com.example.springprojectsteganographytool.models.StegoDownloadDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 
 import java.awt.image.BufferedImage;
@@ -44,8 +43,6 @@ public interface SteganographyService {
             BufferedImage stegoImage,
             String password
     ) throws Exception;
-
-    StegoDownloadDTO downloadStegoImage(UUID id) throws StegoDataNotFoundException;
 
     List<StegoEncodeResponseDTO> listAllEncodings();
 
