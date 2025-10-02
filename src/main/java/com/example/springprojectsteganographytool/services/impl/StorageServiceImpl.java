@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.FileNotFoundException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -31,17 +30,6 @@ public class StorageServiceImpl implements StorageService {
         Files.createDirectories(targetPath.getParent());
         Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         log.debug("Saved file: {}  ({} bytes)", targetPath, content.length);
-        return targetPath;
-    }
-
-    @Override
-    public Path resolve(String relativeFileName) throws Exception {
-        var targetPath = safeResolve(relativeFileName);
-
-        if (!Files.exists(targetPath) || !Files.isRegularFile(targetPath)) {
-            throw new FileNotFoundException("File not found: " + relativeFileName);
-        }
-
         return targetPath;
     }
 
