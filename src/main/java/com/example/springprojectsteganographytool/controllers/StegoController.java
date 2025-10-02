@@ -114,17 +114,17 @@ public class StegoController {
     @PostMapping(path = "/encode/file", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoEncodeResponseDTO> encodeFile(
             @RequestParam("coverImage") MultipartFile coverImage,
-            @RequestParam("embeddedFile") MultipartFile embeddedFile,
+            @RequestParam("fileToEmbed") MultipartFile fileToEmbed,
             @RequestParam("password") String password,
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
         var image = toBufferedImage(coverImage);
-        var embeddedFileSize = embeddedFile.getSize();
-        var originalFileName = embeddedFile.getOriginalFilename();
+        var embeddedFileSize = fileToEmbed.getSize();
+        var originalFileName = fileToEmbed.getOriginalFilename();
 
         if (embeddedFileSize > streamThreshold) {
 
-            try (var input = embeddedFile.getInputStream()) {
+            try (var input = fileToEmbed.getInputStream()) {
                 return ResponseEntity.ok(
                         steganographyService.encodeFileStream(
                                 image, originalFileName, input, embeddedFileSize, password, lsbDepth
@@ -133,7 +133,7 @@ public class StegoController {
             }
 
         } else {
-            var fileBytes = embeddedFile.getBytes();
+            var fileBytes = fileToEmbed.getBytes();
 
             return ResponseEntity.ok(
                     steganographyService.encodeFile(image, originalFileName, fileBytes, password, lsbDepth)
