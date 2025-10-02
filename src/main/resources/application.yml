@@ -27,4 +27,6 @@ app:
         initial-delay-ms: 60000 # 1 minute
         interval-ms: 120000  # 2 minutes
     stream:
-        threshold-bytes: 5000000 # 5 MB cutoff for streaming vs in-memory processing
+        threshold-bytes: 1000000 # 1 MB cutoff for streaming vs in-memory processing
+    extraction:
+        temp-ttl-ms: 300000 # 5 minutes
