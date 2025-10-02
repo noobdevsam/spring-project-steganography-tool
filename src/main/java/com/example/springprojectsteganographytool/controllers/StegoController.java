@@ -8,8 +8,6 @@ import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -185,18 +183,4 @@ public class StegoController {
         return ResponseEntity.noContent().build();
     }
 
-    // ----- Download operations -----
-
-    @GetMapping(path = "/encodings/{id}/stego-image")
-    public ResponseEntity<byte[]> downloadStegoImage(@PathVariable("id") UUID id) {
-        var dto = steganographyService.downloadStegoImage(id);
-        var headers = new HttpHeaders();
-
-        headers.setContentType(MediaType.parseMediaType(dto.contentType()));
-        headers.setContentDisposition(ContentDisposition.attachment().filename(dto.fileName()).build());
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(dto.fileData());
-    }
 }
