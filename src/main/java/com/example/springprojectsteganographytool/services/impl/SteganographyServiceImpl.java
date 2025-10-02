@@ -98,14 +98,14 @@ public class SteganographyServiceImpl implements SteganographyService {
             var coverBytes = bufferedImageToPngBytes(coverImage);
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
-            var safeName = "stego-text-" + UUID.randomUUID() + ".png";
-            storageService.save(safeName, stegoBytes);
+            var stegoFileName = "stego-text-" + UUID.randomUUID() + ".png";
+            storageService.save(stegoFileName, stegoBytes);
 
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
-                            .originalFileName(null)
-                            .embeddedFileName(null)
-                            .stegoFileName(safeName)
+                            .coverImageName(coverImageName)
+                            .fileNameOfEmbeddedData(null)
+                            .stegoFileName(stegoFileName)
                             .stegoFileSize((long) stegoBytes.length)
                             .encryptionKeyHash(keyHash)
                             .hasText(true)
