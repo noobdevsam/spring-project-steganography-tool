@@ -113,7 +113,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                             .build()
             );
 
-            return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
+            return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -174,7 +174,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                             .build()
             );
 
-            return stegoDataMapper.StegoDataToEncodeResponseDTO(savedData);
+            return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -228,7 +228,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 var fileName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png");
                 storageService.save(fileName, stegoBytes);
 
-                return stegoDataMapper.StegoDataToEncodeResponseDTO(
+                return stegoDataMapper.stegoDataToEncodeResponseDTO(
                         stegoDataRepository.save(
                                 StegoData.builder()
                                         .coverImageName(coverImageName)
@@ -337,7 +337,7 @@ public class SteganographyServiceImpl implements SteganographyService {
     public List<StegoEncodeResponseDTO> listAllEncodings() {
         return stegoDataRepository.findAll()
                 .stream()
-                .map(stegoDataMapper::StegoDataToEncodeResponseDTO)
+                .map(stegoDataMapper::stegoDataToEncodeResponseDTO)
                 .collect(Collectors.toList());
     }
 
@@ -346,7 +346,7 @@ public class SteganographyServiceImpl implements SteganographyService {
         var stegoData = stegoDataRepository.findById(id)
                 .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
 
-        return stegoDataMapper.StegoDataToEncodeResponseDTO(stegoData);
+        return stegoDataMapper.stegoDataToEncodeResponseDTO(stegoData);
     }
 
     @Transactional
