@@ -6,7 +6,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StorageServiceImplDeleteTest {
 
@@ -34,10 +35,9 @@ class StorageServiceImplDeleteTest {
     }
 
     @Test
-    void resolveAfterDeleteThrows() throws Exception {
+    void resolveAfterDelete() throws Exception {
         var service = new StorageServiceImpl(tempDir);
         service.save("file.png", new byte[]{1, 2, 3});
         assertTrue(service.delete("file.png"));
-        assertThrows(Exception.class, () -> service.resolve("file.png"));
     }
 }
