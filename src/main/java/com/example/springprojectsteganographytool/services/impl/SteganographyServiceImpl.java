@@ -127,7 +127,8 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public StegoEncodeResponseDTO encodeFile(
             BufferedImage coverImage,
-            String originalFileName,
+            String coverImageName,
+            String nameOfFileToEmbed,
             byte[] fileBytes,
             String password,
             int lsbDepth
@@ -187,7 +188,8 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Override
     public StegoEncodeResponseDTO encodeFileStream(
             BufferedImage coverImage,
-            String originalFileName,
+            String coverImageName,
+            String nameOfFileToEmbed,
             InputStream fileStream,
             long fileSize,
             String password,
