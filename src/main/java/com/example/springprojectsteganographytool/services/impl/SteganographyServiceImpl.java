@@ -98,7 +98,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
             var safeName = "stego-text-" + UUID.randomUUID() + ".png";
-            var _ = storageService.save(safeName, stegoBytes);
+            storageService.save(safeName, stegoBytes);
 
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
@@ -158,7 +158,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 baseName = baseName.substring(0, dot);
             }
             var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replaceAll("[^A-Za-z0-9._-]", "_");
-            var _ = storageService.save(safeName, stegoBytes);
+            storageService.save(safeName, stegoBytes);
 
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
