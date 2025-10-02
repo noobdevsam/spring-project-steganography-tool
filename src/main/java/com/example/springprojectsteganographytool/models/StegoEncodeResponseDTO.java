@@ -9,7 +9,7 @@ import java.util.UUID;
 public record StegoEncodeResponseDTO(
         UUID id,
         String coverImageName,
-        String nameOfEmbeddedData,
+        String fileNameOfEmbeddedData,
         String stegoFileName,
         Long stegoFileSize,
         boolean hasText,
