@@ -162,19 +162,19 @@ public class SteganographyServiceImpl implements SteganographyService {
             var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replaceAll("[^A-Za-z0-9._-]", "_");
             storageService.save(safeName, stegoBytes);
 
-            var savedData = stegoDataRepository.save(
-                    StegoData.builder()
-                            .coverImageName(coverImageName)
-                            .fileNameOfEmbeddedData(nameOfFileToEmbed)
-                            .stegoFileName(safeName)
-                            .stegoFileSize((long) stegoBytes.length)
-                            .encryptionKeyHash(keyHash)
-                            .hasText(false)
-                            .hasFile(true)
-                            .build()
+            return stegoDataMapper.stegoDataToEncodeResponseDTO(
+                    stegoDataRepository.save(
+                            StegoData.builder()
+                                    .coverImageName(coverImageName)
+                                    .fileNameOfEmbeddedData(nameOfFileToEmbed)
+                                    .stegoFileName(safeName)
+                                    .stegoFileSize((long) stegoBytes.length)
+                                    .encryptionKeyHash(keyHash)
+                                    .hasText(false)
+                                    .hasFile(true)
+                                    .build()
+                    )
             );
-
-            return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
