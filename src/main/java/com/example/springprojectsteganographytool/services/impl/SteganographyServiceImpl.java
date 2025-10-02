@@ -17,6 +17,7 @@ import com.example.springprojectsteganographytool.repos.StegoDataRepository;
 import com.example.springprojectsteganographytool.services.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +43,9 @@ public class SteganographyServiceImpl implements SteganographyService {
     private final StorageService storageService;
     private final ObjectMapper objectMapper;
     private final LargeFileEncryptionService largeFileEncryptionService;
+
+    @Value("${app.extraction.temp-ttl-ms:600000}") // default 10 minutes
+    private long extractionTempTtlMs;
 
     public SteganographyServiceImpl(
             AesUtilService aesUtilService,
