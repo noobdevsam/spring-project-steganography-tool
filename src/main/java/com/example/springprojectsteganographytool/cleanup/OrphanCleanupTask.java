@@ -28,7 +28,7 @@ public class OrphanCleanupTask {
             @Value("${app.cleanup.enabled:false}") boolean enabled,
             @Value("${app.storage.base-path}") Path basePath,
             StegoDataRepository stegoDataRepository,
-            @Value("${app.extraction.ttl-ms:300000}") long extractedTtlMs
+            @Value("${app.extraction.temp-ttl-ms:300000}") long extractedTtlMs
     ) {
         this.enabled = enabled;
         this.basePath = basePath.toAbsolutePath().normalize();
