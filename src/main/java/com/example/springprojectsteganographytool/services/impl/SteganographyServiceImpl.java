@@ -272,9 +272,17 @@ public class SteganographyServiceImpl implements SteganographyService {
                     stegoImage, metadata.lsbDepth()
             );
             var text = aesUtilService.decryptText(encodedText, password);
+            var now = System.currentTimeMillis();
 
             return new StegoDecodeResponseDTO(
-                    text, null, null, true, false
+                    true,
+                    false,
+                    text,
+                    null,
+                    null,
+                    null,
+                    now,
+                    now
             );
         } else if (metadata.hasFile()) {
             var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
