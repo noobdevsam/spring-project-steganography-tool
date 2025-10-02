@@ -142,7 +142,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                     false,
                     true,
                     keyHash,
-                    originalFileName
+                    nameOfFileToEmbed
             );
 
             // Phase 1: Early capacity estimation before encryption
@@ -154,7 +154,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
             // save the stego image to storage
-            var baseName = originalFileName != null ? originalFileName : "embedded-file";
+            var baseName = nameOfFileToEmbed != null ? nameOfFileToEmbed : "embedded-file";
             var dot = baseName.lastIndexOf('.');
             if (dot > 0) {
                 baseName = baseName.substring(0, dot);
@@ -164,8 +164,8 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
-                            .originalFileName(null)
-                            .embeddedFileName(originalFileName)
+                            .coverImageName(coverImageName)
+                            .fileNameOfEmbeddedData(nameOfFileToEmbed)
                             .stegoFileName(safeName)
                             .stegoFileSize((long) stegoBytes.length)
                             .encryptionKeyHash(keyHash)
