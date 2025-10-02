@@ -204,7 +204,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                 false,
                 true,
                 keyHash,
-                originalFileName
+                nameOfFileToEmbed
         );
 
         // Early capacity estimation before encryption
@@ -224,14 +224,15 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             try (var encIn = Files.newInputStream(encTemp.path())) {
                 var stegoBytes = lsbUtilService.encodeStream(coverBytes, encIn, encryptedLength, metadata);
-                var baseName = sanitizeBaseName(originalFileName);
+                var baseName = sanitizeBaseName(nameOfFileToEmbed);
                 var fileName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png");
                 storageService.save(fileName, stegoBytes);
 
                 return stegoDataMapper.StegoDataToEncodeResponseDTO(
                         stegoDataRepository.save(
                                 StegoData.builder()
-                                        .embeddedFileName(originalFileName)
+                                        .coverImageName(coverImageName)
+                                        .fileNameOfEmbeddedData(nameOfFileToEmbed)
                                         .stegoFileName(fileName)
                                         .stegoFileSize((long) stegoBytes.length)
                                         .encryptionKeyHash(keyHash)
@@ -287,6 +288,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                     now
             );
         } else if (metadata.hasFile()) {
+            // Extract file bytes
             var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
             var fileBytes = aesUtilService.decryptFile(encodedFile, password);
 
@@ -295,14 +297,14 @@ public class SteganographyServiceImpl implements SteganographyService {
             var expires = created + extractionTempTtlMs;
 
             // Sanitize base name
-            var baseName = sanitizeBaseName(metadata.originalFileName());
+            var baseName = sanitizeBaseName(metadata.nameOfFileToEmbed());
             var extension = "";
 
             // Try to preserve original file extension if any
-            if (metadata.originalFileName() != null) {
-                var dot = metadata.originalFileName().lastIndexOf('.');
-                if (dot > 0 && dot < metadata.originalFileName().length() - 1) {
-                    extension = metadata.originalFileName().substring(dot);
+            if (metadata.nameOfFileToEmbed() != null) {
+                var dot = metadata.nameOfFileToEmbed().lastIndexOf('.');
+                if (dot > 0 && dot < metadata.nameOfFileToEmbed().length() - 1) {
+                    extension = metadata.nameOfFileToEmbed().substring(dot);
                     extension = extension.replaceAll("[^A-Za-z0-9._-]", "");
                 }
             }
