@@ -27,7 +27,6 @@ public class StegoData {
     private String stegoFileName;
     private Long stegoFileSize;
 
-    private String encryptionKeyHash;
     private Instant createdDate;
 
     private boolean hasText;
@@ -39,7 +38,6 @@ public class StegoData {
             String fileNameOfEmbeddedData,
             String stegoFileName,
             Long stegoFileSize,
-            String encryptionKeyHash,
             boolean hasText,
             boolean hasFile
     ) {
@@ -47,7 +45,6 @@ public class StegoData {
         this.fileNameOfEmbeddedData = fileNameOfEmbeddedData;
         this.stegoFileName = stegoFileName;
         this.stegoFileSize = stegoFileSize;
-        this.encryptionKeyHash = encryptionKeyHash;
         this.createdDate = Instant.now();
         this.hasText = hasText;
         this.hasFile = hasFile;
