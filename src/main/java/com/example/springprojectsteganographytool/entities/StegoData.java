@@ -21,12 +21,11 @@ public class StegoData {
     @Version
     private Long version;
 
-    private String originalFileName;
-    private String embeddedFileName;
+    private String coverImageName;
+    private String fileNameOfEmbeddedData;
 
     private String stegoFileName;
     private Long stegoFileSize;
-
 
     private String encryptionKeyHash;
     private Instant createdDate;
@@ -36,16 +35,16 @@ public class StegoData {
 
     @Builder
     public StegoData(
-            String originalFileName,
-            String embeddedFileName,
+            String coverImageName,
+            String fileNameOfEmbeddedData,
             String stegoFileName,
             Long stegoFileSize,
             String encryptionKeyHash,
             boolean hasText,
             boolean hasFile
     ) {
-        this.originalFileName = originalFileName;
-        this.embeddedFileName = embeddedFileName;
+        this.coverImageName = coverImageName;
+        this.fileNameOfEmbeddedData = fileNameOfEmbeddedData;
         this.stegoFileName = stegoFileName;
         this.stegoFileSize = stegoFileSize;
         this.encryptionKeyHash = encryptionKeyHash;
