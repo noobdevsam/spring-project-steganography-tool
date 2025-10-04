@@ -60,6 +60,7 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(
             MethodArgumentNotValidException ex,
             HttpServletRequest request
@@ -75,6 +76,27 @@ public class GlobalExceptionHandler {
         pd.setProperty("code", "VALIDATION_ERROR");
         pd.setProperty("timestamp", Instant.now().toString());
         pd.setProperty("path", request.getRequestURI());
+        return pd;
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleGeneric(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        // Log full stack trace
+        // logger.error("Unhandled exception", ex);
+        var pd = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "An unexpected error occurred."
+        );
+
+        pd.setType(URI.create("https://api.example.com/errors/INTERNAL_SERVER_ERROR"));
+        pd.setTitle("INTERNAL_SERVER_ERROR");
+        pd.setProperty("code", "INTERNAL_SERVER_ERROR");
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
+
         return pd;
     }
 
