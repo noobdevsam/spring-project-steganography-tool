@@ -53,8 +53,8 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining());
         var pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, summary);
         pd.setType(URI.create("https://api.example.com/errors/VALIDATION_ERROR"));
-        pd.setTitle("VALIDATION_ERROR");
-        pd.setProperty("code", "VALIDATION_ERROR");
+        pd.setTitle(StegoErrorCode.VALIDATION_ERROR.name());
+        pd.setProperty("code", StegoErrorCode.VALIDATION_ERROR.name());
         pd.setProperty("timestamp", Instant.now().toString());
         pd.setProperty("path", request.getRequestURI());
         return pd;
