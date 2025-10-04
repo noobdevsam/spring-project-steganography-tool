@@ -1,29 +1,27 @@
 package com.example.springprojectsteganographytool.exceptions.metadata;
 
-/**
- * Exception thrown when an error occurs during the decoding of metadata.
- * This exception extends the {@link RuntimeException}, making it an unchecked exception.
- */
-public class MetadataDecodingException extends RuntimeException {
+import com.example.springprojectsteganographytool.exceptions.StegoErrorCode;
+import com.example.springprojectsteganographytool.exceptions.StegoException;
+import org.springframework.http.HttpStatus;
 
-    /**
-     * Constructs a new MetadataDecodingException with the specified detail message.
-     *
-     * @param message the detail message explaining the reason for the exception
-     */
+public class MetadataDecodingException extends StegoException {
+
     public MetadataDecodingException(String message) {
         super(message);
     }
 
-    /**
-     * Constructs a new MetadataDecodingException with the specified detail message
-     * and cause.
-     *
-     * @param message the detail message explaining the reason for the exception
-     * @param cause   the cause of the exception (a throwable that caused this exception)
-     */
     public MetadataDecodingException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    @Override
+    public StegoErrorCode code() {
+        return StegoErrorCode.METADATA_DECODING_ERROR;
+    }
+
+    @Override
+    public HttpStatus status() {
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
 }
