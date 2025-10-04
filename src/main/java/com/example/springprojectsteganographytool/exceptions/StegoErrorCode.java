@@ -13,7 +13,7 @@ public enum StegoErrorCode {
     STORAGE_ERROR,
     OPERATION_NOT_ALLOWED,
     DECODE_FAILURE,
-    INTERNAL_ERROR;
+    INTERNAL_SERVER_ERROR;
 
     public String typeURI() {
         return "https://api.example.com/errors/" + name();
