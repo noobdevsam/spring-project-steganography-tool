@@ -13,6 +13,8 @@ public enum StegoErrorCode {
     STORAGE_ERROR,
     OPERATION_NOT_ALLOWED,
     DECODE_FAILURE,
+    ENCODE_FAILURE,
+    UNSUPPORTED_MEDIA_TYPE,
     INTERNAL_SERVER_ERROR;
 
     public String typeURI() {
