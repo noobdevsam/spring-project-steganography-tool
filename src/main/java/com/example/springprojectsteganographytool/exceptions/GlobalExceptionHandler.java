@@ -22,12 +22,14 @@ import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 /**
  * Global exception handler for the application.
@@ -38,7 +40,10 @@ import java.util.HashMap;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(StegoException.class)
-    public ProblemDetail handleStego(StegoException ex, HttpServletRequest request) {
+    public ProblemDetail handleStego(
+            StegoException ex,
+            HttpServletRequest request
+    ) {
         var pd = ProblemDetail.forStatusAndDetail(ex.status(), ex.getMessage());
         var traceId = MDC.get("traceId");
 
@@ -52,6 +57,24 @@ public class GlobalExceptionHandler {
             pd.setProperty("traceId", traceId);
         }
 
+        return pd;
+    }
+
+    public ProblemDetail handleValidation(
+            MethodArgumentNotValidException ex,
+            HttpServletRequest request
+    ) {
+        var summary = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining());
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, summary);
+        pd.setType(URI.create("https://api.example.com/errors/VALIDATION_ERROR"));
+        pd.setTitle("VALIDATION_ERROR");
+        pd.setProperty("code", "VALIDATION_ERROR");
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
         return pd;
     }
 
