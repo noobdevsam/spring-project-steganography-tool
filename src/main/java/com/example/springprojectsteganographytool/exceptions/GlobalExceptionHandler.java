@@ -52,11 +52,18 @@ public class GlobalExceptionHandler {
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining());
         var pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, summary);
+        var traceId = MDC.get("traceId");
+
         pd.setType(URI.create("https://api.example.com/errors/VALIDATION_ERROR"));
         pd.setTitle(StegoErrorCode.VALIDATION_ERROR.name());
         pd.setProperty("code", StegoErrorCode.VALIDATION_ERROR.name());
         pd.setProperty("timestamp", Instant.now().toString());
         pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
         return pd;
     }
 
