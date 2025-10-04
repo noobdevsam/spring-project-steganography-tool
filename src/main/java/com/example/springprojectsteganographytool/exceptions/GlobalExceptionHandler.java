@@ -17,11 +17,15 @@ import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingExce
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataEncodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.HashMap;
 
@@ -32,6 +36,25 @@ import java.util.HashMap;
  */
 @ControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(StegoException.class)
+    public ProblemDetail handleStego(StegoException ex, HttpServletRequest request) {
+        var pd = ProblemDetail.forStatusAndDetail(ex.status(), ex.getMessage());
+        var traceId = MDC.get("traceId");
+
+        pd.setType(URI.create(ex.code().typeURI()));
+        pd.setTitle(ex.code().name());
+        pd.setProperty("code", ex.code().name());
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
+        return pd;
+    }
+
 
     /**
      * Builds a standardized response body for exceptions.
