@@ -21,7 +21,7 @@ public class AesKeyInvalidException extends StegoException {
 
     @Override
     public HttpStatus status() {
-        return HttpStatus.BAD_REQUEST;
+        return HttpStatus.FORBIDDEN;
     }
 
 }

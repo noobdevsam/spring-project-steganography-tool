@@ -21,7 +21,7 @@ public class LsbDecodingException extends StegoException {
 
     @Override
     public HttpStatus status() {
-        return HttpStatus.INTERNAL_SERVER_ERROR;
+        return HttpStatus.UNPROCESSABLE_ENTITY;
     }
 
 }
