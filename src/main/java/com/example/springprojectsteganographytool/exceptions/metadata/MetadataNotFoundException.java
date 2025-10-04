@@ -1,28 +1,26 @@
 package com.example.springprojectsteganographytool.exceptions.metadata;
 
-/**
- * Custom exception class that represents a metadata not found error.
- * This exception is thrown when the requested metadata cannot be located.
- */
-public class MetadataNotFoundException extends RuntimeException {
+import com.example.springprojectsteganographytool.exceptions.StegoErrorCode;
+import com.example.springprojectsteganographytool.exceptions.StegoException;
+import org.springframework.http.HttpStatus;
 
-    /**
-     * Constructs a new MetadataNotFoundException with the specified detail message.
-     *
-     * @param message the detail message explaining the reason for the exception
-     */
+public class MetadataNotFoundException extends StegoException {
+
     public MetadataNotFoundException(String message) {
         super(message);
     }
 
-    /**
-     * Constructs a new MetadataNotFoundException with the specified detail message
-     * and cause.
-     *
-     * @param message the detail message explaining the reason for the exception
-     * @param cause   the cause of the exception (a throwable that caused this exception)
-     */
     public MetadataNotFoundException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    @Override
+    public StegoErrorCode code() {
+        return StegoErrorCode.METADATA_NOT_FOUND;
+    }
+
+    @Override
+    public HttpStatus status() {
+        return HttpStatus.NOT_FOUND;
     }
 }

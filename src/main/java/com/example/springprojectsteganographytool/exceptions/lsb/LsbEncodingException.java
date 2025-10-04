@@ -1,29 +1,27 @@
 package com.example.springprojectsteganographytool.exceptions.lsb;
 
-/**
- * Exception thrown when an error occurs during the LSB (Least Significant Bit) encoding process.
- * This exception extends the {@link RuntimeException}, making it an unchecked exception.
- */
-public class LsbEncodingException extends RuntimeException {
+import com.example.springprojectsteganographytool.exceptions.StegoErrorCode;
+import com.example.springprojectsteganographytool.exceptions.StegoException;
+import org.springframework.http.HttpStatus;
 
-    /**
-     * Constructs a new LsbEncodingException with the specified detail message.
-     *
-     * @param message the detail message explaining the reason for the exception
-     */
+public class LsbEncodingException extends StegoException {
+
     public LsbEncodingException(String message) {
         super(message);
     }
 
-    /**
-     * Constructs a new LsbEncodingException with the specified detail message
-     * and cause.
-     *
-     * @param message the detail message explaining the reason for the exception
-     * @param cause   the cause of the exception (a throwable that caused this exception)
-     */
     public LsbEncodingException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    @Override
+    public StegoErrorCode code() {
+        return StegoErrorCode.ENCODE_FAILURE;
+    }
+
+    @Override
+    public HttpStatus status() {
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 
 }

@@ -1,29 +1,26 @@
 package com.example.springprojectsteganographytool.exceptions.data;
 
-/**
- * Exception thrown when steganographic data is not found.
- * This exception extends the {@link RuntimeException}, making it an unchecked exception.
- */
-public class StegoDataNotFoundException extends RuntimeException {
+import com.example.springprojectsteganographytool.exceptions.StegoErrorCode;
+import com.example.springprojectsteganographytool.exceptions.StegoException;
+import org.springframework.http.HttpStatus;
 
-    /**
-     * Constructs a new StegoDataNotFoundException with the specified detail message.
-     *
-     * @param message the detail message explaining the reason for the exception
-     */
+public class StegoDataNotFoundException extends StegoException {
+
     public StegoDataNotFoundException(String message) {
         super(message);
     }
 
-    /**
-     * Constructs a new StegoDataNotFoundException with the specified detail message
-     * and cause.
-     *
-     * @param message the detail message explaining the reason for the exception
-     * @param cause   the cause of the exception (a throwable that caused this exception)
-     */
     public StegoDataNotFoundException(String message, Throwable cause) {
         super(message, cause);
     }
 
+    @Override
+    public StegoErrorCode code() {
+        return StegoErrorCode.STEGO_DATA_NOT_FOUND;
+    }
+
+    @Override
+    public HttpStatus status() {
+        return HttpStatus.NOT_FOUND;
+    }
 }
