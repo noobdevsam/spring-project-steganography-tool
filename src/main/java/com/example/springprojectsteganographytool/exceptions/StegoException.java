@@ -1,6 +1,5 @@
-package com.example.springprojectsteganographytool;
+package com.example.springprojectsteganographytool.exceptions;
 
-import com.example.springprojectsteganographytool.exceptions.StegoErrorCode;
 import org.springframework.http.HttpStatus;
 
 public abstract class StegoException extends RuntimeException {
