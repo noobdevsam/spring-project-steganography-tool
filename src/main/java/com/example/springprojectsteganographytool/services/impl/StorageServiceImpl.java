@@ -28,7 +28,7 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public Path save(String relativeFileName, byte[] content) throws StorageException, IOException {
+    public Path save(String relativeFileName, byte[] content) throws StorageSecurityException, StorageException, IOException {
         var targetPath = safeResolve(relativeFileName);
         Files.createDirectories(targetPath.getParent());
         Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
