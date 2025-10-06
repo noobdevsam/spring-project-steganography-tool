@@ -18,7 +18,7 @@ public interface LsbUtilService {
             byte[] imageBytes,
             byte[] payloadBytes,
             StegoMetadataDTO metadata
-    ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
+    ) throws MessageTooLargeException, LsbEncodingException;
 
     // Streaming encode: payload length known, data provided as stream
     byte[] encodeStream(
@@ -26,21 +26,15 @@ public interface LsbUtilService {
             InputStream payloadStream,
             long payloadLength,
             StegoMetadataDTO metadata
-    ) throws
-            MessageTooLargeException,
-            LsbEncodingException;
+    ) throws MessageTooLargeException, LsbEncodingException;
 
     //New: BufferedImage-based APIs (Phase 3)
     StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
-            InvalidImageFormatException,
-            MessageTooLargeException,
-            MetadataNotFoundException,
-            MetadataDecodingException;
+            InvalidImageFormatException, MessageTooLargeException,
+            MetadataNotFoundException, MetadataDecodingException;
 
     byte[] decode(
             BufferedImage stegoImage,
             Integer lsbDepth
-    ) throws
-            InvalidLsbDepthException,
-            LsbDecodingException;
+    ) throws InvalidLsbDepthException, LsbDecodingException;
 }

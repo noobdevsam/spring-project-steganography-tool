@@ -50,7 +50,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             byte[] imageBytes,
             byte[] payloadBytes,
             StegoMetadataDTO metadata
-    ) throws MessageTooLargeException {
+    ) throws MessageTooLargeException, LsbEncodingException {
 
         // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
         // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
