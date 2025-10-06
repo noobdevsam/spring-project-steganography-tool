@@ -114,9 +114,6 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
-
-    // ----- Private Helper Methods -----
-
     @Override
     public String generateKey(String key) throws AesOperationException {
 
@@ -142,6 +139,8 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
     }
+
+    // ----- Private Helper Methods -----
 
     private byte[] encryptBytes(byte[] bytesToEncrypt, String key) throws Exception {
         var salt = new byte[SALT_LENGTH];
@@ -175,8 +174,6 @@ public class AesUtilServiceImpl implements AesUtilService {
 
         return outputBytes;
     }
-
-    //  --- package-private helper method for key derivation ---
 
     private byte[] decryptBytes(byte[] bytesToDecrypt, String key) throws Exception {
         if (bytesToDecrypt == null || bytesToDecrypt.length < SALT_LENGTH + IV_LENGTH) {
