@@ -1,7 +1,6 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
@@ -184,9 +183,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     @Override
-    public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+    public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws
+            InvalidLsbDepthException,
+            LsbDecodingException {
         try {
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
+        } catch (InvalidLsbDepthException | LsbDecodingException e) {
+            throw e;
         } catch (Exception e) {
             throw new LsbDecodingException("Decoding failed: " + e.getMessage());
         }
@@ -194,7 +197,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private High-Level Helper Methods -----
 
-    private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
+    private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws
+            InvalidLsbDepthException,
+            LsbDecodingException {
 
         StegoMetadataDTO meta;
 
