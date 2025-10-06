@@ -1,10 +1,13 @@
 package com.example.springprojectsteganographytool.services.impl;
 
+import com.example.springprojectsteganographytool.exceptions.data.StorageException;
+import com.example.springprojectsteganographytool.exceptions.data.StorageSecurityException;
 import com.example.springprojectsteganographytool.services.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -15,7 +18,7 @@ public class StorageServiceImpl implements StorageService {
 
     private final Path basePath;
 
-    public StorageServiceImpl(@Value("${app.storage.base-path}") Path basePath) {
+    public StorageServiceImpl(@Value("${app.storage.base-path}") Path basePath) throws IllegalArgumentException {
 
         if (basePath == null) {
             throw new IllegalArgumentException("app.storage.base-path must not be null");
@@ -25,7 +28,7 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public Path save(String relativeFileName, byte[] content) throws Exception {
+    public Path save(String relativeFileName, byte[] content) throws StorageSecurityException, StorageException, IOException {
         var targetPath = safeResolve(relativeFileName);
         Files.createDirectories(targetPath.getParent());
         Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
@@ -34,9 +37,15 @@ public class StorageServiceImpl implements StorageService {
     }
 
     @Override
-    public boolean delete(String relativeFileName) throws Exception {
-        var targetPath = safeResolve(relativeFileName);
-        var deleted = Files.deleteIfExists(targetPath);
+    public boolean delete(String relativeFileName) throws StorageException {
+        Path targetPath = null;
+        boolean deleted = false;
+        try {
+            targetPath = safeResolve(relativeFileName);
+            deleted = Files.deleteIfExists(targetPath);
+        } catch (IllegalArgumentException | StorageSecurityException | IOException e) {
+            throw new StorageException(e.getMessage(), e);
+        }
 
         if (deleted) {
             log.debug("Deleted file: {}", targetPath);
@@ -47,7 +56,7 @@ public class StorageServiceImpl implements StorageService {
         return deleted;
     }
 
-    private Path safeResolve(String name) {
+    private Path safeResolve(String name) throws IllegalArgumentException, StorageSecurityException {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("File name cannot be null or blank");
         }
@@ -60,7 +69,7 @@ public class StorageServiceImpl implements StorageService {
         var targetPath = basePath.resolve(name).normalize();
 
         if (!targetPath.startsWith(basePath)) {
-            throw new SecurityException("Attempt to escape storage directory: ");
+            throw new StorageSecurityException("Attempt to escape storage directory: ");
         }
 
         return targetPath;

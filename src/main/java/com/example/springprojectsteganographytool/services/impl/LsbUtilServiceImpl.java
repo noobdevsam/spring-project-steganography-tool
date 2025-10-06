@@ -1,11 +1,11 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.models.lsb.MetadataBlockDTO;
@@ -18,6 +18,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -49,7 +50,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             byte[] imageBytes,
             byte[] payloadBytes,
             StegoMetadataDTO metadata
-    ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+    ) throws MessageTooLargeException, LsbEncodingException {
 
         // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
         // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
@@ -84,11 +85,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // Step 4: Return the modified image as a byte array in lossless PNG format
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
-        } catch (MessageTooLargeException | InvalidLsbDepthException | MetadataNotFoundException e) {
+        } catch (MessageTooLargeException e) {
             throw e; // Re-throw specific exceptions
         } catch (Exception e) {
             log.error("Error during LSB encoding", e);
-            throw new LsbEncodingException("Failed to encode payload into image", e);
+            throw new LsbEncodingException("Failed to encode payload into image: " + e.getMessage(), e);
         }
 
     }
@@ -99,7 +100,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InputStream payloadStream,
             long payloadLength,
             StegoMetadataDTO metadata
-    ) throws Exception {
+    ) throws MessageTooLargeException, LsbEncodingException {
 
         try {
             var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
@@ -127,13 +128,14 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
         } catch (Exception e) {
-            throw new LsbEncodingException("LSB stream encoding failed", e);
+            throw new LsbEncodingException("LSB stream encoding failed: " + e.getMessage(), e);
         }
-
     }
 
     @Override
-    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
+    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
+            InvalidImageFormatException, MessageTooLargeException,
+            MetadataNotFoundException, MetadataDecodingException {
         try {
 
             // 1. Read the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1
@@ -172,22 +174,24 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             // 6. Deserialize JSON to StegoMetadataDTO
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
         } catch (Exception e) {
-            throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
+            throw new MetadataDecodingException("Failed extracting metadata: " + e.getMessage(), e);
         }
     }
 
     @Override
-    public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException {
+    public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws
+            InvalidLsbDepthException, LsbDecodingException {
         try {
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
         } catch (Exception e) {
-            throw new LsbDecodingException("Decoding failed: " + e.getMessage());
+            throw new LsbDecodingException("Decoding failed: " + e.getMessage(), e);
         }
     }
 
     // ----- Private High-Level Helper Methods -----
 
-    private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws Exception {
+    private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws
+            InvalidLsbDepthException, LsbDecodingException {
 
         StegoMetadataDTO meta;
 
@@ -237,7 +241,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
-    private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws Exception {
+    private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
+            MetadataNotFoundException, InvalidLsbDepthException,
+            MessageTooLargeException, IOException {
         if (metadata == null) {
             throw new MetadataNotFoundException("Metadata cannot be null");
         }
@@ -294,10 +300,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return deepCopy(source);
     }
 
-
     private BufferedImage bytesToImage(
             byte[] imageBytes
-    ) throws Exception {
+    ) throws LsbEncodingException, IOException {
 
         try (
                 // Create an input stream from the byte array
@@ -320,13 +325,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // Return the converted image
             return convertedImage;
+        } catch (Exception e) {
+            throw new LsbEncodingException("Failed to convert byte array to image: " + e.getMessage(), e);
         }
 
     }
 
     private byte[] imageToBytes(
             BufferedImage image
-    ) throws Exception {
+    ) throws IOException {
 
         try (
                 var byteArrayOutputStream = new ByteArrayOutputStream()
@@ -458,7 +465,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             InputStream payloadStream,
             long payloadLength
-    ) throws Exception {
+    ) throws MessageTooLargeException, IOException {
 
         var width = working.getWidth();
         var height = working.getHeight();

@@ -15,7 +15,9 @@ public enum StegoErrorCode {
     DECODE_FAILURE,
     ENCODE_FAILURE,
     METADATA_DECODING_ERROR,
-    METADATA_ENCODING_ERROR;
+    METADATA_ENCODING_ERROR,
+    STORAGE_SECURITY_ERROR,
+    INTERNAL_ERROR;
 
     public String typeURI() {
         return "https://api.example.com/errors/" + name();

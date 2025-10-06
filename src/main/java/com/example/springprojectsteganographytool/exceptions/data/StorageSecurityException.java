@@ -1,27 +1,25 @@
-package com.example.springprojectsteganographytool.exceptions.encryption;
+package com.example.springprojectsteganographytool.exceptions.data;
 
 import com.example.springprojectsteganographytool.exceptions.StegoErrorCode;
 import com.example.springprojectsteganographytool.exceptions.StegoException;
 import org.springframework.http.HttpStatus;
 
-public class AesKeyInvalidException extends StegoException {
-
-    public AesKeyInvalidException(String message) {
+public class StorageSecurityException extends StegoException {
+    public StorageSecurityException(String message) {
         super(message);
     }
 
-    public AesKeyInvalidException(String message, Throwable cause) {
+    public StorageSecurityException(String message, Throwable cause) {
         super(message, cause);
     }
 
     @Override
     public StegoErrorCode code() {
-        return StegoErrorCode.ENCRYPTION_KEY_INVALID;
+        return StegoErrorCode.STORAGE_SECURITY_ERROR;
     }
 
     @Override
     public HttpStatus status() {
         return HttpStatus.FORBIDDEN;
     }
-
 }

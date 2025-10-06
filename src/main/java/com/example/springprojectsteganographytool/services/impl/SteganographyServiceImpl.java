@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
@@ -66,6 +67,29 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.largeFileEncryptionService = largeFileEncryptionService;
     }
 
+    private static void validateLsbDepth(int lsbDepth) throws InvalidLsbDepthException {
+        if (lsbDepth != 1 && lsbDepth != 2) {
+            throw new InvalidLsbDepthException("LSB depth must be 1 or 2.");
+        }
+    }
+
+    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws StorageException, IOException {
+
+        try (var outputStream = new ByteArrayOutputStream()) {
+            // Always write PNG to preserve RGB 8-bit without loss
+            var ok = ImageIO.write(bufferedImage, "png", outputStream);
+
+            if (!ok) {
+                throw new StorageException("Failed to write BufferedImage to PNG format.");
+            }
+
+            return outputStream.toByteArray();
+        } catch (StorageException | IOException e) {
+            throw new StorageException("Error while converting image to PNG:" + e.getMessage(), e);
+        }
+
+    }
+
     @Transactional(
             rollbackFor = {Exception.class},
             propagation = Propagation.REQUIRED
@@ -77,7 +101,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             String message,
             String password,
             int lsbDepth
-    ) throws Exception {
+    ) {
         validateLsbDepth(lsbDepth);
 
         try {
@@ -113,8 +137,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             );
 
             return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
+        } catch (StorageException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unexpected failure during text encoding: " + e.getMessage(), e);
         }
 
     }
@@ -131,7 +157,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             byte[] fileBytes,
             String password,
             int lsbDepth
-    ) throws Exception {
+    ) {
         validateLsbDepth(lsbDepth);
 
         try {
@@ -173,8 +199,10 @@ public class SteganographyServiceImpl implements SteganographyService {
                                     .build()
                     )
             );
+        } catch (StorageException e) {
+            throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Unexpected failure during file encoding: " + e.getMessage(), e);
         }
 
     }
@@ -205,8 +233,12 @@ public class SteganographyServiceImpl implements SteganographyService {
                 nameOfFileToEmbed
         );
 
-        // Early capacity estimation before encryption
-        earlyCapacityCheck(coverImage, metadata, fileSize);
+        try {
+            // Early capacity estimation before encryption
+            earlyCapacityCheck(coverImage, metadata, fileSize);
+        } catch (MessageTooLargeException e) {
+            throw new RuntimeException(e);
+        }
 
         // Streaming encryption -> temp file
         var encTemp = largeFileEncryptionService.encryptToTempFile(fileStream, password);
@@ -239,6 +271,8 @@ public class SteganographyServiceImpl implements SteganographyService {
                         )
                 );
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
         } finally {
             try {
                 Files.deleteIfExists(encTemp.path());
@@ -327,9 +361,6 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
-
-    // ----- Read operations -----
-
     @Override
     public List<StegoEncodeResponseDTO> listAllEncodings() {
         return stegoDataRepository.findAll()
@@ -370,33 +401,8 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
-    // --- helpers ---
+    // ----- Helpers -----
 
-    private static void validateLsbDepth(int lsbDepth) throws InvalidLsbDepthException {
-        if (lsbDepth != 1 && lsbDepth != 2) {
-            throw new InvalidLsbDepthException("LSB depth must be 1 or 2.");
-        }
-    }
-
-    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) {
-
-        try (var baos = new ByteArrayOutputStream()) {
-            // Always write PNG to preserve RGB 8-bit without loss
-            var ok = ImageIO.write(bufferedImage, "png", baos);
-
-            if (!ok) {
-                throw new StorageException("Failed to write BufferedImage to PNG format.");
-            }
-
-            return baos.toByteArray();
-        } catch (Exception e) {
-            throw new StorageException("Error while converting image to PNG.", e);
-        }
-    }
-
-    // Perform early capacity estimation (Phase 1)
-    // Throw MessageTooLargeException if estimated required
-    // bytes exceed image capacity
     private void earlyCapacityCheck(
             BufferedImage coverImage, StegoMetadataDTO metadata, long plainPayloadLength
     ) throws MessageTooLargeException {

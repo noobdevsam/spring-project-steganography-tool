@@ -52,11 +52,60 @@ public class GlobalExceptionHandler {
                 .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
                 .collect(Collectors.joining());
         var pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, summary);
+        var traceId = MDC.get("traceId");
+
+        pd.setType(URI.create("https://api.example.com/errors/VALIDATION_ERROR"));
+        pd.setTitle(StegoErrorCode.VALIDATION_ERROR.name());
+        pd.setProperty("code", StegoErrorCode.VALIDATION_ERROR.name());
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
+        return pd;
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        var traceId = MDC.get("traceId");
+
         pd.setType(URI.create("https://api.example.com/errors/VALIDATION_ERROR"));
         pd.setTitle("VALIDATION_ERROR");
         pd.setProperty("code", "VALIDATION_ERROR");
         pd.setProperty("timestamp", Instant.now().toString());
         pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
+        return pd;
+    }
+
+    @ExceptionHandler(SecurityException.class)
+    public ProblemDetail handleSecurity(
+            SecurityException ex,
+            HttpServletRequest request
+    ) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        var traceId = MDC.get("traceId");
+
+        pd.setType(URI.create("https://api.example.com/errors/STORAGE_SECURITY_ERROR"));
+        pd.setTitle("STORAGE_SECURITY_ERROR");
+        pd.setProperty("code", "STORAGE_SECURITY_ERROR");
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
         return pd;
     }
 

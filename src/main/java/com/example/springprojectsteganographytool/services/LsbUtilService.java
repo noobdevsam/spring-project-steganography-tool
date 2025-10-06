@@ -1,11 +1,12 @@
 package com.example.springprojectsteganographytool.services;
 
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 
 import java.awt.image.BufferedImage;
@@ -17,7 +18,7 @@ public interface LsbUtilService {
             byte[] imageBytes,
             byte[] payloadBytes,
             StegoMetadataDTO metadata
-    ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException;
+    ) throws MessageTooLargeException, LsbEncodingException;
 
     // Streaming encode: payload length known, data provided as stream
     byte[] encodeStream(
@@ -25,13 +26,15 @@ public interface LsbUtilService {
             InputStream payloadStream,
             long payloadLength,
             StegoMetadataDTO metadata
-    ) throws Exception;
+    ) throws MessageTooLargeException, LsbEncodingException;
 
     //New: BufferedImage-based APIs (Phase 3)
-    StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException;
+    StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
+            InvalidImageFormatException, MessageTooLargeException,
+            MetadataNotFoundException, MetadataDecodingException;
 
     byte[] decode(
             BufferedImage stegoImage,
             Integer lsbDepth
-    ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
+    ) throws InvalidLsbDepthException, LsbDecodingException;
 }
