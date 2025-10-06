@@ -43,10 +43,10 @@ public class CapacityUtilServiceImpl implements CapacityUtilService {
     public long estimateEncryptedLength(long plainLength) {
         var padding = AES_BLOCK_SIZE - (plainLength % AES_BLOCK_SIZE);
 
-//        if (padding == 0) {
-//            padding = AES_BLOCK_SIZE;
-//        }
-//
+        if (padding == 0) {
+            padding = AES_BLOCK_SIZE;
+        }
+
         return SALT_LEN + IV_LEN + plainLength + padding;
     }
 
