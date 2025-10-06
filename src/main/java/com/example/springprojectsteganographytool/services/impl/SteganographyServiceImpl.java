@@ -73,7 +73,7 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
-    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws IOException {
+    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws StorageException, IOException {
 
         try (var outputStream = new ByteArrayOutputStream()) {
             // Always write PNG to preserve RGB 8-bit without loss
@@ -84,8 +84,8 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
 
             return outputStream.toByteArray();
-        } catch (StorageException e) {
-            throw new StorageException("Error while converting image to PNG.", e);
+        } catch (StorageException | IOException e) {
+            throw new StorageException("Error while converting image to PNG:" + e.getMessage(), e);
         }
 
     }
