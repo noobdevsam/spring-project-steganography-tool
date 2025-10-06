@@ -1,7 +1,6 @@
 package com.example.springprojectsteganographytool.services;
 
 import com.example.springprojectsteganographytool.exceptions.data.MessageTooLargeException;
-import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
@@ -39,5 +38,7 @@ public interface LsbUtilService {
     byte[] decode(
             BufferedImage stegoImage,
             Integer lsbDepth
-    ) throws InvalidLsbDepthException, LsbDecodingException, StegoDataNotFoundException, InvalidImageFormatException;
+    ) throws
+            InvalidLsbDepthException,
+            LsbDecodingException;
 }
