@@ -132,8 +132,6 @@ public class AesUtilServiceImpl implements AesUtilService {
             // Return the hex-encoded representation of the digest.
             // Hex-encoded SHA-256 hash of the key
             return HexFormat.of().formatHex(digestKey);
-        } catch (AesKeyInvalidException e) {
-            throw e;
         } catch (Exception ee) {
             throw new AesOperationException("Key generation operation failed: " + ee.getMessage(), ee);
         }
