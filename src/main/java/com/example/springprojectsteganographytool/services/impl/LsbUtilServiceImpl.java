@@ -6,6 +6,7 @@ import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFo
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
 import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.models.lsb.MetadataBlockDTO;
@@ -133,7 +134,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     @Override
-    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException {
+    public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
+            InvalidImageFormatException,
+            MessageTooLargeException,
+            MetadataNotFoundException,
+            MetadataDecodingException {
         try {
 
             // 1. Read the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1
@@ -171,8 +176,10 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // 6. Deserialize JSON to StegoMetadataDTO
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
+        } catch (MessageTooLargeException | InvalidImageFormatException | MetadataNotFoundException e) {
+            throw e;
         } catch (Exception e) {
-            throw new InvalidImageFormatException("Failed extracting metadata: " + e.getMessage());
+            throw new MetadataDecodingException("Failed extracting metadata: " + e.getMessage());
         }
     }
 

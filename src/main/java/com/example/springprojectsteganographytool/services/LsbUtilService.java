@@ -6,6 +6,8 @@ import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFo
 import com.example.springprojectsteganographytool.exceptions.lsb.InvalidLsbDepthException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbDecodingException;
 import com.example.springprojectsteganographytool.exceptions.lsb.LsbEncodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataDecodingException;
+import com.example.springprojectsteganographytool.exceptions.metadata.MetadataNotFoundException;
 import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 
 import java.awt.image.BufferedImage;
@@ -28,7 +30,11 @@ public interface LsbUtilService {
     ) throws Exception;
 
     //New: BufferedImage-based APIs (Phase 3)
-    StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws InvalidImageFormatException;
+    StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
+            InvalidImageFormatException,
+            MessageTooLargeException,
+            MetadataNotFoundException,
+            MetadataDecodingException;
 
     byte[] decode(
             BufferedImage stegoImage,
