@@ -257,7 +257,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
             MetadataNotFoundException,
             InvalidLsbDepthException,
-            MessageTooLargeException {
+            MessageTooLargeException,
+            IOException {
         if (metadata == null) {
             throw new MetadataNotFoundException("Metadata cannot be null");
         }
