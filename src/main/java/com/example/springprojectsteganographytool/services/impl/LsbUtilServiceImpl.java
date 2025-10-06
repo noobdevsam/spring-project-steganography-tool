@@ -50,7 +50,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             byte[] imageBytes,
             byte[] payloadBytes,
             StegoMetadataDTO metadata
-    ) throws InvalidLsbDepthException, MessageTooLargeException, LsbEncodingException, InvalidImageFormatException {
+    ) throws MessageTooLargeException {
 
         // Writes: [MAGIC(4)][VERSION(1)] at LSB=1, then [META_LEN(4)][META_JSON] at LSB=1,
         // then [PAYLOAD_LEN(8)] at LSB=1 and [PAYLOAD] at LSB=metadata.lsbDepth()
@@ -85,11 +85,11 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // Step 4: Return the modified image as a byte array in lossless PNG format
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
-        } catch (MessageTooLargeException | InvalidLsbDepthException | MetadataNotFoundException e) {
+        } catch (MessageTooLargeException e) {
             throw e; // Re-throw specific exceptions
         } catch (Exception e) {
             log.error("Error during LSB encoding", e);
-            throw new LsbEncodingException("Failed to encode payload into image", e);
+            throw new LsbEncodingException("Failed to encode payload into image: " + e.getMessage(), e);
         }
 
     }
