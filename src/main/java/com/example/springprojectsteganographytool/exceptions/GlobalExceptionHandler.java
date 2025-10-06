@@ -67,6 +67,27 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ProblemDetail handleIllegalArgument(
+            IllegalArgumentException ex,
+            HttpServletRequest request
+    ) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        var traceId = MDC.get("traceId");
+
+        pd.setType(URI.create("https://api.example.com/errors/VALIDATION_ERROR"));
+        pd.setTitle("VALIDATION_ERROR");
+        pd.setProperty("code", "VALIDATION_ERROR");
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
+        return pd;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(
             Exception ex,
