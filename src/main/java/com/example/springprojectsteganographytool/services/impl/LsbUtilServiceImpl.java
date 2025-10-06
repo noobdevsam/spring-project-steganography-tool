@@ -127,8 +127,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength); // Stream the payload data into the image using the specified LSB depth
 
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
-        } catch (MessageTooLargeException | LsbEncodingException e) {
-            throw e;
         } catch (Exception e) {
             throw new LsbEncodingException("LSB stream encoding failed: " + e.getMessage(), e);
         }
@@ -175,8 +173,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // 6. Deserialize JSON to StegoMetadataDTO
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
-        } catch (MessageTooLargeException | InvalidImageFormatException | MetadataNotFoundException e) {
-            throw e;
         } catch (Exception e) {
             throw new MetadataDecodingException("Failed extracting metadata: " + e.getMessage(), e);
         }
@@ -187,8 +183,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InvalidLsbDepthException, LsbDecodingException {
         try {
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
-        } catch (InvalidLsbDepthException | LsbDecodingException e) {
-            throw e;
         } catch (Exception e) {
             throw new LsbDecodingException("Decoding failed: " + e.getMessage(), e);
         }
