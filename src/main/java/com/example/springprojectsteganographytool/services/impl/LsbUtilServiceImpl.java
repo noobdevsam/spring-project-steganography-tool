@@ -99,7 +99,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InputStream payloadStream,
             long payloadLength,
             StegoMetadataDTO metadata
-    ) throws Exception {
+    ) throws
+            MessageTooLargeException,
+            LsbEncodingException {
 
         try {
             var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
@@ -126,8 +128,10 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength); // Stream the payload data into the image using the specified LSB depth
 
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
+        } catch (MessageTooLargeException | LsbEncodingException e) {
+            throw e;
         } catch (Exception e) {
-            throw new LsbEncodingException("LSB stream encoding failed", e);
+            throw new LsbEncodingException("LSB stream encoding failed: " + e.getMessage(), e);
         }
 
     }

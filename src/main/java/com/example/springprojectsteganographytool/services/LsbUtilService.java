@@ -26,7 +26,9 @@ public interface LsbUtilService {
             InputStream payloadStream,
             long payloadLength,
             StegoMetadataDTO metadata
-    ) throws Exception;
+    ) throws
+            MessageTooLargeException,
+            LsbEncodingException;
 
     //New: BufferedImage-based APIs (Phase 3)
     StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
