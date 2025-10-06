@@ -331,8 +331,6 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             // Return the converted image
             return convertedImage;
-        } catch (LsbEncodingException | IOException e) {
-            throw e;
         } catch (Exception e) {
             throw new LsbEncodingException("Failed to convert byte array to image: " + e.getMessage(), e);
         }
