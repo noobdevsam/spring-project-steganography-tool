@@ -253,7 +253,10 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
-    private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws Exception {
+    private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
+            MetadataNotFoundException,
+            InvalidLsbDepthException,
+            MessageTooLargeException {
         if (metadata == null) {
             throw new MetadataNotFoundException("Metadata cannot be null");
         }
