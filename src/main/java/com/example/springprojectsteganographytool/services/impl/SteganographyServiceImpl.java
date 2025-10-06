@@ -24,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
@@ -72,7 +73,7 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
-    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) {
+    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws IOException {
 
         try (var outputStream = new ByteArrayOutputStream()) {
             // Always write PNG to preserve RGB 8-bit without loss
@@ -83,9 +84,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
 
             return outputStream.toByteArray();
-        } catch (Exception e) {
+        } catch (StorageException e) {
             throw new StorageException("Error while converting image to PNG.", e);
         }
+
     }
 
     @Transactional(
@@ -367,8 +369,6 @@ public class SteganographyServiceImpl implements SteganographyService {
                 .collect(Collectors.toList());
     }
 
-    // --- helpers ---
-
     @Override
     public StegoEncodeResponseDTO getById(UUID id) throws StegoDataNotFoundException {
         var stegoData = stegoDataRepository.findById(id)
@@ -401,9 +401,8 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     }
 
-    // Perform early capacity estimation (Phase 1)
-    // Throw MessageTooLargeException if estimated required
-    // bytes exceed image capacity
+    // ----- Helpers -----
+
     private void earlyCapacityCheck(
             BufferedImage coverImage, StegoMetadataDTO metadata, long plainPayloadLength
     ) throws MessageTooLargeException {
