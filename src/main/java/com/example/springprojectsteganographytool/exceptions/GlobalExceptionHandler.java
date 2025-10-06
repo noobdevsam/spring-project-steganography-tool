@@ -88,6 +88,27 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    @ExceptionHandler(SecurityException.class)
+    public ProblemDetail handleSecurity(
+            SecurityException ex,
+            HttpServletRequest request
+    ) {
+        var pd = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, ex.getMessage());
+        var traceId = MDC.get("traceId");
+
+        pd.setType(URI.create("https://api.example.com/errors/STORAGE_SECURITY_ERROR"));
+        pd.setTitle("STORAGE_SECURITY_ERROR");
+        pd.setProperty("code", "STORAGE_SECURITY_ERROR");
+        pd.setProperty("timestamp", Instant.now().toString());
+        pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
+
+        return pd;
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(
             Exception ex,
