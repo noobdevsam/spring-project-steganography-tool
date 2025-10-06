@@ -100,9 +100,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InputStream payloadStream,
             long payloadLength,
             StegoMetadataDTO metadata
-    ) throws
-            MessageTooLargeException,
-            LsbEncodingException {
+    ) throws MessageTooLargeException, LsbEncodingException {
 
         try {
             var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
@@ -134,15 +132,12 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         } catch (Exception e) {
             throw new LsbEncodingException("LSB stream encoding failed: " + e.getMessage(), e);
         }
-
     }
 
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
-            InvalidImageFormatException,
-            MessageTooLargeException,
-            MetadataNotFoundException,
-            MetadataDecodingException {
+            InvalidImageFormatException, MessageTooLargeException,
+            MetadataNotFoundException, MetadataDecodingException {
         try {
 
             // 1. Read the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1
@@ -183,28 +178,26 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         } catch (MessageTooLargeException | InvalidImageFormatException | MetadataNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new MetadataDecodingException("Failed extracting metadata: " + e.getMessage());
+            throw new MetadataDecodingException("Failed extracting metadata: " + e.getMessage(), e);
         }
     }
 
     @Override
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws
-            InvalidLsbDepthException,
-            LsbDecodingException {
+            InvalidLsbDepthException, LsbDecodingException {
         try {
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
         } catch (InvalidLsbDepthException | LsbDecodingException e) {
             throw e;
         } catch (Exception e) {
-            throw new LsbDecodingException("Decoding failed: " + e.getMessage());
+            throw new LsbDecodingException("Decoding failed: " + e.getMessage(), e);
         }
     }
 
     // ----- Private High-Level Helper Methods -----
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws
-            InvalidLsbDepthException,
-            LsbDecodingException {
+            InvalidLsbDepthException, LsbDecodingException {
 
         StegoMetadataDTO meta;
 
@@ -255,10 +248,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     }
 
     private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
-            MetadataNotFoundException,
-            InvalidLsbDepthException,
-            MessageTooLargeException,
-            IOException {
+            MetadataNotFoundException, InvalidLsbDepthException,
+            MessageTooLargeException, IOException {
         if (metadata == null) {
             throw new MetadataNotFoundException("Metadata cannot be null");
         }
@@ -315,12 +306,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return deepCopy(source);
     }
 
-
     private BufferedImage bytesToImage(
             byte[] imageBytes
-    ) throws
-            LsbEncodingException,
-            IOException {
+    ) throws LsbEncodingException, IOException {
 
         try (
                 // Create an input stream from the byte array
@@ -353,7 +341,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private byte[] imageToBytes(
             BufferedImage image
-    ) throws Exception {
+    ) throws IOException {
 
         try (
                 var byteArrayOutputStream = new ByteArrayOutputStream()
@@ -485,7 +473,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             InputStream payloadStream,
             long payloadLength
-    ) throws Exception {
+    ) throws MessageTooLargeException, IOException {
 
         var width = working.getWidth();
         var height = working.getHeight();
