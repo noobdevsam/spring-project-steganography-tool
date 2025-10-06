@@ -24,22 +24,28 @@ import java.util.HexFormat;
 @Service
 public class AesUtilServiceImpl implements AesUtilService {
 
-    // Constants for encryption configuration
-    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
     static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
-    private static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
-    private static final int KEY_LENGTH = 256; // AES-256 key length in bits
     static final int SALT_LENGTH = 16; // Length of the salt in bytes
     static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
-
     static final SecureRandom RANDOM = new SecureRandom(); // Secure random generator for salt and IV
+    // Constants for encryption configuration
+    private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
+    private static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
+    private static final int KEY_LENGTH = 256; // AES-256 key length in bits
 
     public AesUtilServiceImpl() {
     }
 
+    static SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
+        var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
+        var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
+        var keyBytes = factory.generateSecret(spec).getEncoded();
+        return new SecretKeySpec(keyBytes, "AES");
+    }
+
     @Override
     public byte[] encryptText(String plainText, String key)
-            throws Exception {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -57,7 +63,7 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     @Override
     public String decryptText(byte[] cipherBytes, String key)
-            throws Exception {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -76,7 +82,7 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     @Override
     public byte[] encryptFile(byte[] fileBytes, String key)
-            throws Exception {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -93,7 +99,7 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     @Override
     public byte[] decryptFile(byte[] cipherBytes, String key)
-            throws Exception {
+            throws AesKeyInvalidException, AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -108,8 +114,11 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
+
+    // ----- Private Helper Methods -----
+
     @Override
-    public String generateKey(String key) throws Exception {
+    public String generateKey(String key) throws AesOperationException {
 
         // Validate the key
         if (key == null || key.isBlank()) {
@@ -126,14 +135,13 @@ public class AesUtilServiceImpl implements AesUtilService {
             // Return the hex-encoded representation of the digest.
             // Hex-encoded SHA-256 hash of the key
             return HexFormat.of().formatHex(digestKey);
+        } catch (AesKeyInvalidException e) {
+            throw e;
         } catch (Exception ee) {
-            throw new AesOperationException("Key generation operation failed", ee);
+            throw new AesOperationException("Key generation operation failed: " + ee.getMessage(), ee);
         }
 
     }
-
-
-    // ----- Private Helper Methods -----
 
     private byte[] encryptBytes(byte[] bytesToEncrypt, String key) throws Exception {
         var salt = new byte[SALT_LENGTH];
@@ -168,6 +176,8 @@ public class AesUtilServiceImpl implements AesUtilService {
         return outputBytes;
     }
 
+    //  --- package-private helper method for key derivation ---
+
     private byte[] decryptBytes(byte[] bytesToDecrypt, String key) throws Exception {
         if (bytesToDecrypt == null || bytesToDecrypt.length < SALT_LENGTH + IV_LENGTH) {
             throw new AesOperationException("Invalid input for decryption.");
@@ -192,15 +202,6 @@ public class AesUtilServiceImpl implements AesUtilService {
 
         // Decrypt the cipher text
         return cipher.doFinal(cipherText);
-    }
-
-    //  --- package-private helper method for key derivation ---
-
-    static SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
-        var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
-        var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
-        var keyBytes = factory.generateSecret(spec).getEncoded();
-        return new SecretKeySpec(keyBytes, "AES");
     }
 
 }
