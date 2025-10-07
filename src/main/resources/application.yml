@@ -9,19 +9,23 @@ spring:
             max-file-size: 50MB
             max-request-size: 100MB
     datasource:
-        url: ${DATABASE_URL}
-        username: ${DATABASE_USER}
-        password: ${DATABASE_PASSWORD}
+        url: ${DATABASE_URL:jdbc:mysql://localhost:3306/stego}
+        username: ${DATABASE_USER:user}
+        password: ${DATABASE_PASSWORD:password}
         driver-class-name: com.mysql.cj.jdbc.Driver
     jpa:
         hibernate:
             ddl-auto: update
         show-sql: true
+        properties:
+            hibernate:
+                format_sql: true
+                dialect: org.hibernate.dialect.MySQL8Dialect
 
 
 app:
     storage:
-        base-path: ${STORAGE_BASE_PATH}
+        base-path: ${STORAGE_BASE_PATH:./src/main/resources}
     cleanup:
         enabled: true # Set to true to enable cleanup task
         initial-delay-ms: 60000 # 1 minute
