@@ -20,6 +20,8 @@ public class LargeFileEncryptionServiceImpl implements LargeFileEncryptionServic
     @Override
     public EncryptedTempFile encryptToTempFile(InputStream plain, String password) throws Exception {
 
+        log.debug("Encrypting large file stream with password");
+
         if (password == null || password.isBlank()) {
             throw new AesKeyInvalidException("Password cannot be null or empty");
         }
