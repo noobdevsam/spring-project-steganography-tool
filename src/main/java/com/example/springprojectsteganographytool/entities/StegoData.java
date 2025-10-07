@@ -3,7 +3,6 @@ package com.example.springprojectsteganographytool.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.Instant;
 import java.util.UUID;
 
 
@@ -27,8 +26,6 @@ public class StegoData {
     private String stegoFileName;
     private Long stegoFileSize;
 
-    private Instant createdDate;
-
     private boolean hasText;
     private boolean hasFile;
 
@@ -45,7 +42,6 @@ public class StegoData {
         this.fileNameOfEmbeddedData = fileNameOfEmbeddedData;
         this.stegoFileName = stegoFileName;
         this.stegoFileSize = stegoFileSize;
-        this.createdDate = Instant.now();
         this.hasText = hasText;
         this.hasFile = hasFile;
     }
