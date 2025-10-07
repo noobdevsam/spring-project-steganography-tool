@@ -24,11 +24,16 @@ public class StorageServiceImpl implements StorageService {
             throw new IllegalArgumentException("app.storage.base-path must not be null");
         }
 
+        log.info("Using storage base path: {}", basePath.toAbsolutePath().normalize());
+
         this.basePath = basePath.toAbsolutePath().normalize();
     }
 
     @Override
     public Path save(String relativeFileName, byte[] content) throws StorageSecurityException, StorageException, IOException {
+
+        log.debug("Saving file: {} ({} bytes)", relativeFileName, content.length);
+
         var targetPath = safeResolve(relativeFileName);
         Files.createDirectories(targetPath.getParent());
         Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
@@ -38,6 +43,9 @@ public class StorageServiceImpl implements StorageService {
 
     @Override
     public boolean delete(String relativeFileName) throws StorageException {
+
+        log.debug("Deleting file: {}", relativeFileName);
+
         Path targetPath = null;
         boolean deleted = false;
         try {
@@ -57,6 +65,9 @@ public class StorageServiceImpl implements StorageService {
     }
 
     private Path safeResolve(String name) throws IllegalArgumentException, StorageSecurityException {
+
+        log.debug("Resolving file name: {}", name);
+
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("File name cannot be null or blank");
         }

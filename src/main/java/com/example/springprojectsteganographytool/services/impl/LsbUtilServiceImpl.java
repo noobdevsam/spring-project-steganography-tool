@@ -83,6 +83,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
             writeBytesToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadBytes); // Write the actual payload data to the image using the specified LSB depth
 
+            log.info("Encoding completed successfully.");
+
             // Step 4: Return the modified image as a byte array in lossless PNG format
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
         } catch (MessageTooLargeException e) {
@@ -103,6 +105,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     ) throws MessageTooLargeException, LsbEncodingException {
 
         try {
+
+            log.info("Encoding payload stream into image with metadata");
+
             var result = getResultForStartingEncoding(imageBytes, metadata); // Prepare the image and metadata block
 
             var requiredPayloadBytes = PAYLOAD_LEN_BYTES + payloadLength;
@@ -126,6 +131,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             var payloadStartPixel = result.metaPixelCount() + payloadLenPixels; // Calculate where the payload data starts
             writeStreamToImage(result.working(), payloadStartPixel, metadata.lsbDepth(), payloadStream, payloadLength); // Stream the payload data into the image using the specified LSB depth
 
+            log.info("Stream encoding completed successfully.");
+
             return imageToBytes(result.working()); // Convert the modified image back to a byte array in lossless PNG format
         } catch (Exception e) {
             throw new LsbEncodingException("LSB stream encoding failed: " + e.getMessage(), e);
@@ -137,6 +144,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InvalidImageFormatException, MessageTooLargeException,
             MetadataNotFoundException, MetadataDecodingException {
         try {
+
+            log.info("Extracting metadata from stego image");
 
             // 1. Read the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1
             var preliminaryHeader = readBytesFromImage(convertForLsb(stegoImage), 0, 1, (HEADER_TOTAL_LEN + META_LEN_BYTES));
@@ -171,6 +180,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             var metaJsonBytes = new byte[metaLength];
             System.arraycopy(metaBlockBytes, metaJsonStart, metaJsonBytes, 0, metaLength);
 
+            log.info("Metadata extraction completed successfully.");
+
             // 6. Deserialize JSON to StegoMetadataDTO
             return mapper.readValue(metaJsonBytes, StegoMetadataDTO.class);
         } catch (Exception e) {
@@ -182,6 +193,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws
             InvalidLsbDepthException, LsbDecodingException {
         try {
+            log.info("Decoding payload from stego image");
             return decodeFromImage(convertForLsb(stegoImage), lsbDepth);
         } catch (Exception e) {
             throw new LsbDecodingException("Decoding failed: " + e.getMessage(), e);
@@ -192,6 +204,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws
             InvalidLsbDepthException, LsbDecodingException {
+
+        log.info("Starting payload decoding process");
 
         StegoMetadataDTO meta;
 
@@ -238,12 +252,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         // 5) Read payload at chosen depth by user
         var payloadStartPixel = metaPixelCount + payloadLenPixels;
 
+        log.info("Payload decoding completed successfully");
+
         return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
     private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
             MetadataNotFoundException, InvalidLsbDepthException,
             MessageTooLargeException, IOException {
+
+        log.info("Preparing image and metadata block for encoding");
+
         if (metadata == null) {
             throw new MetadataNotFoundException("Metadata cannot be null");
         }
@@ -286,6 +305,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         System.arraycopy(metaLengthBytes, 0, metaBlock, HEADER_TOTAL_LEN, META_LEN_BYTES);
         System.arraycopy(metaJson, 0, metaBlock, HEADER_TOTAL_LEN + META_LEN_BYTES, metaLength);
 
+        log.info("Image and metadata block preparation completed successfully");
+
         return new MetadataBlockDTO(working, metaBlock, metaPixelCount, payloadCapacityBytes);
     }
 
@@ -293,9 +314,13 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     private BufferedImage convertForLsb(BufferedImage source) {
 
+        log.info("Converting image to suitable format for LSB operations");
+
         if (source.getType() == BufferedImage.TYPE_INT_ARGB) {
             return source; // Already in the desired format
         }
+
+        log.info("Image converted to TYPE_INT_ARGB format for LSB operations");
 
         return deepCopy(source);
     }
@@ -303,6 +328,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
     private BufferedImage bytesToImage(
             byte[] imageBytes
     ) throws LsbEncodingException, IOException {
+
+        log.info("Converting byte array to BufferedImage");
 
         try (
                 // Create an input stream from the byte array
@@ -323,6 +350,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             // Draw the original image onto the converted image
             convertedImage.getGraphics().drawImage(image, 0, 0, null);
 
+            log.info("Image converted to BufferedImage");
+
             // Return the converted image
             return convertedImage;
         } catch (Exception e) {
@@ -335,12 +364,16 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             BufferedImage image
     ) throws IOException {
 
+        log.info("Converting BufferedImage to byte array in PNG format");
+
         try (
                 var byteArrayOutputStream = new ByteArrayOutputStream()
         ) {
 
             // Write the image to the output stream in the specified format
             ImageIO.write(image, "png", byteArrayOutputStream);
+
+            log.info("Image successfully converted to byte array");
 
             // Convert the output stream to a byte array
             return byteArrayOutputStream.toByteArray();
@@ -369,6 +402,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth
     ) {
 
+        log.info("Calculating pixel count required for embedding {} bytes at LSB depth {}", numberOfBytes, lsbDepth);
+
         // Convert bytes to bits
         var bits = (long) numberOfBytes * 8L;
 
@@ -387,6 +422,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             byte[] dataBytes
     ) throws MessageTooLargeException {
+
+        log.info("Writing {} bytes to image starting at pixel {} with LSB depth {}", dataBytes.length, startPixel, lsbDepth);
+
         var width = image.getWidth(); // get image width
         var height = image.getHeight(); // get image height
         var totalPixels = width * height; // calculate total number of pixels in the image
@@ -457,6 +495,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             pixelIndex++; // move to the next pixel
         }
 
+        log.info("Successfully wrote {} bytes to image", dataBytes.length);
+
     }
 
     private void writeStreamToImage(
@@ -466,6 +506,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             InputStream payloadStream,
             long payloadLength
     ) throws MessageTooLargeException, IOException {
+
+        log.info("Streaming {} bytes to image starting at pixel {} with LSB depth {}", payloadLength, payloadStartPixel, lsbDepth);
 
         var width = working.getWidth();
         var height = working.getHeight();
@@ -554,6 +596,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             pixelIndex++;
         }
 
+        log.info("Successfully streamed {} bytes to image", bytesWritten);
+
     }
 
     private byte[] readBytesFromImage(
@@ -562,6 +606,9 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             int lsbDepth,
             int numberOfBytes
     ) throws LsbDecodingException {
+
+        log.info("Reading {} bytes from image starting at pixel {} with LSB depth {}", numberOfBytes, startPixel, lsbDepth);
+
         int width = image.getWidth(); // get image width
         int height = image.getHeight(); // get image height
         int totalPixels = width * height; // calculate total number of pixels in the image
@@ -620,6 +667,8 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             pixelIndex++; // move to the next pixel
         }
+
+        log.info("Successfully read {} bytes from image", outputBytes.length);
 
         return outputBytes; // return the output bytes containing the read data
     }

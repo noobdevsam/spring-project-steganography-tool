@@ -3,6 +3,7 @@ package com.example.springprojectsteganographytool.services.impl;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesKeyInvalidException;
 import com.example.springprojectsteganographytool.exceptions.encryption.AesOperationException;
 import com.example.springprojectsteganographytool.services.AesUtilService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
@@ -16,12 +17,8 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HexFormat;
 
-/**
- * Implementation of the AesUtilService interface providing utility methods for AES encryption and decryption.
- * This service supports text and file encryption/decryption using AES in CBC mode with PKCS5 padding.
- * It also includes methods for generating encryption keys.
- */
 @Service
+@Slf4j
 public class AesUtilServiceImpl implements AesUtilService {
 
     static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
@@ -53,6 +50,7 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
         try {
+            log.info("Encrypting text using AES...");
             return encryptBytes(
                     plainText.getBytes(StandardCharsets.UTF_8), key
             );
@@ -71,6 +69,7 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
         try {
+            log.info("Decrypting text using AES...");
             var plainTextBytes = decryptBytes(
                     cipherBytes, key
             );
@@ -90,6 +89,7 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
         try {
+            log.info("Encrypting file using AES...");
             return encryptBytes(fileBytes, key);
         } catch (Exception ee) {
             throw new AesOperationException("AES file encryption operation failed", ee);
@@ -107,6 +107,7 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
         try {
+            log.info("Decrypting file using AES...");
             return decryptBytes(cipherBytes, key);
         } catch (Exception ee) {
             throw new AesOperationException("AES file decryption operation failed", ee);
@@ -123,6 +124,8 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
 
         try {
+            log.info("Generating hash of the key...");
+
             // Generate an SHA-256 hash of the key
             var messageDigest = MessageDigest.getInstance("SHA-256");
 
@@ -141,10 +144,12 @@ public class AesUtilServiceImpl implements AesUtilService {
     // ----- Private Helper Methods -----
 
     private byte[] encryptBytes(byte[] bytesToEncrypt, String key) throws Exception {
+
+        log.info("Starting AES encryption process...");
+
         var salt = new byte[SALT_LENGTH];
         var iv = new byte[IV_LENGTH];
         var cipher = Cipher.getInstance(CIPHER_ALGORITHM);
-
 
         // Generate random salt and IV
         RANDOM.nextBytes(salt);
@@ -170,10 +175,15 @@ public class AesUtilServiceImpl implements AesUtilService {
         System.arraycopy(iv, 0, outputBytes, SALT_LENGTH, IV_LENGTH); // Copy IV
         System.arraycopy(cipherText, 0, outputBytes, SALT_LENGTH + IV_LENGTH, cipherText.length); // Copy cipher text
 
+        log.info("AES encryption process completed.");
+
         return outputBytes;
     }
 
     private byte[] decryptBytes(byte[] bytesToDecrypt, String key) throws Exception {
+
+        log.info("Starting AES decryption process...");
+
         if (bytesToDecrypt == null || bytesToDecrypt.length < SALT_LENGTH + IV_LENGTH) {
             throw new AesOperationException("Invalid input for decryption.");
         }
@@ -194,6 +204,8 @@ public class AesUtilServiceImpl implements AesUtilService {
                 keySpec,
                 new IvParameterSpec(iv)
         );
+
+        log.info("AES decryption process completed.");
 
         // Decrypt the cipher text
         return cipher.doFinal(cipherText);

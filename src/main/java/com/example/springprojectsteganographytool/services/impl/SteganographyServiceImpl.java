@@ -68,12 +68,17 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     private static void validateLsbDepth(int lsbDepth) throws InvalidLsbDepthException {
+
+        log.debug("Validating LSB depth: {}", lsbDepth);
+
         if (lsbDepth != 1 && lsbDepth != 2) {
             throw new InvalidLsbDepthException("LSB depth must be 1 or 2.");
         }
     }
 
-    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws StorageException, IOException {
+    private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws StorageException {
+
+        log.debug("Converting BufferedImage to PNG byte array.");
 
         try (var outputStream = new ByteArrayOutputStream()) {
             // Always write PNG to preserve RGB 8-bit without loss
@@ -105,6 +110,9 @@ public class SteganographyServiceImpl implements SteganographyService {
         validateLsbDepth(lsbDepth);
 
         try {
+
+            log.debug("Encoding text into image. Cover image: {}, Message length: {}, LSB depth: {}", coverImageName, message.length(), lsbDepth);
+
             var keyHash = aesUtilService.generateKey(password);
             var metadata = new StegoMetadataDTO(
                     lsbDepth,
@@ -136,6 +144,8 @@ public class SteganographyServiceImpl implements SteganographyService {
                             .build()
             );
 
+            log.debug("Text encoded and saved as stego file: {}", stegoFileName);
+
             return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
         } catch (StorageException e) {
             throw e;
@@ -161,6 +171,10 @@ public class SteganographyServiceImpl implements SteganographyService {
         validateLsbDepth(lsbDepth);
 
         try {
+
+            log.debug("Encoding file into image. Cover image: {}, File name: {}, File size: {}, LSB depth: {}",
+                    coverImageName, nameOfFileToEmbed, fileBytes.length, lsbDepth);
+
             var keyHash = aesUtilService.generateKey(password);
             var metadata = new StegoMetadataDTO(
                     lsbDepth,
@@ -186,6 +200,8 @@ public class SteganographyServiceImpl implements SteganographyService {
             }
             var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replaceAll("[^A-Za-z0-9._-]", "_");
             storageService.save(safeName, stegoBytes);
+
+            log.debug("File encoded and saved as stego file: {}", safeName);
 
             return stegoDataMapper.stegoDataToEncodeResponseDTO(
                     stegoDataRepository.save(
@@ -224,6 +240,8 @@ public class SteganographyServiceImpl implements SteganographyService {
 
         validateLsbDepth(lsbDepth);
 
+        log.debug("Encoding file stream into image.");
+
         var keyHash = aesUtilService.generateKey(password);
         var metadata = new StegoMetadataDTO(
                 lsbDepth,
@@ -258,6 +276,8 @@ public class SteganographyServiceImpl implements SteganographyService {
                 var fileName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png");
                 storageService.save(fileName, stegoBytes);
 
+                log.debug("File stream encoded and saved as stego file: {}", fileName);
+
                 return stegoDataMapper.stegoDataToEncodeResponseDTO(
                         stegoDataRepository.save(
                                 StegoData.builder()
@@ -288,6 +308,8 @@ public class SteganographyServiceImpl implements SteganographyService {
             BufferedImage stegoImage,
             String password
     ) throws Exception {
+
+        log.debug("Decoding stego image with provided password.");
 
         // Use direct BufferedImage metadata extraction (no intermediate PNG serialization)
         var metadata = lsbUtilService.extractMetadata(stegoImage);
@@ -345,6 +367,8 @@ public class SteganographyServiceImpl implements SteganographyService {
             var savedPath = storageService.save(tempFileName, fileBytes);
             log.debug("Extracted file saved to {} (expires at {})", savedPath, expires);
 
+            log.debug("File extracted from stego image: {}, size: {}", tempFileName, fileBytes.length);
+
             return new StegoDecodeResponseDTO(
                     false,
                     true,
@@ -363,6 +387,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public List<StegoEncodeResponseDTO> listAllEncodings() {
+        log.debug("Listing all stego encodings from the database.");
         return stegoDataRepository.findAll()
                 .stream()
                 .map(stegoDataMapper::stegoDataToEncodeResponseDTO)
@@ -371,6 +396,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     @Override
     public StegoEncodeResponseDTO getById(UUID id) throws StegoDataNotFoundException {
+        log.debug("Retrieving stego encoding by ID: {}", id);
         var stegoData = stegoDataRepository.findById(id)
                 .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
 
@@ -380,6 +406,8 @@ public class SteganographyServiceImpl implements SteganographyService {
     @Transactional
     @Override
     public void deleteById(UUID id) throws StegoDataNotFoundException {
+
+        log.debug("Deleting stego encoding by ID: {}", id);
 
         var stegoData = stegoDataRepository.findById(id)
                 .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
@@ -406,6 +434,10 @@ public class SteganographyServiceImpl implements SteganographyService {
     private void earlyCapacityCheck(
             BufferedImage coverImage, StegoMetadataDTO metadata, long plainPayloadLength
     ) throws MessageTooLargeException {
+
+        log.debug("Performing early capacity check. Image size: {}x{}, LSB depth: {}, Payload length: {}",
+                coverImage.getWidth(), coverImage.getHeight(), metadata.lsbDepth(), plainPayloadLength);
+
         try {
             var metaJsonBytes = objectMapper.writeValueAsBytes(metadata);
             var estimation = capacityUtilService.estimate(
@@ -438,6 +470,10 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     private void preciseCapacityCheck(BufferedImage coverImage, StegoMetadataDTO metadata, long encryptedLength) {
+
+        log.debug("Performing precise capacity check. Image size: {}x{}, LSB depth: {}, Encrypted payload length: {}",
+                coverImage.getWidth(), coverImage.getHeight(), metadata.lsbDepth(), encryptedLength);
+
         try {
             var metaJsonBytes = objectMapper.writeValueAsBytes(metadata);
             long capacity = capacityUtilService.computeTotalCapacityBytes(
@@ -462,6 +498,9 @@ public class SteganographyServiceImpl implements SteganographyService {
     }
 
     private String sanitizeBaseName(String originalFileName) {
+
+        log.debug("Sanitizing base name from original file name: {}", originalFileName);
+
         if (originalFileName == null || originalFileName.isBlank()) {
             return "embedded-file";
         }
