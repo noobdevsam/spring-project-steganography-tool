@@ -65,6 +65,9 @@ public class StorageServiceImpl implements StorageService {
     }
 
     private Path safeResolve(String name) throws IllegalArgumentException, StorageSecurityException {
+
+        log.debug("Resolving file name: {}", name);
+
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("File name cannot be null or blank");
         }
