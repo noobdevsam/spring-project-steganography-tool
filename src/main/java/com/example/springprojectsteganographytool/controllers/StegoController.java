@@ -54,12 +54,6 @@ public class StegoController {
 
     // ----- Capacity estimation endpoint (Phase 1) -----
 
-    /**
-     * Estimate whether a plain payload of length 'plainLength' bytes will fit into an image of given dimensions
-     * at the specified lsbDepth, using an assumed metadata JSON length (defaults to 120 if not provided).
-     * <p>
-     * This is a heuristic; actual encode still validates precisely.
-     */
     @GetMapping(path = "/estimate", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Map<String, Object>> estimateCapacity(
             @RequestParam int width,

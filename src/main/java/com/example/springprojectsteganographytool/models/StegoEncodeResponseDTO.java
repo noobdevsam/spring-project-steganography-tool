@@ -1,6 +1,5 @@
 package com.example.springprojectsteganographytool.models;
 
-import java.time.Instant;
 import java.util.UUID;
 
 // Used for returning a response after encoding data into an image
@@ -13,7 +12,6 @@ public record StegoEncodeResponseDTO(
         String stegoFileName,
         Long stegoFileSize,
         boolean hasText,
-        boolean hasFile,
-        Instant createdDate
+        boolean hasFile
 ) {
 }
