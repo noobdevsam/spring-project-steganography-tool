@@ -6,6 +6,7 @@ import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
 import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/stego")
+@Slf4j
 public class StegoController {
 
     private final SteganographyService steganographyService;
@@ -62,6 +64,9 @@ public class StegoController {
             @RequestParam long plainLength,
             @RequestParam(name = "metadataJsonLength", required = false, defaultValue = "120") int metadataJsonLength
     ) {
+
+        log.info("In Controller- Estimating capacity for image. ");
+
         if (width <= 0 || height <= 0) {
             return ResponseEntity.badRequest().body(Map.of("error", "width and height must be > 0"));
         }
@@ -98,6 +103,9 @@ public class StegoController {
             @RequestParam("password") String password,
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
+
+        log.info("In Controller- Encoding text into image. ");
+
         var image = toBufferedImage(coverImage);
         var coverImageName = coverImage.getOriginalFilename();
         var result = steganographyService.encodeText(image, coverImageName, message, password, lsbDepth);
@@ -111,6 +119,9 @@ public class StegoController {
             @RequestParam("password") String password,
             @RequestParam(name = "lsbDepth", defaultValue = "1") int lsbDepth
     ) throws Exception {
+
+        log.info("In Controller- Encoding file into image. ");
+
         var image = toBufferedImage(coverImage);
         var coverImageName = coverImage.getOriginalFilename();
         var nameOfFileToEmbed = fileToEmbed.getOriginalFilename();
@@ -118,6 +129,8 @@ public class StegoController {
 
 
         if (sizeOfFileToEmbed > streamThreshold) {
+
+            log.info(">>>Using stream-based encoding.");
 
             try (var input = fileToEmbed.getInputStream()) {
                 return ResponseEntity.ok(
@@ -128,6 +141,9 @@ public class StegoController {
             }
 
         } else {
+
+            log.info(">>>Using byte-array-based encoding.");
+
             var fileBytes = fileToEmbed.getBytes();
 
             return ResponseEntity.ok(
@@ -143,6 +159,9 @@ public class StegoController {
             @RequestParam("stegoImage") MultipartFile stegoImage,
             @RequestParam("password") String password
     ) throws Exception {
+
+        log.info("In Controller- Decoding data from image. ");
+
         var image = toBufferedImage(stegoImage);
         var result = steganographyService.decodeProcess(image, password);
         return ResponseEntity.ok(result);
@@ -154,6 +173,9 @@ public class StegoController {
     public ResponseEntity<Map<String, Object>> extractMetadata(
             @RequestParam("stegoImage") MultipartFile stegoImage
     ) throws IOException {
+
+        log.info("In Controller- Extracting metadata from image. ");
+
         var meta = lsbUtilService.extractMetadata(toBufferedImage(stegoImage));
         if (meta == null) {
             throw new InvalidImageFormatException("No metadata found or invalid image provided.");
@@ -171,16 +193,19 @@ public class StegoController {
 
     @GetMapping(path = "/encodings", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<List<StegoEncodeResponseDTO>> listAllEncodings() {
+        log.info("In Controller- Listing all encodings in DB. ");
         return ResponseEntity.ok(steganographyService.listAllEncodings());
     }
 
     @GetMapping(path = "/encodings/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoEncodeResponseDTO> getById(@PathVariable("id") UUID id) {
+        log.info("In Controller- Getting encoding by ID from DB. ");
         return ResponseEntity.ok(steganographyService.getById(id));
     }
 
     @DeleteMapping(path = "/encodings/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable("id") UUID id) {
+        log.info("In Controller- Deleting encoding by ID from DB. ");
         steganographyService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
