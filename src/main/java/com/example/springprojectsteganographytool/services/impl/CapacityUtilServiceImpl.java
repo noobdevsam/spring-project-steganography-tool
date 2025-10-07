@@ -35,24 +35,6 @@ public class CapacityUtilServiceImpl implements CapacityUtilService {
     }
 
     @Override
-    public long computeOverheadBytes(int metadataJsonLength) {
-        log.debug("Computing overhead for metadata length {}", metadataJsonLength);
-        return FIXED_HEADER_OVERHEAD + metadataJsonLength;
-    }
-
-    @Override
-    public long estimateEncryptedLength(long plainLength) {
-        log.debug("Estimating encrypted length for plain length {}", plainLength);
-        var padding = AES_BLOCK_SIZE - (plainLength % AES_BLOCK_SIZE);
-
-        if (padding == 0) {
-            padding = AES_BLOCK_SIZE;
-        }
-
-        return SALT_LEN + IV_LEN + plainLength + padding;
-    }
-
-    @Override
     public EstimationResult estimate(int width, int height, int lsbDepth, int metadataJsonLength, long plainLength) {
 
         log.debug("Estimating capacity for image {}x{} at LSB depth {}, metadata length {}, plain length {}",
@@ -70,5 +52,23 @@ public class CapacityUtilServiceImpl implements CapacityUtilService {
                 required,
                 required <= capacity
         );
+    }
+
+    // ----- Helpers ----- //
+
+    private long computeOverheadBytes(int metadataJsonLength) {
+        log.debug("Computing overhead for metadata length {}", metadataJsonLength);
+        return FIXED_HEADER_OVERHEAD + metadataJsonLength;
+    }
+
+    private long estimateEncryptedLength(long plainLength) {
+        log.debug("Estimating encrypted length for plain length {}", plainLength);
+        var padding = AES_BLOCK_SIZE - (plainLength % AES_BLOCK_SIZE);
+
+        if (padding == 0) {
+            padding = AES_BLOCK_SIZE;
+        }
+
+        return SALT_LEN + IV_LEN + plainLength + padding;
     }
 }

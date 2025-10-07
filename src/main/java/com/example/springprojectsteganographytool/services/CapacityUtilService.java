@@ -10,14 +10,6 @@ public interface CapacityUtilService {
             int lsbDepth
     );
 
-    long computeOverheadBytes(
-            int metadataJsonLength
-    );
-
-    long estimateEncryptedLength(
-            long plainLength
-    );
-
     EstimationResult estimate(
             int width,
             int height,
