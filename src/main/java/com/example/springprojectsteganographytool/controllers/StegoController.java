@@ -3,7 +3,6 @@ package com.example.springprojectsteganographytool.controllers;
 import com.example.springprojectsteganographytool.exceptions.file.InvalidImageFormatException;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
-import com.example.springprojectsteganographytool.models.StegoMetadataDTO;
 import com.example.springprojectsteganographytool.services.CapacityUtilService;
 import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
@@ -158,14 +157,20 @@ public class StegoController {
     // ----- Metadata operations -----
 
     @PostMapping(path = "/metadata", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<StegoMetadataDTO> extractMetadata(
+    public ResponseEntity<Map<String, Object>> extractMetadata(
             @RequestParam("stegoImage") MultipartFile stegoImage
     ) throws IOException {
         var meta = lsbUtilService.extractMetadata(toBufferedImage(stegoImage));
         if (meta == null) {
             throw new InvalidImageFormatException("No metadata found or invalid image provided.");
         }
-        return ResponseEntity.ok(meta);
+        return ResponseEntity.ok(
+                Map.of(
+                        "lsbDepth", meta.lsbDepth(),
+                        "hasText", meta.hasText(),
+                        "hasFile", meta.hasFile()
+                )
+        );
     }
 
     // ----- Retrieval operations -----
