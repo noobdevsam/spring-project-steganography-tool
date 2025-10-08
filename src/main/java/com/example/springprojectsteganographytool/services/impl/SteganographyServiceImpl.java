@@ -398,6 +398,14 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
+    /**
+     * Decodes a stego image to extract either hidden text or a file.
+     *
+     * @param stegoImage The stego image containing the hidden data.
+     * @param password   The password used to decrypt the hidden data.
+     * @return A `StegoDecodeResponseDTO` containing the extracted data and metadata.
+     * @throws Exception If an error occurs during the decoding process.
+     */
     @Override
     public StegoDecodeResponseDTO decodeProcess(
             BufferedImage stegoImage,
@@ -406,25 +414,31 @@ public class SteganographyServiceImpl implements SteganographyService {
 
         log.debug("Decoding stego image with provided password.");
 
-        // Use direct BufferedImage metadata extraction (no intermediate PNG serialization)
+        // Extract metadata directly from the BufferedImage (no intermediate PNG serialization)
         var metadata = lsbUtilService.extractMetadata(stegoImage);
 
+        // Throw an exception if no metadata is found in the image
         if (metadata == null) {
             throw new MetadataNotFoundException("No metadata found in the provided image.");
         }
 
-        var providedKeyHash = aesUtilService.generateKey(password); // Generate the key hash from the provided password
+        // Generate a key hash from the provided password and validate it against the metadata
+        var providedKeyHash = aesUtilService.generateKey(password);
         if (!providedKeyHash.equals(metadata.encryptionKeyHash())) {
             throw new AesKeyInvalidException("Provided password does not match the encryption key.");
         }
 
+        // Check if the metadata indicates hidden text
         if (metadata.hasText()) {
+            // Decode the hidden text from the stego image
             var encodedText = lsbUtilService.decode(
                     stegoImage, metadata.lsbDepth()
             );
+            // Decrypt the extracted text using the provided password
             var text = aesUtilService.decryptText(encodedText, password);
             var now = System.currentTimeMillis();
 
+            // Return the response DTO with the extracted text
             return new StegoDecodeResponseDTO(
                     true,
                     false,
@@ -436,19 +450,19 @@ public class SteganographyServiceImpl implements SteganographyService {
                     now
             );
         } else if (metadata.hasFile()) {
-            // Extract file bytes
+            // Extract the hidden file bytes from the stego image
             var encodedFile = lsbUtilService.decode(stegoImage, metadata.lsbDepth());
             var fileBytes = aesUtilService.decryptFile(encodedFile, password);
 
-            // Persist extracted file temporarily
+            // Persist the extracted file temporarily
             var created = System.currentTimeMillis();
             var expires = created + extractionTempTtlMs;
 
-            // Sanitize base name
+            // Sanitize the base name of the file
             var baseName = sanitizeBaseName(metadata.nameOfFileToEmbed());
             var extension = "";
 
-            // Try to preserve original file extension if any
+            // Preserve the original file extension if available
             if (metadata.nameOfFileToEmbed() != null) {
                 var dot = metadata.nameOfFileToEmbed().lastIndexOf('.');
                 if (dot > 0 && dot < metadata.nameOfFileToEmbed().length() - 1) {
@@ -457,13 +471,14 @@ public class SteganographyServiceImpl implements SteganographyService {
                 }
             }
 
-            // Create a unique temp file name
+            // Create a unique temporary file name for the extracted file
             var tempFileName = "extracted-" + created + "-" + UUID.randomUUID() + "-" + baseName + extension;
             var savedPath = storageService.save(tempFileName, fileBytes);
             log.debug("Extracted file saved to {} (expires at {})", savedPath, expires);
 
             log.debug("File extracted from stego image: {}, size: {}", tempFileName, fileBytes.length);
 
+            // Return the response DTO with the extracted file details
             return new StegoDecodeResponseDTO(
                     false,
                     true,
@@ -475,6 +490,7 @@ public class SteganographyServiceImpl implements SteganographyService {
                     expires
             );
         } else {
+            // Throw an exception if no text or file data is found in the image
             throw new MetadataDecodingException("No text or file data found in the provided image.");
         }
 
