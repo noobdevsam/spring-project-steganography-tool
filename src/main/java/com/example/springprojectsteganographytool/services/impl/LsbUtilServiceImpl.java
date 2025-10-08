@@ -45,6 +45,24 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ------- New  BufferedImage-based public API -------
 
+    /**
+     * Encodes a payload and metadata into an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method writes the following data into the image:
+     * <ul>
+     *   <li>[MAGIC(4)][VERSION(1)] at LSB=1</li>
+     *   <li>[META_LEN(4)][META_JSON] at LSB=1</li>
+     *   <li>[PAYLOAD_LEN(8)] at LSB=1</li>
+     *   <li>[PAYLOAD] at LSB=metadata.lsbDepth()</li>
+     * </ul>
+     *
+     * @param imageBytes   The byte array of the image to encode into.
+     * @param payloadBytes The byte array of the payload to encode.
+     * @param metadata     The metadata to encode, which includes the LSB depth.
+     * @return The modified image as a byte array in lossless PNG format.
+     * @throws MessageTooLargeException If the payload is too large for the image with the given LSB depth.
+     * @throws LsbEncodingException     If an error occurs during encoding.
+     */
     @Override
     public byte[] encode(
             byte[] imageBytes,
@@ -96,6 +114,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Encodes a payload stream and metadata into an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method writes the following data into the image:
+     * <ul>
+     *   <li>[MAGIC(4)][VERSION(1)] at LSB=1</li>
+     *   <li>[META_LEN(4)][META_JSON] at LSB=1</li>
+     *   <li>[PAYLOAD_LEN(8)] at LSB=1</li>
+     *   <li>[PAYLOAD] at LSB=metadata.lsbDepth()</li>
+     * </ul>
+     *
+     * <p>The payload is streamed from an InputStream, allowing for encoding large data without loading it entirely into memory.
+     *
+     * @param imageBytes    The byte array of the image to encode into.
+     * @param payloadStream The InputStream of the payload to encode.
+     * @param payloadLength The length of the payload in bytes.
+     * @param metadata      The metadata to encode, which includes the LSB depth.
+     * @return The modified image as a byte array in lossless PNG format.
+     * @throws MessageTooLargeException If the payload is too large for the image with the given LSB depth.
+     * @throws LsbEncodingException     If an error occurs during encoding.
+     */
     @Override
     public byte[] encodeStream(
             byte[] imageBytes,
@@ -139,6 +178,25 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Extracts metadata from a stego image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Reads the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1.</li>
+     *   <li>Validates the "STEG" magic bytes and version to ensure the image contains valid stego metadata.</li>
+     *   <li>Extracts the metadata length from the bytes read in step 1.</li>
+     *   <li>Reads the full metadata block (MAGIC + VERSION + META_LEN + META_JSON) at LSB=1.</li>
+     *   <li>Extracts the JSON part of the metadata and deserializes it into a `StegoMetadataDTO` object.</li>
+     * </ol>
+     *
+     * @param stegoImage The stego image from which metadata is to be extracted.
+     * @return The extracted metadata as a `StegoMetadataDTO` object.
+     * @throws InvalidImageFormatException If the image does not contain valid stego metadata (e.g., magic/version mismatch).
+     * @throws MessageTooLargeException    If the metadata length exceeds the image's capacity.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws MetadataDecodingException   If an error occurs during metadata extraction or deserialization.
+     */
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
             InvalidImageFormatException, MessageTooLargeException,
@@ -189,6 +247,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Decodes the payload from a stego image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Converts the input image to a format suitable for LSB operations.</li>
+     *   <li>Delegates the decoding process to the `decodeFromImage` method.</li>
+     * </ol>
+     *
+     * @param stegoImage The stego image from which the payload is to be decoded.
+     * @param lsbDepth   The LSB depth to use for decoding. If null, the depth is determined from the metadata.
+     * @return The decoded payload as a byte array.
+     * @throws InvalidLsbDepthException If the provided LSB depth is invalid.
+     * @throws LsbDecodingException     If an error occurs during the decoding process.
+     */
     @Override
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws
             InvalidLsbDepthException, LsbDecodingException {
