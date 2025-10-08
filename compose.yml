@@ -1,4 +1,20 @@
 services:
+    # Database Service
+    db-mysql:
+        image: mysql:latest
+        container_name: db-mysql
+        ports:
+            - "3306:3306"
+        environment:
+            - MYSQL_ROOT_PASSWORD=password
+            - MYSQL_DATABASE=stego
+            - MYSQL_USER=user
+            - MYSQL_PASSWORD=password
+        volumes:
+            - mysql_data:/var/lib/mysql
+        networks:
+            - stego-network
+
     # Application Service
     app:
         # Use the image built by the Spring Boot Maven plugin
@@ -20,22 +36,6 @@ services:
             - stego-network
         depends_on:
             - db-mysql
-
-    # Database Service
-    db-mysql:
-        image: mysql:latest
-        container_name: db-mysql
-        ports:
-            - "3306:3306"
-        environment:
-            - MYSQL_ROOT_PASSWORD=password
-            - MYSQL_DATABASE=stego
-            - MYSQL_USER=user
-            - MYSQL_PASSWORD=password
-        volumes:
-            - mysql_data:/var/lib/mysql
-        networks:
-            - stego-network
 
 networks:
     stego-network:
