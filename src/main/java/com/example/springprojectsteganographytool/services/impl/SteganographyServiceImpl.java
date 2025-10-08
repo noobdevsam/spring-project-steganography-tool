@@ -125,6 +125,18 @@ public class SteganographyServiceImpl implements SteganographyService {
             rollbackFor = {Exception.class},
             propagation = Propagation.REQUIRED
     )
+    /**
+     * Encodes a text message into an image using steganography.
+     *
+     * @param coverImage The cover image in which the text message will be embedded.
+     * @param coverImageName The name of the cover image.
+     * @param message The text message to encode.
+     * @param password The password used for encrypting the text message.
+     * @param lsbDepth The LSB (Least Significant Bit) depth to use for encoding.
+     * @return A `StegoEncodeResponseDTO` containing details about the encoded stego image.
+     * @throws RuntimeException If an unexpected error occurs during the encoding process.
+     * @throws StorageException If an error occurs while saving the stego image.
+     */
     @Override
     public StegoEncodeResponseDTO encodeText(
             BufferedImage coverImage,
@@ -133,13 +145,15 @@ public class SteganographyServiceImpl implements SteganographyService {
             String password,
             int lsbDepth
     ) {
+        // Validate the LSB depth to ensure it is either 1 or 2
         validateLsbDepth(lsbDepth);
 
         try {
-
             log.debug("Encoding text into image. Cover image: {}, Message length: {}, LSB depth: {}", coverImageName, message.length(), lsbDepth);
 
             var keyHash = aesUtilService.generateKey(password);
+
+            // Create metadata for the stego image
             var metadata = new StegoMetadataDTO(
                     lsbDepth,
                     true,
@@ -148,17 +162,25 @@ public class SteganographyServiceImpl implements SteganographyService {
                     null
             );
 
-            // Phase 1: Early capacity estimation before encryption
+            // Perform an early capacity check to ensure the message can fit in the image
             earlyCapacityCheck(coverImage, metadata, message.getBytes().length);
 
+            // Encrypt the text message using the provided password
             var encodedBytes = aesUtilService.encryptText(message, password);
 
+            // Convert the cover image to a PNG byte array
             var coverBytes = bufferedImageToPngBytes(coverImage);
+
+            // Encode the encrypted message into the cover image
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
+            // Generate a unique file name for the stego image
             var stegoFileName = "stego-text-" + UUID.randomUUID() + ".png";
+
+            // Save the stego image to storage
             storageService.save(stegoFileName, stegoBytes);
 
+            // Save the stego data to the repository
             var savedData = stegoDataRepository.save(
                     StegoData.builder()
                             .coverImageName(coverImageName)
@@ -172,6 +194,7 @@ public class SteganographyServiceImpl implements SteganographyService {
 
             log.debug("Text encoded and saved as stego file: {}", stegoFileName);
 
+            // Return the response DTO with details about the encoded stego image
             return stegoDataMapper.stegoDataToEncodeResponseDTO(savedData);
         } catch (StorageException e) {
             throw e;
