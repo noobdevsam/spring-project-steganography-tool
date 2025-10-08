@@ -252,14 +252,14 @@ The provided `compose.yml` is configured to build and run both the application a
     -   Start the application container and the MySQL database container.
 
     ```bash
-    docker-compose up --build
+    docker compose up --build
     ```
     The application will be available on port `8080`. The `storage` directory is mounted as a volume, so your files will persist between container restarts.
 
 2.  **Stopping the services:**
     To stop the containers, press `Ctrl+C` or run:
     ```bash
-    docker-compose down
+    docker compose down
     ```
 
 ## Project Structure
