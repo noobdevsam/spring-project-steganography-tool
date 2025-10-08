@@ -11,13 +11,10 @@ public enum StegoErrorCode {
     METADATA_NOT_FOUND,
     STEGO_DATA_NOT_FOUND,
     STORAGE_ERROR,
-    OPERATION_NOT_ALLOWED,
     DECODE_FAILURE,
     ENCODE_FAILURE,
     METADATA_DECODING_ERROR,
-    METADATA_ENCODING_ERROR,
-    STORAGE_SECURITY_ERROR,
-    INTERNAL_ERROR;
+    STORAGE_SECURITY_ERROR;
 
     public String typeURI() {
         return "https://api.example.com/errors/" + name();
