@@ -130,7 +130,7 @@ This process involves two simple steps:
 
     ```bash
     # This command can take several minutes to complete
-    ./mvnw spring-boot:build-image -Pnative
+    ./mvnw spring-boot:build-image -Pnative -DskipTests
     ```
 
 2.  **Run with Docker Compose:**
