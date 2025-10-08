@@ -45,6 +45,24 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ------- New  BufferedImage-based public API -------
 
+    /**
+     * Encodes a payload and metadata into an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method writes the following data into the image:
+     * <ul>
+     *   <li>[MAGIC(4)][VERSION(1)] at LSB=1</li>
+     *   <li>[META_LEN(4)][META_JSON] at LSB=1</li>
+     *   <li>[PAYLOAD_LEN(8)] at LSB=1</li>
+     *   <li>[PAYLOAD] at LSB=metadata.lsbDepth()</li>
+     * </ul>
+     *
+     * @param imageBytes   The byte array of the image to encode into.
+     * @param payloadBytes The byte array of the payload to encode.
+     * @param metadata     The metadata to encode, which includes the LSB depth.
+     * @return The modified image as a byte array in lossless PNG format.
+     * @throws MessageTooLargeException If the payload is too large for the image with the given LSB depth.
+     * @throws LsbEncodingException     If an error occurs during encoding.
+     */
     @Override
     public byte[] encode(
             byte[] imageBytes,
@@ -96,6 +114,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Encodes a payload stream and metadata into an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method writes the following data into the image:
+     * <ul>
+     *   <li>[MAGIC(4)][VERSION(1)] at LSB=1</li>
+     *   <li>[META_LEN(4)][META_JSON] at LSB=1</li>
+     *   <li>[PAYLOAD_LEN(8)] at LSB=1</li>
+     *   <li>[PAYLOAD] at LSB=metadata.lsbDepth()</li>
+     * </ul>
+     *
+     * <p>The payload is streamed from an InputStream, allowing for encoding large data without loading it entirely into memory.
+     *
+     * @param imageBytes    The byte array of the image to encode into.
+     * @param payloadStream The InputStream of the payload to encode.
+     * @param payloadLength The length of the payload in bytes.
+     * @param metadata      The metadata to encode, which includes the LSB depth.
+     * @return The modified image as a byte array in lossless PNG format.
+     * @throws MessageTooLargeException If the payload is too large for the image with the given LSB depth.
+     * @throws LsbEncodingException     If an error occurs during encoding.
+     */
     @Override
     public byte[] encodeStream(
             byte[] imageBytes,
@@ -139,6 +178,25 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Extracts metadata from a stego image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Reads the first 9 bytes (MAGIC + VERSION + META_LEN) at LSB=1.</li>
+     *   <li>Validates the "STEG" magic bytes and version to ensure the image contains valid stego metadata.</li>
+     *   <li>Extracts the metadata length from the bytes read in step 1.</li>
+     *   <li>Reads the full metadata block (MAGIC + VERSION + META_LEN + META_JSON) at LSB=1.</li>
+     *   <li>Extracts the JSON part of the metadata and deserializes it into a `StegoMetadataDTO` object.</li>
+     * </ol>
+     *
+     * @param stegoImage The stego image from which metadata is to be extracted.
+     * @return The extracted metadata as a `StegoMetadataDTO` object.
+     * @throws InvalidImageFormatException If the image does not contain valid stego metadata (e.g., magic/version mismatch).
+     * @throws MessageTooLargeException    If the metadata length exceeds the image's capacity.
+     * @throws MetadataNotFoundException   If the metadata length is invalid or zero.
+     * @throws MetadataDecodingException   If an error occurs during metadata extraction or deserialization.
+     */
     @Override
     public StegoMetadataDTO extractMetadata(BufferedImage stegoImage) throws
             InvalidImageFormatException, MessageTooLargeException,
@@ -189,6 +247,21 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Decodes the payload from a stego image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Converts the input image to a format suitable for LSB operations.</li>
+     *   <li>Delegates the decoding process to the `decodeFromImage` method.</li>
+     * </ol>
+     *
+     * @param stegoImage The stego image from which the payload is to be decoded.
+     * @param lsbDepth   The LSB depth to use for decoding. If null, the depth is determined from the metadata.
+     * @return The decoded payload as a byte array.
+     * @throws InvalidLsbDepthException If the provided LSB depth is invalid.
+     * @throws LsbDecodingException     If an error occurs during the decoding process.
+     */
     @Override
     public byte[] decode(BufferedImage stegoImage, Integer lsbDepth) throws
             InvalidLsbDepthException, LsbDecodingException {
@@ -202,6 +275,25 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private High-Level Helper Methods -----
 
+    /**
+     * Decodes the payload from a stego image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>If the LSB depth is not provided, it extracts the metadata from the image to determine the depth.</li>
+     *   <li>Validates the LSB depth to ensure it is either 1 or 2.</li>
+     *   <li>Reads and validates the header and metadata length from the image.</li>
+     *   <li>Calculates the total metadata size and the number of pixels used for metadata storage.</li>
+     *   <li>Reads the payload length from the image and validates it against the image's capacity.</li>
+     *   <li>Calculates the starting pixel for the payload and reads the payload data at the specified LSB depth.</li>
+     * </ol>
+     *
+     * @param bufferedImage The stego image from which the payload is to be decoded.
+     * @param lsbDepth      The LSB depth to use for decoding. If null, the depth is determined from the metadata.
+     * @return The decoded payload as a byte array.
+     * @throws InvalidLsbDepthException If the provided LSB depth is invalid.
+     * @throws LsbDecodingException     If an error occurs during the decoding process.
+     */
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws
             InvalidLsbDepthException, LsbDecodingException {
 
@@ -209,16 +301,18 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         StegoMetadataDTO meta;
 
+        // If LSB depth is not provided, extract metadata to determine the depth
         if (lsbDepth == null) {
             meta = extractMetadata(bufferedImage);
             lsbDepth = meta.lsbDepth();
         }
 
+        // Validate the LSB depth
         if (lsbDepth != 1 && lsbDepth != 2) {
             throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
         }
 
-        // 1) Read and validate header + meta length (at LSB=1)
+        // 1) Read and validate header + metadata length (at LSB=1)
         var preliminaryHeader = readBytesFromImage(bufferedImage, 0, 1, (HEADER_TOTAL_LEN + META_LEN_BYTES));
         var metaLength = ByteBuffer
                 .wrap(preliminaryHeader, HEADER_TOTAL_LEN, META_LEN_BYTES)
@@ -229,7 +323,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
         var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
-        // 3) Read payload length at LSB=1
+        // 3) Read payload length (at LSB=1)
         var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, 1, PAYLOAD_LEN_BYTES);
         var payloadLength = ByteBuffer
                 .wrap(payloadLenBytes)
@@ -239,7 +333,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbDecodingException("Payload length invalid or too large. Got: " + payloadLength);
         }
 
-        // 4) Capacity check
+        // 4) Validate the image's capacity for the payload
         var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
         var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
         var payloadDataPixels = totalPixels - metaPixelCount - payloadLenPixels;
@@ -249,7 +343,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbDecodingException("Payload length " + payloadLength + " exceeds capacity " + maxPayloadBytes);
         }
 
-        // 5) Read payload at chosen depth by user
+        // 5) Read the payload data at the specified LSB depth
         var payloadStartPixel = metaPixelCount + payloadLenPixels;
 
         log.info("Payload decoding completed successfully");
@@ -257,6 +351,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
+    /**
+     * Prepares the image and metadata block for encoding using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Validates the provided metadata object and its LSB depth.</li>
+     *   <li>Creates a deep copy of the input image to ensure the original image remains unmodified.</li>
+     *   <li>Serializes the metadata object into a JSON byte array and calculates its length.</li>
+     *   <li>Calculates the total metadata size and checks if the image has enough capacity to store it.</li>
+     *   <li>Calculates the payload capacity of the image based on the remaining pixels and the specified LSB depth.</li>
+     *   <li>Combines the metadata components into a single byte array for encoding.</li>
+     * </ol>
+     *
+     * @param imageBytes The byte array of the image to encode into.
+     * @param metadata   The metadata to encode, which includes the LSB depth.
+     * @return A `MetadataBlockDTO` containing the prepared image, metadata block, metadata pixel count, and payload capacity.
+     * @throws MetadataNotFoundException If the metadata object is null.
+     * @throws InvalidLsbDepthException  If the LSB depth in the metadata is not 1 or 2.
+     * @throws MessageTooLargeException  If the metadata size exceeds the image's capacity.
+     * @throws IOException               If an error occurs while processing the image or metadata.
+     */
     private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
             MetadataNotFoundException, InvalidLsbDepthException,
             MessageTooLargeException, IOException {
@@ -312,6 +427,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private Low-Level Helper Methods -----
 
+    /**
+     * Converts the given image to a format suitable for Least Significant Bit (LSB) operations.
+     *
+     * <p>This method ensures that the image is in the `BufferedImage.TYPE_INT_ARGB` format,
+     * which is required for consistent pixel operations during LSB encoding or decoding.
+     * If the image is already in the desired format, it is returned as-is. Otherwise, a deep copy
+     * of the image is created in the `TYPE_INT_ARGB` format.
+     *
+     * @param source The input image to be converted.
+     * @return A `BufferedImage` in the `TYPE_INT_ARGB` format.
+     */
     private BufferedImage convertForLsb(BufferedImage source) {
 
         log.info("Converting image to suitable format for LSB operations");
@@ -325,6 +451,23 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return deepCopy(source);
     }
 
+    /**
+     * Converts a byte array into a `BufferedImage` object.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Creates an input stream from the provided byte array.</li>
+     *   <li>Attempts to read the input stream as an image using `ImageIO.read`.</li>
+     *   <li>Checks if the resulting image is null, indicating an unsupported format or corrupted data.</li>
+     *   <li>Converts the image to the `BufferedImage.TYPE_INT_ARGB` format to ensure consistent pixel operations.</li>
+     *   <li>Draws the original image onto the converted image.</li>
+     * </ol>
+     *
+     * @param imageBytes The byte array representing the image data.
+     * @return A `BufferedImage` object in the `TYPE_INT_ARGB` format.
+     * @throws LsbEncodingException If the image format is unsupported or the data is corrupted.
+     * @throws IOException          If an I/O error occurs during the conversion process.
+     */
     private BufferedImage bytesToImage(
             byte[] imageBytes
     ) throws LsbEncodingException, IOException {
@@ -360,6 +503,16 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Converts a `BufferedImage` to a byte array in PNG format.
+     *
+     * <p>This method writes the given `BufferedImage` to a `ByteArrayOutputStream` in PNG format
+     * and then converts the output stream to a byte array.
+     *
+     * @param image The `BufferedImage` to be converted.
+     * @return A byte array representing the image in PNG format.
+     * @throws IOException If an error occurs during the conversion process.
+     */
     private byte[] imageToBytes(
             BufferedImage image
     ) throws IOException {
@@ -381,6 +534,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Creates a deep copy of the given `BufferedImage`.
+     *
+     * <p>This method creates a new `BufferedImage` with the same dimensions and type as the source image,
+     * and then draws the source image onto the new image.
+     *
+     * @param source The `BufferedImage` to be copied.
+     * @return A deep copy of the source image.
+     */
     private BufferedImage deepCopy(BufferedImage source) {
 
         // Create a new BufferedImage with the same dimensions and type as the source
@@ -397,6 +559,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return copy;
     }
 
+    /**
+     * Calculates the number of pixels required to embed a given number of bytes at a specified LSB depth.
+     *
+     * <p>This method converts the number of bytes to bits, calculates the number of bits per pixel
+     * based on the LSB depth and the three color channels (RGB), and then determines the number of pixels
+     * required to store the bits, rounding up to the nearest whole pixel.
+     *
+     * @param numberOfBytes The number of bytes to be embedded.
+     * @param lsbDepth      The LSB depth (number of bits per color channel).
+     * @return The number of pixels required to embed the given number of bytes.
+     */
     private int bytesToPixelCount(
             int numberOfBytes,
             int lsbDepth
@@ -416,6 +589,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Writes a byte array to an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method embeds the provided data bytes into the image starting at the specified pixel
+     * and using the specified LSB depth. The data is written across the RGB channels of the pixels.
+     * If the image does not have enough capacity to store the data, a `MessageTooLargeException` is thrown.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Iterates over the pixels of the image starting from the specified pixel index.</li>
+     *   <li>For each pixel, extracts the RGB channels and modifies their LSBs to embed the data bits.</li>
+     *   <li>Writes the modified RGB values back to the image.</li>
+     *   <li>Stops once all data bytes have been written or the image capacity is exceeded.</li>
+     * </ol>
+     *
+     * @param image      The `BufferedImage` to write the data into.
+     * @param startPixel The starting pixel index for writing the data.
+     * @param lsbDepth   The number of least significant bits to use per color channel.
+     * @param dataBytes  The byte array containing the data to embed.
+     * @throws MessageTooLargeException If the image does not have enough capacity to store the data.
+     */
     private void writeBytesToImage(
             BufferedImage image,
             int startPixel,
@@ -453,7 +647,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             for (var c = 0; c < 3; c++) { // iterate over each color channel (R, G, B)
 
-                //get next lsbDepth bits from dataBytes
+                // get next lsbDepth bits from dataBytes
                 var bitsToWrite = 0; // variable to hold the bits to write into the channel
 
                 for (var bit = 0; bit < lsbDepth; bit++) { // iterate over the number of bits to write
@@ -479,7 +673,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 }
 
                 // set lsbDepth bits in the channel
-                var mask = ~((1 << lsbDepth) - 1); //use bitwise NOT to create a mask
+                var mask = ~((1 << lsbDepth) - 1); // use bitwise NOT to create a mask
                 channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1)); // clear the lsbDepth bits in the channel and set them to bitsToWrite
 
                 if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) { // if we have written all bytes and bits, we can stop
@@ -499,6 +693,30 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Streams a payload into an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method embeds the provided payload data into the image starting at the specified pixel
+     * and using the specified LSB depth. The payload is read from an InputStream, allowing for efficient
+     * handling of large data without loading it entirely into memory.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Iterates over the pixels of the image starting from the specified pixel index.</li>
+     *   <li>For each pixel, extracts the RGB channels and modifies their LSBs to embed the payload bits.</li>
+     *   <li>Reads the payload data in chunks using a buffer to minimize memory usage.</li>
+     *   <li>Writes the modified RGB values back to the image.</li>
+     *   <li>Stops once all payload bytes have been written or the image capacity is exceeded.</li>
+     * </ol>
+     *
+     * @param working           The `BufferedImage` to write the payload into.
+     * @param payloadStartPixel The starting pixel index for writing the payload.
+     * @param lsbDepth          The number of least significant bits to use per color channel.
+     * @param payloadStream     The InputStream containing the payload data to embed.
+     * @param payloadLength     The length of the payload in bytes.
+     * @throws MessageTooLargeException If the image does not have enough capacity to store the payload.
+     * @throws IOException              If an error occurs while reading the payload stream.
+     */
     private void writeStreamToImage(
             BufferedImage working,
             int payloadStartPixel,
@@ -600,6 +818,28 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Reads a specified number of bytes from an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method extracts data embedded in the LSBs of the image's pixel color channels. It starts reading
+     * from the specified pixel index and continues until the required number of bytes is read or the image's
+     * capacity is exceeded.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Iterates over the pixels of the image starting from the specified pixel index.</li>
+     *   <li>For each pixel, extracts the RGB channels and retrieves the LSBs based on the specified depth.</li>
+     *   <li>Combines the extracted bits into bytes and stores them in the output array.</li>
+     *   <li>Stops once the required number of bytes has been read or the image capacity is exceeded.</li>
+     * </ol>
+     *
+     * @param image         The `BufferedImage` to read the data from.
+     * @param startPixel    The starting pixel index for reading the data.
+     * @param lsbDepth      The number of least significant bits to read per color channel.
+     * @param numberOfBytes The number of bytes to read from the image.
+     * @return A byte array containing the extracted data.
+     * @throws LsbDecodingException If the image does not have enough pixels to read the required data.
+     */
     private byte[] readBytesFromImage(
             BufferedImage image,
             int startPixel,

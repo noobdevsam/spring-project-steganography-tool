@@ -20,6 +20,13 @@ import java.util.stream.Collectors;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
+    /**
+     * Handles exceptions of type StegoException.
+     *
+     * @param ex      the StegoException instance
+     * @param request the HttpServletRequest object containing request details
+     * @return a ProblemDetail object containing error details
+     */
     @ExceptionHandler(StegoException.class)
     public ProblemDetail handleStego(
             StegoException ex,
@@ -41,6 +48,13 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    /**
+     * Handles exceptions of type MethodArgumentNotValidException.
+     *
+     * @param ex      the MethodArgumentNotValidException instance
+     * @param request the HttpServletRequest object containing request details
+     * @return a ProblemDetail object containing validation error details
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(
             MethodArgumentNotValidException ex,
@@ -67,6 +81,13 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    /**
+     * Handles exceptions of type IllegalArgumentException.
+     *
+     * @param ex      the IllegalArgumentException instance
+     * @param request the HttpServletRequest object containing request details
+     * @return a ProblemDetail object containing error details
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ProblemDetail handleIllegalArgument(
             IllegalArgumentException ex,
@@ -88,6 +109,13 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    /**
+     * Handles exceptions of type SecurityException.
+     *
+     * @param ex      the SecurityException instance
+     * @param request the HttpServletRequest object containing request details
+     * @return a ProblemDetail object containing security error details
+     */
     @ExceptionHandler(SecurityException.class)
     public ProblemDetail handleSecurity(
             SecurityException ex,
@@ -109,6 +137,13 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    /**
+     * Handles generic exceptions of type Exception.
+     *
+     * @param ex      the Exception instance
+     * @param request the HttpServletRequest object containing request details
+     * @return a ProblemDetail object containing generic error details
+     */
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleGeneric(
             Exception ex,
@@ -120,12 +155,17 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "An unexpected error occurred."
         );
+        var traceId = MDC.get("traceId");
 
         pd.setType(URI.create("https://api.example.com/errors/INTERNAL_SERVER_ERROR"));
         pd.setTitle("INTERNAL_SERVER_ERROR");
         pd.setProperty("code", "INTERNAL_SERVER_ERROR");
         pd.setProperty("timestamp", Instant.now().toString());
         pd.setProperty("path", request.getRequestURI());
+
+        if (traceId != null) {
+            pd.setProperty("traceId", traceId);
+        }
 
         return pd;
     }

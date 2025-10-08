@@ -12,18 +12,31 @@ import java.nio.file.Path;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * A scheduled task for cleaning up orphaned or expired files in the storage directory.
+ * This task deletes:
+ * 1. Orphaned stego files that are no longer referenced in the database.
+ * 2. Extracted files that have exceeded their time-to-live (TTL).
+ */
 @Component
 @Slf4j
 public class OrphanCleanupTask {
 
-    private final boolean enabled;
-    private final Path basePath;
-    private final StegoDataRepository stegoDataRepository;
-    private static final Pattern STEGO_PATTERN = Pattern.compile("^stego-.*\\.png$");
-    // extracted-{createdMillis}-{uuid}-basename(.ext)?
-    private static final Pattern EXTRACTED_PATTERN = Pattern.compile("^extracted-(\\d+)-[0-9a-fA-F\\-]+-.*$");
-    private final long extractedTtlMs;
+    private static final Pattern STEGO_PATTERN = Pattern.compile("^stego-.*\\.png$"); // Pattern for identifying stego files.
+    private static final Pattern EXTRACTED_PATTERN = Pattern.compile("^extracted-(\\d+)-[0-9a-fA-F\\-]+-.*$"); // Pattern for identifying extracted files.
+    private final boolean enabled; // Indicates whether the cleanup task is enabled.
+    private final Path basePath; // The base directory where files are stored.
+    private final StegoDataRepository stegoDataRepository; // Repository for accessing stego data.
+    private final long extractedTtlMs; // Time-to-live (TTL) for extracted files in milliseconds.
 
+    /**
+     * Constructor for OrphanCleanupTask.
+     *
+     * @param enabled             Whether the cleanup task is enabled.
+     * @param basePath            The base directory for file storage.
+     * @param stegoDataRepository Repository for accessing stego data.
+     * @param extractedTtlMs      Time-to-live for extracted files in milliseconds.
+     */
     public OrphanCleanupTask(
             @Value("${app.cleanup.enabled:false}") boolean enabled,
             @Value("${app.storage.base-path}") Path basePath,
@@ -36,6 +49,10 @@ public class OrphanCleanupTask {
         this.extractedTtlMs = extractedTtlMs;
     }
 
+    /**
+     * Scheduled method to perform the cleanup task.
+     * Runs at a fixed interval as defined in the application properties.
+     */
     @Scheduled(
             initialDelayString = "${app.cleanup.initial-delay-ms}",
             fixedDelayString = "${app.cleanup.interval-ms}"
@@ -53,6 +70,7 @@ public class OrphanCleanupTask {
                 return;
             }
 
+            // Retrieve all referenced stego file names from the database
             var referencedStegoNames = stegoDataRepository.findAll()
                     .stream()
                     .map(StegoData::getStegoFileName)
@@ -67,7 +85,6 @@ public class OrphanCleanupTask {
                     var name = file.getFileName().toString();
 
                     // 1. Orphaned stego image deletion
-
                     if (STEGO_PATTERN.matcher(name).matches()) {
                         if (!referencedStegoNames.contains(name)) {
                             try {
