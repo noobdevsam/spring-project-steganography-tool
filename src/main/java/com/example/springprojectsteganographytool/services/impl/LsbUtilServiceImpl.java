@@ -275,6 +275,25 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private High-Level Helper Methods -----
 
+    /**
+     * Decodes the payload from a stego image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>If the LSB depth is not provided, it extracts the metadata from the image to determine the depth.</li>
+     *   <li>Validates the LSB depth to ensure it is either 1 or 2.</li>
+     *   <li>Reads and validates the header and metadata length from the image.</li>
+     *   <li>Calculates the total metadata size and the number of pixels used for metadata storage.</li>
+     *   <li>Reads the payload length from the image and validates it against the image's capacity.</li>
+     *   <li>Calculates the starting pixel for the payload and reads the payload data at the specified LSB depth.</li>
+     * </ol>
+     *
+     * @param bufferedImage The stego image from which the payload is to be decoded.
+     * @param lsbDepth      The LSB depth to use for decoding. If null, the depth is determined from the metadata.
+     * @return The decoded payload as a byte array.
+     * @throws InvalidLsbDepthException If the provided LSB depth is invalid.
+     * @throws LsbDecodingException     If an error occurs during the decoding process.
+     */
     private byte[] decodeFromImage(BufferedImage bufferedImage, Integer lsbDepth) throws
             InvalidLsbDepthException, LsbDecodingException {
 
@@ -282,16 +301,18 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
         StegoMetadataDTO meta;
 
+        // If LSB depth is not provided, extract metadata to determine the depth
         if (lsbDepth == null) {
             meta = extractMetadata(bufferedImage);
             lsbDepth = meta.lsbDepth();
         }
 
+        // Validate the LSB depth
         if (lsbDepth != 1 && lsbDepth != 2) {
             throw new InvalidLsbDepthException("Invalid LSB depth: " + lsbDepth);
         }
 
-        // 1) Read and validate header + meta length (at LSB=1)
+        // 1) Read and validate header + metadata length (at LSB=1)
         var preliminaryHeader = readBytesFromImage(bufferedImage, 0, 1, (HEADER_TOTAL_LEN + META_LEN_BYTES));
         var metaLength = ByteBuffer
                 .wrap(preliminaryHeader, HEADER_TOTAL_LEN, META_LEN_BYTES)
@@ -302,7 +323,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         var metaTotalBytes = HEADER_TOTAL_LEN + META_LEN_BYTES + metaLength;
         var metaPixelCount = bytesToPixelCount(metaTotalBytes, 1);
 
-        // 3) Read payload length at LSB=1
+        // 3) Read payload length (at LSB=1)
         var payloadLenBytes = readBytesFromImage(bufferedImage, metaPixelCount, 1, PAYLOAD_LEN_BYTES);
         var payloadLength = ByteBuffer
                 .wrap(payloadLenBytes)
@@ -312,7 +333,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbDecodingException("Payload length invalid or too large. Got: " + payloadLength);
         }
 
-        // 4) Capacity check
+        // 4) Validate the image's capacity for the payload
         var totalPixels = (long) bufferedImage.getWidth() * bufferedImage.getHeight();
         var payloadLenPixels = bytesToPixelCount(PAYLOAD_LEN_BYTES, 1);
         var payloadDataPixels = totalPixels - metaPixelCount - payloadLenPixels;
@@ -322,7 +343,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
             throw new LsbDecodingException("Payload length " + payloadLength + " exceeds capacity " + maxPayloadBytes);
         }
 
-        // 5) Read payload at chosen depth by user
+        // 5) Read the payload data at the specified LSB depth
         var payloadStartPixel = metaPixelCount + payloadLenPixels;
 
         log.info("Payload decoding completed successfully");
