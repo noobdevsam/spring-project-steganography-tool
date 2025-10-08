@@ -25,7 +25,7 @@ spring:
 
 app:
     storage:
-        base-path: ${STORAGE_BASE_PATH:./src/main/resources}
+        base-path: ${STORAGE_BASE_PATH:}
     cleanup:
         enabled: true # Set to true to enable cleanup task
         initial-delay-ms: 60000 # 1 minute
