@@ -12,26 +12,43 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * Implementation of the StorageService interface.
+ * Provides methods to save and delete files in a secure manner.
+ */
 @Service
 @Slf4j
 public class StorageServiceImpl implements StorageService {
 
     private final Path basePath;
 
+    /**
+     * Constructor for StorageServiceImpl.
+     *
+     * @param basePath the base directory for file storage, injected from the application properties.
+     * @throws IllegalArgumentException if the basePath is null.
+     */
     public StorageServiceImpl(@Value("${app.storage.base-path}") Path basePath) throws IllegalArgumentException {
-
         if (basePath == null) {
             throw new IllegalArgumentException("app.storage.base-path must not be null");
         }
 
         log.info("Using storage base path: {}", basePath.toAbsolutePath().normalize());
-
         this.basePath = basePath.toAbsolutePath().normalize();
     }
 
+    /**
+     * Saves a file to the storage directory.
+     *
+     * @param relativeFileName the relative name of the file to save.
+     * @param content          the content of the file as a byte array.
+     * @return the path to the saved file.
+     * @throws StorageSecurityException if the file name is invalid or attempts to escape the storage directory.
+     * @throws StorageException         if an error occurs during file operations.
+     * @throws IOException              if an I/O error occurs.
+     */
     @Override
     public Path save(String relativeFileName, byte[] content) throws StorageSecurityException, StorageException, IOException {
-
         log.debug("Saving file: {} ({} bytes)", relativeFileName, content.length);
 
         var targetPath = safeResolve(relativeFileName);
@@ -41,9 +58,15 @@ public class StorageServiceImpl implements StorageService {
         return targetPath;
     }
 
+    /**
+     * Deletes a file from the storage directory.
+     *
+     * @param relativeFileName the relative name of the file to delete.
+     * @return true if the file was successfully deleted, false otherwise.
+     * @throws StorageException if an error occurs during file operations.
+     */
     @Override
     public boolean delete(String relativeFileName) throws StorageException {
-
         log.debug("Deleting file: {}", relativeFileName);
 
         Path targetPath = null;
@@ -64,8 +87,15 @@ public class StorageServiceImpl implements StorageService {
         return deleted;
     }
 
+    /**
+     * Resolves a file name to an absolute path within the storage directory.
+     *
+     * @param name the relative file name to resolve.
+     * @return the resolved absolute path.
+     * @throws IllegalArgumentException if the file name is null, blank, or invalid.
+     * @throws StorageSecurityException if the resolved path attempts to escape the storage directory.
+     */
     private Path safeResolve(String name) throws IllegalArgumentException, StorageSecurityException {
-
         log.debug("Resolving file name: {}", name);
 
         if (name == null || name.isBlank()) {
