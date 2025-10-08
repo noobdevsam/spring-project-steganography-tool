@@ -141,8 +141,11 @@
                 <artifactId>native-maven-plugin</artifactId>
                 <configuration>
                     <buildArgs>
-                        <buildArg>--initialize-at-run-time=com.example.springprojectsteganographytool.Application
-                        </buildArg>
+                        <!-- Enable AWT support (needed for BufferedImage, ImageIO) -->
+                        <buildArg>-H:Features=org.graalvm.home.HomeFinderFeature</buildArg>
+                        <buildArg>--enable-url-protocols=http,https</buildArg>
+                        <!-- Include security services needed for AES and PBKDF2 -->
+                        <buildArg>--initialize-at-build-time=org.springframework.util.MimeTypeUtils</buildArg>
                     </buildArgs>
                 </configuration>
             </plugin>

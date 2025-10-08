@@ -1,0 +1,24 @@
+[
+  {
+    "name": "com.sun.imageio.plugins.png.PNGImageReader",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "javax.imageio.spi.ImageReaderSpi"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "com.sun.imageio.plugins.png.PNGImageWriter",
+    "methods": [
+      {
+        "name": "<init>",
+        "parameterTypes": [
+          "javax.imageio.spi.ImageWriterSpi"
+        ]
+      }
+    ]
+  }
+]
