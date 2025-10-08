@@ -294,6 +294,19 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
+    /**
+     * Encodes a file stream into an image using steganography.
+     *
+     * @param coverImage        The cover image in which the file stream will be embedded.
+     * @param coverImageName    The name of the cover image.
+     * @param nameOfFileToEmbed The name of the file to embed.
+     * @param fileStream        The input stream of the file to embed.
+     * @param fileSize          The size of the file to embed.
+     * @param password          The password used for encrypting the file.
+     * @param lsbDepth          The LSB (Least Significant Bit) depth to use for encoding.
+     * @return A `StegoEncodeResponseDTO` containing details about the encoded stego image.
+     * @throws Exception If an error occurs during the encoding process.
+     */
     @Transactional(
             rollbackFor = {Exception.class},
             propagation = Propagation.REQUIRED
@@ -309,11 +322,15 @@ public class SteganographyServiceImpl implements SteganographyService {
             int lsbDepth
     ) throws Exception {
 
+        // Validate the LSB depth to ensure it is either 1 or 2
         validateLsbDepth(lsbDepth);
 
         log.debug("Encoding file stream into image.");
 
+        // Generate a key hash from the provided password
         var keyHash = aesUtilService.generateKey(password);
+
+        // Create metadata for the stego image
         var metadata = new StegoMetadataDTO(
                 lsbDepth,
                 false,
@@ -323,32 +340,39 @@ public class SteganographyServiceImpl implements SteganographyService {
         );
 
         try {
-            // Early capacity estimation before encryption
+            // Perform an early capacity check to ensure the file can fit in the image
             earlyCapacityCheck(coverImage, metadata, fileSize);
         } catch (MessageTooLargeException e) {
             throw new RuntimeException(e);
         }
 
-        // Streaming encryption -> temp file
+        // Encrypt the file stream and save it to a temporary file
         var encTemp = largeFileEncryptionService.encryptToTempFile(fileStream, password);
 
         try {
-            // Strict precise capacity check now that we know the exact encrypted size
+            // Convert the cover image to a PNG byte array
             var coverBytes = bufferedImageToPngBytes(coverImage);
 
+            // Get the length of the encrypted file
             var encryptedLength = encTemp.length();
 
-            // Validate capacity precisely (metadata + encrypted file size)
+            // Perform a precise capacity check to ensure the encrypted file can fit in the image
             preciseCapacityCheck(coverImage, metadata, encryptedLength);
 
             try (var encIn = Files.newInputStream(encTemp.path())) {
+                // Encode the encrypted file stream into the cover image
                 var stegoBytes = lsbUtilService.encodeStream(coverBytes, encIn, encryptedLength, metadata);
+
+                // Generate a unique file name for the stego image
                 var baseName = sanitizeBaseName(nameOfFileToEmbed);
                 var fileName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png");
+
+                // Save the stego image to storage
                 storageService.save(fileName, stegoBytes);
 
                 log.debug("File stream encoded and saved as stego file: {}", fileName);
 
+                // Save the stego data to the repository and return the response DTO
                 return stegoDataMapper.stegoDataToEncodeResponseDTO(
                         stegoDataRepository.save(
                                 StegoData.builder()
@@ -365,13 +389,13 @@ public class SteganographyServiceImpl implements SteganographyService {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         } finally {
+            // Delete the temporary encrypted file
             try {
                 Files.deleteIfExists(encTemp.path());
             } catch (Exception e) {
                 log.warn("Failed to delete temp encrypted file {} : {}", encTemp.path(), e.getMessage());
             }
         }
-
     }
 
     @Override
