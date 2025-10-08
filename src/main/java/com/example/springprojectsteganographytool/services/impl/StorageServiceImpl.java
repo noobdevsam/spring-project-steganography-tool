@@ -112,7 +112,7 @@ public class StorageServiceImpl implements StorageService {
             var resource = new UrlResource(filePath.toUri());
 
             // Check if the resource exists and is readable
-            if (resource.exists() || resource.isReadable()) {
+            if (resource.exists() && resource.isReadable()) {
                 return resource;
             } else {
                 // Throw an exception if the file cannot be read
