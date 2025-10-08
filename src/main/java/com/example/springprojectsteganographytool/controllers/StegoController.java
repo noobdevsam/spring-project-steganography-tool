@@ -264,7 +264,7 @@ public class StegoController {
      */
     @GetMapping(path = "/encodings/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<StegoEncodeResponseDTO> getById(@PathVariable("id") UUID id) {
-        log.info("In Controller- Getting encoding by ID from DB. ");
+        log.info("In Controller- Getting encoding by ID: {}", id);
         return ResponseEntity.ok(steganographyService.getById(id));
     }
 
@@ -276,7 +276,7 @@ public class StegoController {
      */
     @DeleteMapping(path = "/encodings/{id}")
     public ResponseEntity<Void> deleteById(@PathVariable("id") UUID id) {
-        log.info("In Controller- Deleting encoding by ID from DB. ");
+        log.info("In Controller- Deleting encoding by ID: {}", id);
         steganographyService.deleteById(id);
         return ResponseEntity.noContent().build();
     }
