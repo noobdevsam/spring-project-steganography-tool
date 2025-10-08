@@ -12,19 +12,26 @@
     <artifactId>spring-project-steganography-tool</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>spring-project-steganography-tool</name>
-    <description>Demo project for Spring Boot</description>
-    <url/>
+    <description>A powerful and secure steganography tool built with Spring Boot 3</description>
+    <url>https://github.com/noobdevsam/spring-project-steganography-tool</url>
     <licenses>
-        <license/>
+        <license>
+            <name>GNU AGPLv3</name>
+            <url>https://github.com/noobdevsam/spring-project-steganography-tool/blob/master/LICENSE</url>
+        </license>
     </licenses>
     <developers>
-        <developer/>
+        <developer>
+            <name>noobdevsam</name>
+            <url>https://github.com/noobdevsam</url>
+        </developer>
     </developers>
     <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
+        <connection>scm:git:git://github.com/noobdevsam/spring-project-steganography-tool.git</connection>
+        <developerConnection>scm:git:ssh://github.com:noobdevsam/spring-project-steganography-tool.git
+        </developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/noobdevsam/spring-project-steganography-tool</url>
     </scm>
     <properties>
         <java.version>25</java.version>
@@ -94,6 +101,18 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                    <image>
+                        <!-- The image name to build -->
+                        <name>noobdevsam/${project.artifactId}:${project.version}</name>
+                        <!-- Use the Paketo Tiny builder for smaller native images -->
+                        <builder>paketobuildpacks/builder-jammy-tiny</builder>
+                        <!-- Environment variables for the buildpack -->
+                        <env>
+                            <!-- Configure the buildpack to use Java 25 -->
+                            <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
+                            <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                        </env>
+                    </image>
                 </configuration>
             </plugin>
 
