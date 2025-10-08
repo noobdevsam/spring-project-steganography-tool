@@ -693,6 +693,30 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Streams a payload into an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method embeds the provided payload data into the image starting at the specified pixel
+     * and using the specified LSB depth. The payload is read from an InputStream, allowing for efficient
+     * handling of large data without loading it entirely into memory.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Iterates over the pixels of the image starting from the specified pixel index.</li>
+     *   <li>For each pixel, extracts the RGB channels and modifies their LSBs to embed the payload bits.</li>
+     *   <li>Reads the payload data in chunks using a buffer to minimize memory usage.</li>
+     *   <li>Writes the modified RGB values back to the image.</li>
+     *   <li>Stops once all payload bytes have been written or the image capacity is exceeded.</li>
+     * </ol>
+     *
+     * @param working           The `BufferedImage` to write the payload into.
+     * @param payloadStartPixel The starting pixel index for writing the payload.
+     * @param lsbDepth          The number of least significant bits to use per color channel.
+     * @param payloadStream     The InputStream containing the payload data to embed.
+     * @param payloadLength     The length of the payload in bytes.
+     * @throws MessageTooLargeException If the image does not have enough capacity to store the payload.
+     * @throws IOException              If an error occurs while reading the payload stream.
+     */
     private void writeStreamToImage(
             BufferedImage working,
             int payloadStartPixel,
