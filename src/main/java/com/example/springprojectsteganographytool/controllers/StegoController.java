@@ -8,6 +8,8 @@ import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -279,4 +281,23 @@ public class StegoController {
         return ResponseEntity.noContent().build();
     }
 
+    /**
+     * Downloads a stego image as a Spring `Resource` object.
+     * <p>
+     * This method retrieves the stego image associated with the given ID from the service layer.
+     * The image is returned as a downloadable resource with the appropriate content type and
+     * content disposition headers set for attachment.
+     *
+     * @param id The unique identifier of the stego image to download.
+     * @return A ResponseEntity containing the stego image as a `Resource` object.
+     */
+    @GetMapping("/encodings/{id}/download")
+    public ResponseEntity<Resource> downloadStegoImage(@PathVariable("id") UUID id) {
+        log.info("In Controller- Downloading stego image by Id: {}. ", id);
+        var resource = steganographyService.downloadStegoFile(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
 }
