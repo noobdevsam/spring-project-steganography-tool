@@ -203,6 +203,19 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
+    /**
+     * Encodes a file into an image using steganography.
+     *
+     * @param coverImage        The cover image in which the file will be embedded.
+     * @param coverImageName    The name of the cover image.
+     * @param nameOfFileToEmbed The name of the file to embed.
+     * @param fileBytes         The byte array of the file to embed.
+     * @param password          The password used for encrypting the file.
+     * @param lsbDepth          The LSB (Least Significant Bit) depth to use for encoding.
+     * @return A `StegoEncodeResponseDTO` containing details about the encoded stego image.
+     * @throws RuntimeException If an unexpected error occurs during the encoding process.
+     * @throws StorageException If an error occurs while saving the stego image.
+     */
     @Transactional(
             rollbackFor = {Exception.class},
             propagation = Propagation.REQUIRED
@@ -216,6 +229,7 @@ public class SteganographyServiceImpl implements SteganographyService {
             String password,
             int lsbDepth
     ) {
+        // Validate the LSB depth to ensure it is either 1 or 2
         validateLsbDepth(lsbDepth);
 
         try {
@@ -223,7 +237,10 @@ public class SteganographyServiceImpl implements SteganographyService {
             log.debug("Encoding file into image. Cover image: {}, File name: {}, File size: {}, LSB depth: {}",
                     coverImageName, nameOfFileToEmbed, fileBytes.length, lsbDepth);
 
+            // Generate a key hash from the provided password
             var keyHash = aesUtilService.generateKey(password);
+
+            // Create metadata for the stego image
             var metadata = new StegoMetadataDTO(
                     lsbDepth,
                     false,
@@ -232,25 +249,32 @@ public class SteganographyServiceImpl implements SteganographyService {
                     nameOfFileToEmbed
             );
 
-            // Phase 1: Early capacity estimation before encryption
+            // Perform an early capacity check to ensure the file can fit in the image
             earlyCapacityCheck(coverImage, metadata, fileBytes.length);
 
+            // Encrypt the file using the provided password
             var encodedBytes = aesUtilService.encryptFile(fileBytes, password);
 
+            // Convert the cover image to a PNG byte array
             var coverBytes = bufferedImageToPngBytes(coverImage);
+
+            // Encode the encrypted file into the cover image
             var stegoBytes = lsbUtilService.encode(coverBytes, encodedBytes, metadata);
 
-            // save the stego image to storage
+            // Generate a unique file name for the stego image
             var baseName = nameOfFileToEmbed != null ? nameOfFileToEmbed : "embedded-file";
             var dot = baseName.lastIndexOf('.');
             if (dot > 0) {
                 baseName = baseName.substring(0, dot);
             }
             var safeName = ("stego-" + baseName + "-" + UUID.randomUUID() + ".png").replaceAll("[^A-Za-z0-9._-]", "_");
+
+            // Save the stego image to storage
             storageService.save(safeName, stegoBytes);
 
             log.debug("File encoded and saved as stego file: {}", safeName);
 
+            // Save the stego data to the repository and return the response DTO
             return stegoDataMapper.stegoDataToEncodeResponseDTO(
                     stegoDataRepository.save(
                             StegoData.builder()
@@ -268,7 +292,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         } catch (Exception e) {
             throw new RuntimeException("Unexpected failure during file encoding: " + e.getMessage(), e);
         }
-
     }
 
     @Transactional(
