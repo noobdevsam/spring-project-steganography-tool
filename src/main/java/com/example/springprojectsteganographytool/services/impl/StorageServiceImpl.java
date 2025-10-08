@@ -1,13 +1,17 @@
 package com.example.springprojectsteganographytool.services.impl;
 
 import com.example.springprojectsteganographytool.exceptions.data.StorageException;
+import com.example.springprojectsteganographytool.exceptions.data.StorageFileNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageSecurityException;
 import com.example.springprojectsteganographytool.services.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -85,6 +89,40 @@ public class StorageServiceImpl implements StorageService {
         }
 
         return deleted;
+    }
+
+    /**
+     * Loads a file as a Spring `Resource` object.
+     * <p>
+     * This method resolves the given relative file name to an absolute path within the storage directory,
+     * and attempts to load it as a `UrlResource`. If the file exists and is readable, the resource is returned.
+     * Otherwise, a `StorageFileNotFoundException` is thrown.
+     *
+     * @param relativeFileName the relative name of the file to load.
+     * @return the file as a `Resource` object.
+     * @throws StorageException             if the file cannot be resolved or loaded.
+     * @throws StorageFileNotFoundException if the file does not exist or is not readable.
+     */
+    @Override
+    public Resource loadAsResource(String relativeFileName) throws StorageException {
+        try {
+            // Resolve the relative file name to an absolute path within the storage directory
+            var filePath = safeResolve(relativeFileName);
+            // Create a UrlResource from the resolved file path
+            var resource = new UrlResource(filePath.toUri());
+
+            // Check if the resource exists and is readable
+            if (resource.exists() || resource.isReadable()) {
+                return resource;
+            } else {
+                // Throw an exception if the file cannot be read
+                throw new StorageFileNotFoundException("Could not read file: " + relativeFileName);
+            }
+
+        } catch (MalformedURLException e) {
+            // Handle malformed URL exceptions and wrap them in a StorageFileNotFoundException
+            throw new StorageFileNotFoundException("Could not read file: " + relativeFileName, e);
+        }
     }
 
     /**
