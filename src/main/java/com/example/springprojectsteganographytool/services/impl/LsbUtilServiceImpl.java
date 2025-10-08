@@ -818,6 +818,28 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Reads a specified number of bytes from an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method extracts data embedded in the LSBs of the image's pixel color channels. It starts reading
+     * from the specified pixel index and continues until the required number of bytes is read or the image's
+     * capacity is exceeded.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Iterates over the pixels of the image starting from the specified pixel index.</li>
+     *   <li>For each pixel, extracts the RGB channels and retrieves the LSBs based on the specified depth.</li>
+     *   <li>Combines the extracted bits into bytes and stores them in the output array.</li>
+     *   <li>Stops once the required number of bytes has been read or the image capacity is exceeded.</li>
+     * </ol>
+     *
+     * @param image         The `BufferedImage` to read the data from.
+     * @param startPixel    The starting pixel index for reading the data.
+     * @param lsbDepth      The number of least significant bits to read per color channel.
+     * @param numberOfBytes The number of bytes to read from the image.
+     * @return A byte array containing the extracted data.
+     * @throws LsbDecodingException If the image does not have enough pixels to read the required data.
+     */
     private byte[] readBytesFromImage(
             BufferedImage image,
             int startPixel,
