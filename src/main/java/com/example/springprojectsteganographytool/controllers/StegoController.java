@@ -8,6 +8,8 @@ import com.example.springprojectsteganographytool.services.LsbUtilService;
 import com.example.springprojectsteganographytool.services.SteganographyService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -277,6 +279,47 @@ public class StegoController {
         log.info("In Controller- Deleting encoding by ID from DB. ");
         steganographyService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    /**
+     * Downloads a stego image as a Spring `Resource` object.
+     * <p>
+     * This method retrieves the stego image associated with the given ID from the service layer.
+     * The image is returned as a downloadable resource with the appropriate content type and
+     * content disposition headers set for attachment.
+     *
+     * @param id The unique identifier of the stego image to download.
+     * @return A ResponseEntity containing the stego image as a `Resource` object.
+     */
+    @GetMapping("/encodings/{id}/download")
+    public ResponseEntity<Resource> downloadStegoImage(@PathVariable("id") UUID id) {
+        log.info("In Controller- Downloading stego image by Id: {}. ", id);
+        var resource = steganographyService.downloadStegoFile(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
+                .body(resource);
+    }
+
+    /**
+     * Handles the download of an extracted file.
+     * <p>
+     * This endpoint allows clients to download a previously extracted file by its name.
+     * The file is returned as a downloadable resource with the appropriate content type
+     * and content disposition headers set for attachment.
+     * </p>
+     *
+     * @param fileName The name of the file to be downloaded, provided as a path variable.
+     * @return A ResponseEntity containing the extracted file as a `Resource` object.
+     */
+    @GetMapping("/download/extracted/{fileName}")
+    public ResponseEntity<Resource> downloadExtractedFile(@PathVariable String fileName) {
+        log.info("In Controller- Downloading extracted file: {}. ", fileName);
+        var resource = steganographyService.downloadExtractedFile(fileName);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM) // Set content type to generic binary data.
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"") // Set the file name for download.
+                .body(resource); // Include the file resource in the response body.
     }
 
 }

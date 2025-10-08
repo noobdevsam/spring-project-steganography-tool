@@ -17,6 +17,7 @@ import com.example.springprojectsteganographytool.services.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -538,6 +539,49 @@ public class SteganographyServiceImpl implements SteganographyService {
             log.warn("Failed to delete stego file {} after DB delete: {}", fileName, e.getMessage());
         }
 
+    }
+
+    /**
+     * Downloads a stego file as a Spring `Resource` object.
+     * <p>
+     * This method retrieves the stego data associated with the given ID from the repository.
+     * If the data is found, it loads the corresponding file as a `Resource` object.
+     * If the data is not found, a `StegoDataNotFoundException` is thrown.
+     *
+     * @param id The unique identifier of the stego file to download.
+     * @return The stego file as a `Resource` object.
+     * @throws StegoDataNotFoundException If no stego data is found for the given ID.
+     */
+    @Override
+    public Resource downloadStegoFile(UUID id) throws StegoDataNotFoundException {
+        log.debug("Downloading stego file by ID: {}", id);
+
+        var stegoData = stegoDataRepository.findById(id)
+                .orElseThrow(() -> new StegoDataNotFoundException("Stego data with ID: " + id + " not found."));
+
+        return storageService.loadAsResource(stegoData.getStegoFileName());
+    }
+
+    /**
+     * Downloads an extracted file as a Spring `Resource` object.
+     * <p>
+     * This method attempts to load the specified file from storage and return it as a `Resource`.
+     * If the file cannot be loaded, a `StorageException` is logged, and `null` is returned.
+     * </p>
+     *
+     * @param fileName The name of the file to be downloaded.
+     * @return The extracted file as a `Resource` object, or `null` if the file cannot be loaded.
+     * @throws StorageException If an error occurs while loading the file.
+     */
+    @Override
+    public Resource downloadExtractedFile(String fileName) throws StorageException {
+        log.debug("Downloading extracted file: {}", fileName);
+        try {
+            return storageService.loadAsResource(fileName);
+        } catch (StorageException e) {
+            log.error("Failed to load extracted file {}: {}", fileName, e.getMessage());
+            return null;
+        }
     }
 
     // ----- Helpers -----

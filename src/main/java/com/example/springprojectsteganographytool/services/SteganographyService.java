@@ -1,8 +1,10 @@
 package com.example.springprojectsteganographytool.services;
 
 import com.example.springprojectsteganographytool.exceptions.data.StegoDataNotFoundException;
+import com.example.springprojectsteganographytool.exceptions.data.StorageException;
 import com.example.springprojectsteganographytool.models.StegoDecodeResponseDTO;
 import com.example.springprojectsteganographytool.models.StegoEncodeResponseDTO;
+import org.springframework.core.io.Resource;
 
 import java.awt.image.BufferedImage;
 import java.io.InputStream;
@@ -52,5 +54,9 @@ public interface SteganographyService {
     StegoEncodeResponseDTO getById(UUID id) throws StegoDataNotFoundException;
 
     void deleteById(UUID id) throws StegoDataNotFoundException;
+
+    Resource downloadStegoFile(UUID id) throws StegoDataNotFoundException;
+
+    Resource downloadExtractedFile(String fileName) throws StorageException;
 
 }
