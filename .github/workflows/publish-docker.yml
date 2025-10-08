@@ -34,9 +34,10 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
+          # The image name is defined in pom.xml. This action only generates tags.
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ github.event.repository.name }}
           tags: |
-            # type=schedule
+            # Generate tags based on the event
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
@@ -53,9 +54,9 @@ jobs:
       - name: Build and push Docker image
         run: |
           # The 'spring-boot:build-image' goal uses Paketo Buildpacks to create a Docker image.
-          # The 'pom.xml' is already configured with the image name.
-          # We enable publishing and pass the generated tags from the metadata step.
+          # The 'pom.xml' is already configured with the base image name.
+          # We pass the generated tags as a comma-separated list to the 'tags' property.
           ./mvnw spring-boot:build-image \
             -DskipTests \
             -Dspring-boot.build-image.publish=true \
-            -Dspring-boot.build-image.imageName=${{ steps.meta.outputs.tags }}
+            -Dspring-boot.build-image.tags="${{ steps.meta.outputs.tags }}"
