@@ -4,6 +4,8 @@ spring:
     threads:
         virtual:
             enabled: true
+    main:
+        lazy-initialization: true
     servlet:
         multipart:
             max-file-size: 50MB
