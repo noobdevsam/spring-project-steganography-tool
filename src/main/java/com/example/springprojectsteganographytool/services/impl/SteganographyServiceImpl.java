@@ -565,16 +565,23 @@ public class SteganographyServiceImpl implements SteganographyService {
     /**
      * Downloads an extracted file as a Spring `Resource` object.
      * <p>
-     * This method loads the file with the given name from the storage service
-     * and returns it as a `Resource` object.
+     * This method attempts to load the specified file from storage and return it as a `Resource`.
+     * If the file cannot be loaded, a `StorageException` is logged, and `null` is returned.
+     * </p>
      *
-     * @param fileName The name of the extracted file to download.
-     * @return The extracted file as a `Resource` object.
+     * @param fileName The name of the file to be downloaded.
+     * @return The extracted file as a `Resource` object, or `null` if the file cannot be loaded.
+     * @throws StorageException If an error occurs while loading the file.
      */
     @Override
-    public Resource downloadExtractedFile(String fileName) {
+    public Resource downloadExtractedFile(String fileName) throws StorageException {
         log.debug("Downloading extracted file: {}", fileName);
-        return storageService.loadAsResource(fileName);
+        try {
+            return storageService.loadAsResource(fileName);
+        } catch (StorageException e) {
+            log.error("Failed to load extracted file {}: {}", fileName, e.getMessage());
+            return null;
+        }
     }
 
     // ----- Helpers -----
