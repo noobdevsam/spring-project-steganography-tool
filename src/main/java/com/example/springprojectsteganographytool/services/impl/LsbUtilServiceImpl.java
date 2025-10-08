@@ -427,6 +427,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     // ----- Private Low-Level Helper Methods -----
 
+    /**
+     * Converts the given image to a format suitable for Least Significant Bit (LSB) operations.
+     *
+     * <p>This method ensures that the image is in the `BufferedImage.TYPE_INT_ARGB` format,
+     * which is required for consistent pixel operations during LSB encoding or decoding.
+     * If the image is already in the desired format, it is returned as-is. Otherwise, a deep copy
+     * of the image is created in the `TYPE_INT_ARGB` format.
+     *
+     * @param source The input image to be converted.
+     * @return A `BufferedImage` in the `TYPE_INT_ARGB` format.
+     */
     private BufferedImage convertForLsb(BufferedImage source) {
 
         log.info("Converting image to suitable format for LSB operations");
@@ -440,6 +451,23 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return deepCopy(source);
     }
 
+    /**
+     * Converts a byte array into a `BufferedImage` object.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Creates an input stream from the provided byte array.</li>
+     *   <li>Attempts to read the input stream as an image using `ImageIO.read`.</li>
+     *   <li>Checks if the resulting image is null, indicating an unsupported format or corrupted data.</li>
+     *   <li>Converts the image to the `BufferedImage.TYPE_INT_ARGB` format to ensure consistent pixel operations.</li>
+     *   <li>Draws the original image onto the converted image.</li>
+     * </ol>
+     *
+     * @param imageBytes The byte array representing the image data.
+     * @return A `BufferedImage` object in the `TYPE_INT_ARGB` format.
+     * @throws LsbEncodingException If the image format is unsupported or the data is corrupted.
+     * @throws IOException          If an I/O error occurs during the conversion process.
+     */
     private BufferedImage bytesToImage(
             byte[] imageBytes
     ) throws LsbEncodingException, IOException {
@@ -475,6 +503,16 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Converts a `BufferedImage` to a byte array in PNG format.
+     *
+     * <p>This method writes the given `BufferedImage` to a `ByteArrayOutputStream` in PNG format
+     * and then converts the output stream to a byte array.
+     *
+     * @param image The `BufferedImage` to be converted.
+     * @return A byte array representing the image in PNG format.
+     * @throws IOException If an error occurs during the conversion process.
+     */
     private byte[] imageToBytes(
             BufferedImage image
     ) throws IOException {
@@ -496,6 +534,15 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         }
     }
 
+    /**
+     * Creates a deep copy of the given `BufferedImage`.
+     *
+     * <p>This method creates a new `BufferedImage` with the same dimensions and type as the source image,
+     * and then draws the source image onto the new image.
+     *
+     * @param source The `BufferedImage` to be copied.
+     * @return A deep copy of the source image.
+     */
     private BufferedImage deepCopy(BufferedImage source) {
 
         // Create a new BufferedImage with the same dimensions and type as the source
@@ -512,6 +559,17 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return copy;
     }
 
+    /**
+     * Calculates the number of pixels required to embed a given number of bytes at a specified LSB depth.
+     *
+     * <p>This method converts the number of bytes to bits, calculates the number of bits per pixel
+     * based on the LSB depth and the three color channels (RGB), and then determines the number of pixels
+     * required to store the bits, rounding up to the nearest whole pixel.
+     *
+     * @param numberOfBytes The number of bytes to be embedded.
+     * @param lsbDepth      The LSB depth (number of bits per color channel).
+     * @return The number of pixels required to embed the given number of bytes.
+     */
     private int bytesToPixelCount(
             int numberOfBytes,
             int lsbDepth
