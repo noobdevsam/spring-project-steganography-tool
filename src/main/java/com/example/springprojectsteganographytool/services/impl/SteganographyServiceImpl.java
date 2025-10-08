@@ -35,18 +35,32 @@ import java.util.stream.Collectors;
 @Slf4j
 public class SteganographyServiceImpl implements SteganographyService {
 
-    private final AesUtilService aesUtilService;
-    private final LsbUtilService lsbUtilService;
-    private final CapacityUtilService capacityUtilService;
-    private final StegoDataRepository stegoDataRepository;
-    private final StegoDataMapper stegoDataMapper;
-    private final StorageService storageService;
-    private final ObjectMapper objectMapper;
-    private final LargeFileEncryptionService largeFileEncryptionService;
+    // Dependencies and services used by the SteganographyServiceImpl class
+    private final AesUtilService aesUtilService; // Service for AES encryption and decryption
+    private final LsbUtilService lsbUtilService; // Service for LSB encoding and decoding
+    private final CapacityUtilService capacityUtilService; // Service for capacity estimation
+    private final StegoDataRepository stegoDataRepository; // Repository for managing stego data entities
+    private final StegoDataMapper stegoDataMapper; // Mapper for converting between entities and DTOs
+    private final StorageService storageService; // Service for file storage operations
+    private final ObjectMapper objectMapper; // ObjectMapper for JSON serialization and deserialization
+    private final LargeFileEncryptionService largeFileEncryptionService; // Service for encrypting large files
 
+    // Configuration property for temporary file time-to-live in milliseconds
     @Value("${app.extraction.temp-ttl-ms}")
     private long extractionTempTtlMs;
 
+    /**
+     * Constructor for SteganographyServiceImpl.
+     *
+     * @param aesUtilService             AES utility service for encryption and decryption.
+     * @param lsbUtilService             LSB utility service for encoding and decoding.
+     * @param capacityUtilService        Utility service for capacity estimation.
+     * @param stegoDataRepository        Repository for managing stego data.
+     * @param stegoDataMapper            Mapper for converting between entities and DTOs.
+     * @param storageService             Service for file storage operations.
+     * @param objectMapper               ObjectMapper for JSON serialization and deserialization.
+     * @param largeFileEncryptionService Service for encrypting large files.
+     */
     public SteganographyServiceImpl(
             AesUtilService aesUtilService,
             LsbUtilService lsbUtilService,
@@ -67,6 +81,12 @@ public class SteganographyServiceImpl implements SteganographyService {
         this.largeFileEncryptionService = largeFileEncryptionService;
     }
 
+    /**
+     * Validates the LSB depth value.
+     *
+     * @param lsbDepth The LSB depth to validate.
+     * @throws InvalidLsbDepthException If the LSB depth is not 1 or 2.
+     */
     private static void validateLsbDepth(int lsbDepth) throws InvalidLsbDepthException {
 
         log.debug("Validating LSB depth: {}", lsbDepth);
@@ -76,6 +96,13 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
+    /**
+     * Converts a BufferedImage to a PNG byte array.
+     *
+     * @param bufferedImage The BufferedImage to convert.
+     * @return The PNG byte array.
+     * @throws StorageException If an error occurs during conversion.
+     */
     private static byte[] bufferedImageToPngBytes(BufferedImage bufferedImage) throws StorageException {
 
         log.debug("Converting BufferedImage to PNG byte array.");
@@ -92,7 +119,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         } catch (StorageException | IOException e) {
             throw new StorageException("Error while converting image to PNG:" + e.getMessage(), e);
         }
-
     }
 
     @Transactional(
@@ -152,7 +178,6 @@ public class SteganographyServiceImpl implements SteganographyService {
         } catch (Exception e) {
             throw new RuntimeException("Unexpected failure during text encoding: " + e.getMessage(), e);
         }
-
     }
 
     @Transactional(
