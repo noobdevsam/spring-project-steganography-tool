@@ -94,20 +94,16 @@ invisible to the human eye.
 
 The following are the main endpoints provided by the applicatio n. The b ase path is `/api/v1/stego`.
 
-| Method | Endpoint | Description                                                         :--------- |
+| Method | Endpoint                    | Description                                                         :---------                            |
 | :----- | :-------------------------- | :------------------------------------------------------------------- -------- --------------------------- |
-| `GET`  | `/estimate`                 | Estimates the data capacity of an image based on its dimensions, LSB depth, and
-payload size. |
-| `POST` | `/encode/text`              | Encodes a text message into a cover image. |
-| `POST` | `/encode/file`              | Encodes a file into a cover image. Handles both in-memory and stream ing base d
-on file size. |
-| `POST` | `/decode`                   | Decodes a message or file from a stego-image using a password. |
-| `POST` | `/metadata`                 | Extracts and returns steganography metadata from an image without de coding t
-he payload. |
-| `GET`  | `/encodings`                | Lists all steganography encodings stored in the database. |
-| `GET`  | `/encodings/{id}`           | Retrieves a specific encoding by its UUID. |
-| `DELETE`| `/encodings/{id}`          | Deletes an encoding record from the database and the corresponding stego file
-from storage. |
+| `GET`  | `/estimate`                 | Estimates the data capacity of an image based on its dimensions, LSB depth,   and payload size.           |
+| `POST` | `/encode/text`              | Encodes a text message into a cover image.                                                                |
+| `POST` | `/encode/file`              | Encodes a file into a cover image. Handles both in-memory and stream ing base d on file size.             |
+| `POST` | `/decode`                   | Decodes a message or file from a stego-image using a password.                                            |
+| `POST` | `/metadata`                 | Extracts and returns steganography metadata from an image without de coding t he payload.                 |
+| `GET`  | `/encodings`                | Lists all steganography encodings stored in the database.                                                 |
+| `GET`  | `/encodings/{id}`           | Retrieves a specific encoding by its UUID.                                                               |
+| `DELETE`| `/encodings/{id}`          | Deletes an encoding record from the database and the corresponding stego file from storage.              |
 
 ## Getting Started
 
@@ -133,7 +129,6 @@ The main configuration is in `src/main/resources/application.yml`. The default s
 provided Docker Compose setup.
 
 Key properties:
-
 - `spring.datasource.*`: Configures the connection to the MySQL database.
 - `app.storage.base-path`: The local directory where stego-images and extracted files will be stored. Defaults to
   `storage/`.
@@ -204,3 +199,5 @@ The project follows a standard Spring Boot structure, with a clear separation of
 - `filters/`: Servlet filters like `CorrelationIdFilter` for adding a trace ID to logs.
 
 ---
+This README provides a solid foundation. You can further enhance it with sections on deployment, security
+considerations, or more detailed API documentation as the project evolves.
