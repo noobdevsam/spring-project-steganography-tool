@@ -351,6 +351,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
         return readBytesFromImage(bufferedImage, payloadStartPixel, lsbDepth, (int) payloadLength);
     }
 
+    /**
+     * Prepares the image and metadata block for encoding using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method performs the following steps:
+     * <ol>
+     *   <li>Validates the provided metadata object and its LSB depth.</li>
+     *   <li>Creates a deep copy of the input image to ensure the original image remains unmodified.</li>
+     *   <li>Serializes the metadata object into a JSON byte array and calculates its length.</li>
+     *   <li>Calculates the total metadata size and checks if the image has enough capacity to store it.</li>
+     *   <li>Calculates the payload capacity of the image based on the remaining pixels and the specified LSB depth.</li>
+     *   <li>Combines the metadata components into a single byte array for encoding.</li>
+     * </ol>
+     *
+     * @param imageBytes The byte array of the image to encode into.
+     * @param metadata   The metadata to encode, which includes the LSB depth.
+     * @return A `MetadataBlockDTO` containing the prepared image, metadata block, metadata pixel count, and payload capacity.
+     * @throws MetadataNotFoundException If the metadata object is null.
+     * @throws InvalidLsbDepthException  If the LSB depth in the metadata is not 1 or 2.
+     * @throws MessageTooLargeException  If the metadata size exceeds the image's capacity.
+     * @throws IOException               If an error occurs while processing the image or metadata.
+     */
     private MetadataBlockDTO getResultForStartingEncoding(byte[] imageBytes, StegoMetadataDTO metadata) throws
             MetadataNotFoundException, InvalidLsbDepthException,
             MessageTooLargeException, IOException {
