@@ -4,7 +4,7 @@
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.x-brightgreen.svg)
 ![License](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)
 
-This project is a powerful and secure steganography tool built with Spring Boot 3. It allows you to hide text messages or files within images using the Least Significant Bit (LSB) technique. The application provides a RESTful API for all its operations, supports robust AES-256 encryption for hidden data, and is optimized for production with GraalVM native image support and Java Virtual Threads.
+This project is a powerful and secure steganography tool built with Spring Boot 3. It allows you to hide text messages or files within images using the Least Significant Bit (LSB) technique. The application provides a RESTful API for all its operations, supports robust AES-256 encryption for hidden data, and is optimized for production with Java Virtual Threads.
 
 ## Table of Contents
 
@@ -22,7 +22,7 @@ This project is a powerful and secure steganography tool built with Spring Boot 
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
   - [1. For Local Development (JVM)](#1-for-local-development-jvm)
-  - [2. For Production (Native Docker Image)](#2-for-production-native-docker-image)
+  - [2. For Production (Docker Image)](#2-for-production-docker-image)
 - [Interacting with the API](#interacting-with-the-api)
   - [Example 1: Estimate Capacity](#example-1-estimate-capacity)
   - [Example 2: Encode a Text Message](#example-2-encode-a-text-message)
@@ -40,7 +40,7 @@ Steganography is the practice of concealing a message or file within another fil
 - **Text & File Steganography**: Embed both plain text and binary files within images.
 - **Strong Encryption**: All hidden data is encrypted with **AES-256 (CBC mode)**. The encryption key is derived from your password using **PBKDF2 with 65,536 iterations** and a unique salt for each encoding.
 - **RESTful API**: A comprehensive API for encoding, decoding, capacity estimation, and managing encodings.
-- **GraalVM Native Image Support**: Build a lightweight, fast-starting native executable container using the integrated Spring Boot Maven plugin and Cloud Native Buildpacks.
+- **Docker Support**: Build and run the application as a container using the integrated Spring Boot Maven plugin and Docker Compose.
 - **High-Concurrency Ready**: Utilizes **Java 25 Virtual Threads** with an embedded Jetty server to efficiently handle a large number of concurrent requests.
 - **Large File Streaming**: Efficiently encodes and encrypts large files by streaming them, keeping memory usage low.
 - **Capacity Estimation**: A dedicated endpoint to check if your data will fit in a given image before performing the encoding.
@@ -76,7 +76,6 @@ Steganography is the practice of concealing a message or file within another fil
 ## Technology Stack
 
 - **Java 25** & **Spring Boot 3**
-- **GraalVM**: For building the native executable.
 - **Spring Framework**: Web, Data JPA, Jetty (for Virtual Threads).
 - **Database**: MySQL.
 - **Build & Packaging**: Maven, Spring Boot Buildpacks.
@@ -151,15 +150,15 @@ This method is ideal for development and debugging, as it uses Spring Boot's hot
     ```
     The application will start on `http://localhost:8080`.
 
-### 2. For Production (Native Docker Image)
+### 2. For Production (Docker Image)
 
-This is the recommended approach for production. It compiles the application into a native executable and packages it into a minimal, secure Docker container.
+This is the recommended approach for production. It packages the application into a standard JVM-based Docker container.
 
-1.  **Build the Native Docker Image**:
-    Run the following Maven command. This uses Cloud Native Buildpacks to compile a native executable and create a Docker image named `noobdevsam/spring-project-steganography-tool:0.0.1-SNAPSHOT`.
+1.  **Build the Docker Image**:
+    Run the following Maven command. This uses Cloud Native Buildpacks to create a Docker image named `noobdevsam/spring-project-steganography-tool:0.0.1-SNAPSHOT`.
     ```bash
-    # This command can take several minutes and requires Docker to be running.
-    ./mvnw spring-boot:build-image -Pnative -DskipTests
+    # This command requires Docker to be running.
+    ./mvnw spring-boot:build-image -DskipTests
     ```
 
 2.  **Run with Docker Compose**:
@@ -167,6 +166,8 @@ This is the recommended approach for production. It compiles the application int
     ```bash
     # This will use the image built in the previous step.
     docker compose up
+    or
+    docker compose up -d db-mysql && docker compose up app
     ```
     The application will be available on `http://localhost:8080`.
 
