@@ -102,14 +102,10 @@
                         </exclude>
                     </excludes>
                     <image>
-                        <!-- The image name to build -->
                         <name>noobdevsam/${project.artifactId}:${project.version}</name>
-                        <!-- Use the Paketo Tiny builder for smaller native images -->
                         <builder>paketobuildpacks/builder-jammy-tiny</builder>
-                        <!-- Environment variables for the buildpack -->
                         <env>
                             <!-- Configure the buildpack to use Java 25 -->
-                            <BP_NATIVE_IMAGE>true</BP_NATIVE_IMAGE>
                             <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
                         </env>
                     </image>
@@ -136,19 +132,13 @@
                 </configuration>
             </plugin>
 
-            <plugin>
-                <groupId>org.graalvm.buildtools</groupId>
-                <artifactId>native-maven-plugin</artifactId>
-                <configuration>
-                    <buildArgs>
-                        <!-- Enable AWT support (needed for BufferedImage, ImageIO) -->
-                        <buildArg>-H:Features=org.graalvm.home.HomeFinderFeature</buildArg>
-                        <buildArg>--enable-url-protocols=http,https</buildArg>
-                        <!-- Include security services needed for AES and PBKDF2 -->
-                        <buildArg>--initialize-at-build-time=org.springframework.util.MimeTypeUtils</buildArg>
-                    </buildArgs>
-                </configuration>
-            </plugin>
+            <!--
+             Enable this only if local native image support is needed. Use Liberica NIK JDK for building native image locally.
+             -->
+            <!--            <plugin>-->
+            <!--                <groupId>org.graalvm.buildtools</groupId>-->
+            <!--                <artifactId>native-maven-plugin</artifactId>-->
+            <!--            </plugin>-->
 
         </plugins>
     </build>
