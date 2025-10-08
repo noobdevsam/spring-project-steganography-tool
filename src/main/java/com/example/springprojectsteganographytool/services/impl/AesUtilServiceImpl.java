@@ -17,15 +17,21 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HexFormat;
 
+/**
+ * Implementation of the AesUtilService interface for AES encryption and decryption.
+ * Provides methods to encrypt/decrypt text and files, as well as generate encryption keys.
+ */
 @Service
 @Slf4j
 public class AesUtilServiceImpl implements AesUtilService {
 
+    // AES encryption algorithm configuration
     static final String CIPHER_ALGORITHM = "AES/CBC/PKCS5Padding"; // AES with CBC mode and PKCS5 padding
     static final int SALT_LENGTH = 16; // Length of the salt in bytes
     static final int IV_LENGTH = 16; // Length of the Initialization Vector (IV) in bytes
     static final SecureRandom RANDOM = new SecureRandom(); // Secure random generator for salt and IV
-    // Constants for encryption configuration
+
+    // Constants for key derivation function (KDF) configuration
     private static final String KDF_ALGORITHM = "PBKDF2WithHmacSHA256"; // Key derivation function algorithm
     private static final int ITERATION_COUNT = 65536; // Number of iterations for PBKDF2
     private static final int KEY_LENGTH = 256; // AES-256 key length in bits
@@ -33,6 +39,14 @@ public class AesUtilServiceImpl implements AesUtilService {
     public AesUtilServiceImpl() {
     }
 
+    /**
+     * Derives an AES key from a password and salt using PBKDF2.
+     *
+     * @param password The password to derive the key from.
+     * @param salt     The salt to use in the key derivation process.
+     * @return A SecretKeySpec object representing the derived AES key.
+     * @throws Exception If key derivation fails.
+     */
     static SecretKeySpec deriveKey(String password, byte[] salt) throws Exception {
         var factory = SecretKeyFactory.getInstance(KDF_ALGORITHM);
         var spec = new PBEKeySpec(password.toCharArray(), salt, ITERATION_COUNT, KEY_LENGTH);
@@ -40,6 +54,15 @@ public class AesUtilServiceImpl implements AesUtilService {
         return new SecretKeySpec(keyBytes, "AES");
     }
 
+    /**
+     * Encrypts a plain text string using AES encryption.
+     *
+     * @param plainText The plain text to encrypt.
+     * @param key       The encryption key.
+     * @return The encrypted text as a byte array.
+     * @throws AesKeyInvalidException If the encryption key is invalid.
+     * @throws AesOperationException  If the encryption operation fails.
+     */
     @Override
     public byte[] encryptText(String plainText, String key)
             throws AesKeyInvalidException, AesOperationException {
@@ -59,6 +82,15 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
     }
 
+    /**
+     * Decrypts an encrypted byte array back into a plain text string.
+     *
+     * @param cipherBytes The encrypted byte array.
+     * @param key         The decryption key.
+     * @return The decrypted plain text string.
+     * @throws AesKeyInvalidException If the decryption key is invalid.
+     * @throws AesOperationException  If the decryption operation fails.
+     */
     @Override
     public String decryptText(byte[] cipherBytes, String key)
             throws AesKeyInvalidException, AesOperationException {
@@ -79,6 +111,15 @@ public class AesUtilServiceImpl implements AesUtilService {
         }
     }
 
+    /**
+     * Encrypts a file represented as a byte array using AES encryption.
+     *
+     * @param fileBytes The file content as a byte array.
+     * @param key       The encryption key.
+     * @return The encrypted file content as a byte array.
+     * @throws AesKeyInvalidException If the encryption key is invalid.
+     * @throws AesOperationException  If the encryption operation fails.
+     */
     @Override
     public byte[] encryptFile(byte[] fileBytes, String key)
             throws AesKeyInvalidException, AesOperationException {
@@ -97,6 +138,15 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
+    /**
+     * Decrypts an encrypted file represented as a byte array back into its original content.
+     *
+     * @param cipherBytes The encrypted file content as a byte array.
+     * @param key         The decryption key.
+     * @return The decrypted file content as a byte array.
+     * @throws AesKeyInvalidException If the decryption key is invalid.
+     * @throws AesOperationException  If the decryption operation fails.
+     */
     @Override
     public byte[] decryptFile(byte[] cipherBytes, String key)
             throws AesKeyInvalidException, AesOperationException {
@@ -115,6 +165,13 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     }
 
+    /**
+     * Generates an SHA-256 hash of the provided key.
+     *
+     * @param key The input key to hash.
+     * @return The hex-encoded SHA-256 hash of the key.
+     * @throws AesOperationException If the key generation operation fails.
+     */
     @Override
     public String generateKey(String key) throws AesOperationException {
 
@@ -143,6 +200,14 @@ public class AesUtilServiceImpl implements AesUtilService {
 
     // ----- Private Helper Methods -----
 
+    /**
+     * Encrypts a byte array using AES encryption.
+     *
+     * @param bytesToEncrypt The byte array to encrypt.
+     * @param key            The encryption key.
+     * @return The encrypted byte array.
+     * @throws Exception If the encryption process fails.
+     */
     private byte[] encryptBytes(byte[] bytesToEncrypt, String key) throws Exception {
 
         log.info("Starting AES encryption process...");
@@ -180,6 +245,14 @@ public class AesUtilServiceImpl implements AesUtilService {
         return outputBytes;
     }
 
+    /**
+     * Decrypts an encrypted byte array back into its original content.
+     *
+     * @param bytesToDecrypt The encrypted byte array.
+     * @param key            The decryption key.
+     * @return The decrypted byte array.
+     * @throws Exception If the decryption process fails.
+     */
     private byte[] decryptBytes(byte[] bytesToDecrypt, String key) throws Exception {
 
         log.info("Starting AES decryption process...");
