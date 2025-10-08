@@ -300,4 +300,26 @@ public class StegoController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"")
                 .body(resource);
     }
+
+    /**
+     * Handles the download of an extracted file.
+     * <p>
+     * This endpoint allows clients to download a previously extracted file by its name.
+     * The file is returned as a downloadable resource with the appropriate content type
+     * and content disposition headers set for attachment.
+     * </p>
+     *
+     * @param fileName The name of the file to be downloaded, provided as a path variable.
+     * @return A ResponseEntity containing the extracted file as a `Resource` object.
+     */
+    @GetMapping("/download/extracted/{fileName}")
+    public ResponseEntity<Resource> downloadExtractedFile(@PathVariable String fileName) {
+        log.info("In Controller- Downloading extracted file: {}. ", fileName);
+        var resource = steganographyService.downloadExtractedFile(fileName);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_OCTET_STREAM) // Set content type to generic binary data.
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + resource.getFilename() + "\"") // Set the file name for download.
+                .body(resource); // Include the file resource in the response body.
+    }
+
 }
