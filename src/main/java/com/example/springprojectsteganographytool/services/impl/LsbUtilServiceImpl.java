@@ -589,6 +589,27 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
     }
 
+    /**
+     * Writes a byte array to an image using the Least Significant Bit (LSB) steganography technique.
+     *
+     * <p>This method embeds the provided data bytes into the image starting at the specified pixel
+     * and using the specified LSB depth. The data is written across the RGB channels of the pixels.
+     * If the image does not have enough capacity to store the data, a `MessageTooLargeException` is thrown.
+     *
+     * <p>The method performs the following steps:
+     * <ol>
+     *   <li>Iterates over the pixels of the image starting from the specified pixel index.</li>
+     *   <li>For each pixel, extracts the RGB channels and modifies their LSBs to embed the data bits.</li>
+     *   <li>Writes the modified RGB values back to the image.</li>
+     *   <li>Stops once all data bytes have been written or the image capacity is exceeded.</li>
+     * </ol>
+     *
+     * @param image      The `BufferedImage` to write the data into.
+     * @param startPixel The starting pixel index for writing the data.
+     * @param lsbDepth   The number of least significant bits to use per color channel.
+     * @param dataBytes  The byte array containing the data to embed.
+     * @throws MessageTooLargeException If the image does not have enough capacity to store the data.
+     */
     private void writeBytesToImage(
             BufferedImage image,
             int startPixel,
@@ -626,7 +647,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
 
             for (var c = 0; c < 3; c++) { // iterate over each color channel (R, G, B)
 
-                //get next lsbDepth bits from dataBytes
+                // get next lsbDepth bits from dataBytes
                 var bitsToWrite = 0; // variable to hold the bits to write into the channel
 
                 for (var bit = 0; bit < lsbDepth; bit++) { // iterate over the number of bits to write
@@ -652,7 +673,7 @@ public class LsbUtilServiceImpl implements LsbUtilService {
                 }
 
                 // set lsbDepth bits in the channel
-                var mask = ~((1 << lsbDepth) - 1); //use bitwise NOT to create a mask
+                var mask = ~((1 << lsbDepth) - 1); // use bitwise NOT to create a mask
                 channels[c] = (channels[c] & mask) | (bitsToWrite & ((1 << lsbDepth) - 1)); // clear the lsbDepth bits in the channel and set them to bitsToWrite
 
                 if (bytePointer >= dataBytes.length && ((bytePointer * 8) + bitPointer) >= totalBits) { // if we have written all bytes and bits, we can stop
