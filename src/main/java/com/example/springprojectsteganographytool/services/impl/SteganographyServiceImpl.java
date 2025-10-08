@@ -431,6 +431,15 @@ public class SteganographyServiceImpl implements SteganographyService {
 
     // ----- Helpers -----
 
+    /**
+     * Performs an early capacity check to ensure that the payload can fit into the cover image
+     * with the specified LSB depth and metadata.
+     *
+     * @param coverImage         The cover image to be used for encoding.
+     * @param metadata           The metadata containing encoding details such as LSB depth.
+     * @param plainPayloadLength The length of the plain (unencrypted) payload.
+     * @throws MessageTooLargeException If the payload is too large to fit into the cover image.
+     */
     private void earlyCapacityCheck(
             BufferedImage coverImage, StegoMetadataDTO metadata, long plainPayloadLength
     ) throws MessageTooLargeException {
@@ -469,6 +478,15 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
+    /**
+     * Performs a precise capacity check to ensure that the encrypted payload can fit into the
+     * cover image with the specified LSB depth and metadata.
+     *
+     * @param coverImage      The cover image to be used for encoding.
+     * @param metadata        The metadata containing encoding details such as LSB depth.
+     * @param encryptedLength The length of the encrypted payload.
+     * @throws MessageTooLargeException If the encrypted payload is too large to fit into the cover image.
+     */
     private void preciseCapacityCheck(BufferedImage coverImage, StegoMetadataDTO metadata, long encryptedLength) {
 
         log.debug("Performing precise capacity check. Image size: {}x{}, LSB depth: {}, Encrypted payload length: {}",
@@ -497,6 +515,13 @@ public class SteganographyServiceImpl implements SteganographyService {
         }
     }
 
+    /**
+     * Sanitizes the base name of a file by removing invalid characters and extracting the name
+     * without the file extension.
+     *
+     * @param originalFileName The original file name to sanitize.
+     * @return The sanitized base name of the file.
+     */
     private String sanitizeBaseName(String originalFileName) {
 
         log.debug("Sanitizing base name from original file name: {}", originalFileName);
