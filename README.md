@@ -147,7 +147,7 @@ If you wish to run the application directly on your machine's JVM without contai
 1.  **Start the Database**:
     Use Docker Compose to start only the MySQL database service.
     ```bash
-    docker-compose up -d db-mysql
+    docker compose up -d db-mysql
     ```
     This will start a MySQL container, create a `stego` database, and configure a `user`.
 
