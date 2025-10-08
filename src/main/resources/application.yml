@@ -9,9 +9,9 @@ spring:
             max-file-size: 50MB
             max-request-size: 100MB
     datasource:
-        url: jdbc:mysql://localhost:3306/stego
-        username: user
-        password: password
+        url: ${DATABASE_URL:jdbc:mysql://localhost:3306/stego}
+        username: :${DATABASE_USER:user}
+        password: ${DATABASE_PASSWORD:password}
         driver-class-name: com.mysql.cj.jdbc.Driver
     jpa:
         hibernate:
