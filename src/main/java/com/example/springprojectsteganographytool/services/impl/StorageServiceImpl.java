@@ -37,8 +37,16 @@ public class StorageServiceImpl implements StorageService {
             throw new IllegalArgumentException("app.storage.base-path must not be null");
         }
 
-        log.info("Using storage base path: {}", basePath.toAbsolutePath().normalize());
         this.basePath = basePath.toAbsolutePath().normalize();
+
+        // **KEY CHANGE: Ensure the base directory exists**
+        try {
+            Files.createDirectories(this.basePath);
+            log.info("Using storage base path: {}", this.basePath);
+        } catch (IOException e) {
+            log.error("Failed to create storage base path: {}", this.basePath, e);
+            throw new IllegalArgumentException("Cannot create storage directory: " + this.basePath, e);
+        }
     }
 
     /**
