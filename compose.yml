@@ -18,7 +18,7 @@ services:
     # Application Service
     app:
         # Use the image built by the Spring Boot Maven plugin
-        image: docker.io/noobdevsam/spring-project-steganography-tool:latest
+        image: docker.io/noobdevsam/spring-project-steganography-tool:v1
         container_name: stego-app
         ports:
             - "8080:8080"

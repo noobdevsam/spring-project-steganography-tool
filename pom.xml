@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.example</groupId>
     <artifactId>spring-project-steganography-tool</artifactId>
-    <version>latest</version>
+    <version>v1</version>
     <name>spring-project-steganography-tool</name>
     <description>A powerful and secure steganography tool built with Spring Boot 3</description>
     <url>https://github.com/noobdevsam/spring-project-steganography-tool</url>
