@@ -23,6 +23,7 @@ services:
         ports:
             - "8080:8080"
         mem_limit: 2g
+        user: "0:0"  # Run as root user initially
         environment:
             # Connect to the MySQL container
             - DATABASE_URL=jdbc:mysql://db-mysql:3306/stego
@@ -33,11 +34,15 @@ services:
             # Other environment variables as needed
             - JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0
         volumes:
-            # Mount the local './storage' directory into the container.
-            # This makes it easy to see generated files on your host machine.
-            - ./storage:/app/storage
+            - stego_storage:/app/storage
         command: >
-            sh -c "mkdir -p /app/storage && chown -R cnb:cnb /app/storage && java -jar /workspace/BOOT-INF/lib/spring-project-steganography-tool-v1.jar"
+            sh -c "
+            mkdir -p /app/storage &&
+            chown -R 1000:1000 /app/storage &&
+            chmod -R 755 /app/storage &&
+            cd /workspace &&
+            exec setpriv --reuid=1000 --regid=1000 --clear-groups java org.springframework.boot.loader.launch.JarLauncher
+            "
         networks:
             - stego-network
         depends_on:
@@ -49,4 +54,6 @@ networks:
 
 volumes:
     mysql_data:
+        driver: local
+    stego_storage:
         driver: local
