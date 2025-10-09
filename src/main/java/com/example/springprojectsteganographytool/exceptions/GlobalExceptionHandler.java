@@ -153,7 +153,7 @@ public class GlobalExceptionHandler {
         // logger.error("Unhandled exception", ex);
         var pd = ProblemDetail.forStatusAndDetail(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                "An unexpected error occurred."
+                ex.getLocalizedMessage()
         );
         var traceId = MDC.get("traceId");
 
