@@ -18,10 +18,11 @@ services:
     # Application Service
     app:
         # Use the image built by the Spring Boot Maven plugin
-        image: noobdevsam/spring-project-steganography-tool:0.0.1-SNAPSHOT
+        image: docker.io/noobdevsam/spring-project-steganography-tool:v1
         container_name: stego-app
         ports:
             - "8080:8080"
+        mem_limit: 2g
         environment:
             # Connect to the MySQL container
             - DATABASE_URL=jdbc:mysql://db-mysql:3306/stego
@@ -29,6 +30,8 @@ services:
             - DATABASE_PASSWORD=password
             # Point storage inside the container to the mounted volume
             - STORAGE_BASE_PATH=/app/storage
+            # Other environment variables as needed
+            - JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0
         volumes:
             # Mount the local storage directory into the container to persist files
             - storage_data:/app/storage
