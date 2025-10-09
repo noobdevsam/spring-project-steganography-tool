@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.example</groupId>
     <artifactId>spring-project-steganography-tool</artifactId>
-    <version>v2</version>
+    <version>v1</version>
     <name>spring-project-steganography-tool</name>
     <description>A powerful and secure steganography tool built with Spring Boot 3</description>
     <url>https://github.com/noobdevsam/spring-project-steganography-tool</url>
@@ -103,10 +103,13 @@
                     </excludes>
                     <image>
                         <name>noobdevsam/${project.artifactId}:${project.version}</name>
-                        <builder>paketobuildpacks/builder-jammy-base</builder>
+                        <builder>paketobuildpacks/builder-jammy-tiny</builder>
                         <env>
                             <!-- Configure the buildpack to use Java 25 -->
                             <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                            <!-- Run the app with user/group 1000 to match host user permissions on mounted volumes -->
+                            <BP_USER_ID>1000</BP_USER_ID>
+                            <BP_GROUP_ID>1000</BP_GROUP_ID>
                         </env>
                     </image>
                 </configuration>

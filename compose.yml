@@ -16,9 +16,9 @@ services:
             - stego-network
 
     # Application Service
-    app:
+    stego-app:
         # Use the image built by the Spring Boot Maven plugin
-        image: docker.io/noobdevsam/spring-project-steganography-tool:v2
+        image: docker.io/noobdevsam/spring-project-steganography-tool:v1
         container_name: stego-app
         ports:
             - "8080:8080"
@@ -33,8 +33,9 @@ services:
             # Other environment variables as needed
             - JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0
         volumes:
-            # Mount the local storage directory into the container to persist files
-            - storage_data:/app/storage
+            # Mount the local './storage' directory into the container.
+            # This makes it easy to see generated files on your host machine.
+            - ./storage:/app/storage
         networks:
             - stego-network
         depends_on:
@@ -46,6 +47,4 @@ networks:
 
 volumes:
     mysql_data:
-        driver: local
-    storage_data:
         driver: local
