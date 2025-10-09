@@ -47,19 +47,22 @@ public class StorageServiceImpl implements StorageService {
      * @param relativeFileName the relative name of the file to save.
      * @param content          the content of the file as a byte array.
      * @return the path to the saved file.
-     * @throws StorageSecurityException if the file name is invalid or attempts to escape the storage directory.
+     * @throws StorageSecurityException if an attempt is made to escape the storage directory.
      * @throws StorageException         if an error occurs during file operations.
-     * @throws IOException              if an I/O error occurs.
      */
     @Override
-    public Path save(String relativeFileName, byte[] content) throws StorageSecurityException, StorageException, IOException {
+    public Path save(String relativeFileName, byte[] content) throws StorageSecurityException, StorageException {
         log.debug("Saving file: {} ({} bytes)", relativeFileName, content.length);
 
-        var targetPath = safeResolve(relativeFileName);
-        Files.createDirectories(targetPath.getParent());
-        Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        log.debug("Saved file: {}  ({} bytes)", targetPath, content.length);
-        return targetPath;
+        try {
+            var targetPath = safeResolve(relativeFileName);
+            Files.createDirectories(targetPath.getParent());
+            Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+            log.debug("Saved file: {}  ({} bytes)", targetPath, content.length);
+            return targetPath;
+        } catch (IOException e) {
+            throw new StorageException("Failed to store file " + relativeFileName, e);
+        }
     }
 
     /**

@@ -36,6 +36,8 @@ services:
             # Mount the local './storage' directory into the container.
             # This makes it easy to see generated files on your host machine.
             - ./storage:/app/storage
+        command: >
+            sh -c "mkdir -p /app/storage && chown -R cnb:cnb /app/storage && java -jar /workspace/BOOT-INF/lib/spring-project-steganography-tool-v1.jar"
         networks:
             - stego-network
         depends_on:
