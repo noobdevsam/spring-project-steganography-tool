@@ -4,6 +4,7 @@ import com.example.springprojectsteganographytool.exceptions.data.StorageExcepti
 import com.example.springprojectsteganographytool.exceptions.data.StorageFileNotFoundException;
 import com.example.springprojectsteganographytool.exceptions.data.StorageSecurityException;
 import com.example.springprojectsteganographytool.services.StorageService;
+import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
@@ -38,14 +39,27 @@ public class StorageServiceImpl implements StorageService {
         }
 
         this.basePath = basePath.toAbsolutePath().normalize();
+        log.info("Storage base path configured: {}", this.basePath);
+    }
 
-        // **KEY CHANGE: Ensure the base directory exists**
+    /**
+     * Post-construct initialization to ensure the storage directory exists.
+     * This method is called after dependency injection is complete and BEFORE lazy initialization.
+     */
+    @PostConstruct
+    public void init() {
         try {
             Files.createDirectories(this.basePath);
-            log.info("Using storage base path: {}", this.basePath);
+            log.info("Storage directory initialized successfully: {}", this.basePath);
+
+            // Verify write permissions
+            if (!Files.isWritable(this.basePath)) {
+                log.error("Storage directory is not writable: {}", this.basePath);
+                throw new IllegalStateException("Storage directory is not writable: " + this.basePath);
+            }
         } catch (IOException e) {
-            log.error("Failed to create storage base path: {}", this.basePath, e);
-            throw new IllegalArgumentException("Cannot create storage directory: " + this.basePath, e);
+            log.error("Failed to create storage directory: {}", this.basePath, e);
+            throw new IllegalStateException("Cannot create storage directory: " + this.basePath, e);
         }
     }
 
@@ -64,7 +78,12 @@ public class StorageServiceImpl implements StorageService {
 
         try {
             var targetPath = safeResolve(relativeFileName);
-            Files.createDirectories(targetPath.getParent());
+
+            // Ensure parent directory exists (though basePath should already exist from init())
+            if (targetPath.getParent() != null && !Files.exists(targetPath.getParent())) {
+                Files.createDirectories(targetPath.getParent());
+            }
+
             Files.write(targetPath, content, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
             log.debug("Saved file: {}  ({} bytes)", targetPath, content.length);
             return targetPath;
