@@ -10,6 +10,7 @@ This project is a powerful and secure steganography tool built with Spring Boot 
 
 - [What is Steganography?](#what-is-steganography)
 - [Features](#features)
+- [Docker Hub](#docker-hub)
 - [How It Works](#how-it-works)
   - [Encoding Process](#encoding-process)
   - [Decoding Process](#decoding-process)
@@ -22,7 +23,7 @@ This project is a powerful and secure steganography tool built with Spring Boot 
 - [Configuration](#configuration)
 - [Running the Application](#running-the-application)
   - [1. For Local Development (JVM)](#1-for-local-development-jvm)
-  - [2. For Production (Docker Image)](#2-for-production-docker-image)
+  - [2. For Production (Docker)](#2-for-production-docker)
 - [Interacting with the API](#interacting-with-the-api)
   - [Example 1: Estimate Capacity](#example-1-estimate-capacity)
   - [Example 2: Encode a Text Message](#example-2-encode-a-text-message)
@@ -48,6 +49,12 @@ Steganography is the practice of concealing a message or file within another fil
 - **Scheduled Cleanup**: A background task periodically cleans up orphaned stego files from storage and deletes expired extracted files.
 - **Robust Error Handling**: A global exception handler provides detailed, structured error responses (`ProblemDetail`) for API clients.
 - **Traceability**: A `CorrelationIdFilter` adds a unique trace ID to every request for improved logging and debugging.
+
+## Docker Hub
+
+The official Docker image for this project is available on Docker Hub. You can pull it directly to run the application without building it from the source.
+
+- **Repository**: [noobdevsam/spring-project-steganography-tool](https://hub.docker.com/r/noobdevsam/spring-project-steganography-tool)
 
 ## How It Works
 
@@ -150,28 +157,32 @@ This method is ideal for development and debugging, as it uses Spring Boot's hot
     ```
     The application will start on `http://localhost:8080`.
 
-### 2. For Production (Docker Image)
+### 2. For Production (Docker)
 
-This is the recommended approach for production. It packages the application into a standard JVM-based Docker container.
+This is the recommended approach for production. The `compose.yml` file is configured to use the pre-built image from Docker Hub.
 
-1.  **Build the Docker Image**:
-    Run the following Maven command. This uses Cloud Native Buildpacks to create a Docker image named `noobdevsam/spring-project-steganography-tool:0.0.1-SNAPSHOT`.
+1.  **Pull the Image (Optional)**:
+    You can pull the latest image from Docker Hub before starting the services.
     ```bash
-    # This command requires Docker to be running.
-    ./mvnw spring-boot:build-image -DskipTests
+    docker pull noobdevsam/spring-project-steganography-tool:v1
     ```
 
 2.  **Run with Docker Compose**:
-    Once the image is built, start the application and the database using Docker Compose.
+    This command will start both the application container and the database. Docker Compose will automatically pull the image if it's not available locally.
     ```bash
-    # This will use the image built in the previous step.
-    docker compose up
-    or
-    docker compose up -d db-mysql && docker compose up app
+    docker compose up -d
     ```
     The application will be available on `http://localhost:8080`.
 
-To stop all services, press `Ctrl+C` or run `docker compose down`.
+3.  **Building Locally (Alternative)**:
+    If you prefer to build the image from the source code instead of using the one from Docker Hub, run the following Maven command first:
+    ```bash
+    # This requires Docker to be running.
+    ./mvnw spring-boot:build-image -DskipTests
+    ```
+    The `compose.yml` file will use this locally built image (`noobdevsam/spring-project-steganography-tool:v1`) when you run `docker compose up`.
+
+To stop all services, run `docker compose down`.
 
 ## Interacting with the API
 
