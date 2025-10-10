@@ -4,12 +4,18 @@ services:
         image: mysql:latest
         container_name: db-mysql
         ports:
-            - "3306:3306"
+            - "3306"
         environment:
             - MYSQL_ROOT_PASSWORD=password
             - MYSQL_DATABASE=stego
             - MYSQL_USER=user
             - MYSQL_PASSWORD=password
+        healthcheck:
+            test: [ "CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}" ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
         volumes:
             - mysql_data:/var/lib/mysql
         networks:
@@ -46,7 +52,8 @@ services:
         networks:
             - stego-network
         depends_on:
-            - db-mysql
+            db-mysql:
+                condition: service_healthy
 
 networks:
     stego-network:
